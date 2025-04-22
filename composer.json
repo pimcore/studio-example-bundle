@@ -1,0 +1,37 @@
+{
+  "name": "pimcore/studio-example-bundle",
+  "license": "proprietary",
+  "type": "pimcore-bundle",
+  "description": "Pimcore Studio Example Extension Bundle",
+  "config": {
+    "discard-changes": true,
+    "sort-packages": true,
+    "preferred-install": {
+      "pimcore/pimcore": "source",
+      "*": "dist"
+    },
+    "allow-plugins": {
+      "php-http/discovery": false
+    }
+  },
+  "prefer-stable": true,
+  "minimum-stability": "dev",
+  "require": {
+    "pimcore/studio-ui-bundle": "1.x-dev"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "psr-4": {
+      "Pimcore\\Bundle\\StudioExampleBundle\\": "src/",
+      "Pimcore\\": "core-extension/Pimcore/"
+    }
+  },
+  "extra": {
+    "pimcore": {
+      "bundles": [
+        "Pimcore\\Bundle\\StudioExampleBundle\\PimcoreStudioExampleBundle"
+      ]
+    }
+  }
+}
