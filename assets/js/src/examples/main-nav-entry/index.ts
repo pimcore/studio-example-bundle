@@ -4,7 +4,7 @@ import { type MainNavRegistry } from '@pimcore/studio-ui-bundle/modules/app'
 import { type WidgetRegistry } from '@pimcore/studio-ui-bundle/modules/widget-manager'
 import ExampleTool from './components/example-tool/example-tool'
 
-export const ExampleModule: AbstractModule = {
+export const MainNavEntryExtension: AbstractModule = {
   onInit: (): void => {
     const mainNavRegistryService = container.get<MainNavRegistry>(serviceIds.mainNavRegistry)
 
@@ -15,7 +15,6 @@ export const ExampleModule: AbstractModule = {
 
     mainNavRegistryService.registerMainNavItem({
       path: 'Example Plugin/Example Tool',
-      className: 'item-style-modifier',
       widgetConfig: {
         name: 'Example Tool',
         id: 'example-tool',

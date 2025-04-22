@@ -1,5 +1,5 @@
 import { Pimcore } from '@pimcore/studio-ui-bundle'
-import { ExampleModule } from './modules/example-module'
+import { MainNavEntryExtension } from './examples/main-nav-entry'
 
 if (module.hot !== undefined) {
   module.hot.accept()
@@ -15,7 +15,8 @@ Pimcore.pluginSystem.registerPlugin({
 
   // register modules here
   onStartup: ({ moduleSystem }): void => {
-    moduleSystem.registerModule(ExampleModule)
     console.log('Hello from the demo plugin!')
+
+    moduleSystem.registerModule(MainNavEntryExtension)
   }
 })
