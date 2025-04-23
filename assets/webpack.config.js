@@ -101,8 +101,8 @@ Encore
   })
 
   .addAliases({
-    '@Pimcore': path.resolve(__dirname, 'assets', 'js', 'src'),
-    '@test-utils': path.resolve(__dirname, 'assets', 'js', 'test-utils'),
+    '@PimcoreStudioExampleBundle': path.resolve(__dirname, 'js', 'src'),
+    '@test-utils': path.resolve(__dirname, 'js', 'test-utils'),
   })
 
   .addPlugin(new webpack.DllReferencePlugin({
