@@ -9,7 +9,7 @@ const CustomToolbarButton: React.FC = () => {
 
   const onClick = (): void => {
     alertModal.info({
-      title: 'Hello',
+      title: 'Hello!',
       content: 'Hello from the custom toolbar button! The button will only be shown for image assets.'
     })
   }
