@@ -4,4 +4,4 @@ This bundle provides the basic structure of a Pimcore Studio example extension b
 
 The Pimcore Studio Example Bundle was created to help developers quickly get started with creating custom extensions for Pimcore Studio. It includes a set of examples for extending the UI and integrating new features.
 
-For further information, visit the [Pimcore Studio UI documentation](https://github.com/pimcore/studio-ui-bundle/blob/1.x/README.md).
+For further information, visit the [Pimcore Studio UI Plugin Development Examples documentation](https://github.com/pimcore/studio-ui-bundle/blob/1.x/doc/05_Examples/README.md).
