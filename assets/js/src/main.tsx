@@ -1,5 +1,6 @@
 import { Pimcore } from '@pimcore/studio-ui-bundle'
 import { MainNavEntryExtension } from './examples/main-nav-entry'
+import { AssetEditorToolbarButtonExtension } from './examples/asset-editor-toolbar-button'
 
 if (module.hot !== undefined) {
   module.hot.accept()
@@ -18,5 +19,6 @@ Pimcore.pluginSystem.registerPlugin({
     console.log('Hello from the demo plugin!')
 
     moduleSystem.registerModule(MainNavEntryExtension)
+    moduleSystem.registerModule(AssetEditorToolbarButtonExtension)
   }
 })
