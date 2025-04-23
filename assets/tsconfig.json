@@ -4,7 +4,7 @@
     "target": "es2017",
     "moduleResolution": "bundler",
     "types": ["reflect-metadata", "@types/webpack-env" ],
-    "baseUrl": "./assets/js/",
+    "baseUrl": "./js/",
     "strictNullChecks": true,
     "jsx": "react",
     "esModuleInterop": true,
@@ -15,6 +15,6 @@
   },
   
   "include": [
-    "./assets/js/**/*",
+    "./js/**/*",
   ],
 }
