@@ -2,7 +2,7 @@
   "entrypoints": {
     "main": {
       "js": [
-        "http://localhost:3030/build/main.js"
+        "/bundles/pimcorestudioexamplebundle/build/main.4c1a0445.js"
       ]
     }
   }
