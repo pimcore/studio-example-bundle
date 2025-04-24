@@ -12,7 +12,7 @@ final class WebpackEntryPointProvider implements WebpackEntryPointProviderInterf
 {
     public function getEntryPointsJsonLocations(): array
     {
-        return [__DIR__ . '/../../public/build/entrypoints.json'];
+        return glob(__DIR__ . '/../../public/build/*/entrypoints.json');
     }
 
     public function getEntryPoints(): array
