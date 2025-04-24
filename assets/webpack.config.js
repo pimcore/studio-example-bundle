@@ -3,6 +3,19 @@ const webpack = require('webpack');
 const path = require('path');
 const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const uuid = require('uuid');
+const buildId = uuid.v4();
+const fs = require('fs');
+const buildPath = path.resolve(__dirname, '..', 'public', 'build', buildId);
+
+if (fs.existsSync( path.resolve(__dirname,'..', 'public', 'build'))) {
+  fs.rmSync(path.resolve(__dirname, '..', 'public', 'build'), { recursive: true });
+}
+
+if (!fs.existsSync(buildPath)) {
+  fs.mkdirSync(buildPath, { recursive: true });
+}
+
 
 // Manually configure the runtime environment if not already configured yet by the "encore" command.
 // It's useful when you use tools that rely on webpack.config.js file.
@@ -12,9 +25,9 @@ if (!Encore.isRuntimeEnvironmentConfigured()) {
 
 Encore
   // directory where compiled assets will be stored
-  .setOutputPath(path.resolve(__dirname, 'public', 'build'))
+  .setOutputPath(buildPath)
   // public path used by the web server to access the output path
-  .setPublicPath('/bundles/pimcorestudioexamplebundle/build')
+  .setPublicPath('/bundles/pimcorestudioexamplebundle/build/' + buildId)
 
   .addExternals({
     'Pimcore': 'Pimcore',
@@ -45,7 +58,7 @@ Encore
     * list of features, see:
     * https://symfony.com/doc/current/frontend.html#adding-more-features
     */
-  .cleanupOutputBeforeBuild()
+  //.cleanupOutputBeforeBuild()
   .enableBuildNotifications()
   .enableSourceMaps(!Encore.isProduction())
   // enables hashed filenames (e.g. app.abc123.css)
@@ -101,8 +114,8 @@ Encore
   })
 
   .addAliases({
-    '@PimcoreStudioExampleBundle': path.resolve(__dirname, 'js', 'src'),
-    '@test-utils': path.resolve(__dirname, 'js', 'test-utils'),
+    '@Pimcore': path.resolve(__dirname, 'assets', 'js', 'src'),
+    '@test-utils': path.resolve(__dirname, 'assets', 'js', 'test-utils'),
   })
 
   .addPlugin(new webpack.DllReferencePlugin({
@@ -114,7 +127,7 @@ Encore
 if (!Encore.isDevServer()) {
   // only needed for CDN's or sub-directory deploy
   Encore
-    .setManifestKeyPrefix('bundles/pimcorestudioexamplebundle/build')
+    .setManifestKeyPrefix('bundles/pimcorestudioexamplebundle/build/' + buildId) // Fixed prefix
   ;
 }
 
@@ -125,9 +138,19 @@ if (!Encore.isDevServer() && !Encore.isProduction()) {
 }
 
 if (Encore.isDevServer()) {
+  if (fs.existsSync( path.resolve(__dirname, '..', 'public', 'build'))) {
+    fs.rmSync(path.resolve(__dirname, '..', 'public', 'build'), { recursive: true });
+  }
+
+  if (!fs.existsSync(buildPath)) {
+    fs.mkdirSync(buildPath, { recursive: true });
+  }
+
+
   Encore
-    .setOutputPath('public/build/')
-    .setPublicPath('/build')
+    .setOutputPath(buildPath)
+    .setPublicPath('/build/' + buildId)
+    .setManifestKeyPrefix('build/' + buildId) // Fixed prefix for dev server
     .addPlugin(new ReactRefreshPlugin())
   ;
 }
