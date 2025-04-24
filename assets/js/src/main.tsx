@@ -1,24 +1,20 @@
 import { Pimcore } from '@pimcore/studio-ui-bundle'
-import { MainNavEntryExtension } from './examples/main-nav-entry'
-import { AssetEditorToolbarButtonExtension } from './examples/asset-editor-toolbar-button'
+import { MainNavEntryPlugin } from './examples/main-nav-entry'
+import { AssetEditorToolbarButtonPlugin } from './examples/asset-editor-toolbar-button'
+import { TabManagerPlugin } from './examples/tab-manager'
+import { CustomIconPlugin } from './examples/custom-icons'
+import { CustomWidgetsPlugin } from './examples/custom-widgets'
 
 if (module.hot !== undefined) {
   module.hot.accept()
 }
 
-Pimcore.pluginSystem.registerPlugin({
-  name: 'pimcore-plugin',
+const pluginSystem = Pimcore.pluginSystem
 
-  // Register and overwrite services here
-  onInit: ({ container }): void => {
-
-  },
-
-  // register modules here
-  onStartup: ({ moduleSystem }): void => {
-    console.log('Hello from the demo plugin!')
-
-    moduleSystem.registerModule(MainNavEntryExtension)
-    moduleSystem.registerModule(AssetEditorToolbarButtonExtension)
-  }
-})
+// Examples are splitted into separate plugins to create a clear separation for better understanding.
+// You can also combine them into one plugin if you want to.
+pluginSystem.registerPlugin(MainNavEntryPlugin)
+pluginSystem.registerPlugin(AssetEditorToolbarButtonPlugin)
+pluginSystem.registerPlugin(TabManagerPlugin)
+pluginSystem.registerPlugin(CustomIconPlugin)
+pluginSystem.registerPlugin(CustomWidgetsPlugin)

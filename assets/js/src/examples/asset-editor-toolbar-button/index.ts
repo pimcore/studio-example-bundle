@@ -1,19 +1,10 @@
-import { type AbstractModule, container } from '@pimcore/studio-ui-bundle'
-import { serviceIds } from '@pimcore/studio-ui-bundle/app'
-import { componentConfig, type ComponentRegistry } from '@pimcore/studio-ui-bundle/modules/app'
-import CustomToolbarButton from './components/custom-toolbar-button/custom-toolbar-button'
+import { type IAbstractPlugin } from '@pimcore/studio-ui-bundle'
+import { AssetEditorToolbarButtonExtension } from './modules/asset-editor-toolbar-button-extension'
 
-export const AssetEditorToolbarButtonExtension: AbstractModule = {
-  onInit: (): void => {
-    const componentRegistry = container.get<ComponentRegistry>(serviceIds['App/ComponentRegistry/ComponentRegistry'])
+export const AssetEditorToolbarButtonPlugin: IAbstractPlugin = {
+  name: 'AssetEditorToolbarButtonPlugin',
 
-    componentRegistry.registerToSlot(
-      componentConfig.asset.editor.toolbar.slots.left.name,
-      {
-        name: 'customToolbarButton',
-        component: CustomToolbarButton,
-        priority: 500
-      }
-    )
+  onStartup ({ moduleSystem }) {
+    moduleSystem.registerModule(AssetEditorToolbarButtonExtension)
   }
 }
