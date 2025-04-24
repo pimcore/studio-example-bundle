@@ -27,7 +27,7 @@ Encore
   // directory where compiled assets will be stored
   .setOutputPath(buildPath)
   // public path used by the web server to access the output path
-  .setPublicPath('/bundles/pimcorestudioexamplebundle/build/' + buildId)
+  .setPublicPath('/bundles/pimcorestudioexample/build/' + buildId)
 
   .addExternals({
     'Pimcore': 'Pimcore',
@@ -127,7 +127,7 @@ Encore
 if (!Encore.isDevServer()) {
   // only needed for CDN's or sub-directory deploy
   Encore
-    .setManifestKeyPrefix('bundles/pimcorestudioexamplebundle/build/' + buildId) // Fixed prefix
+    .setManifestKeyPrefix('bundles/pimcorestudioexample/build/' + buildId) // Fixed prefix
   ;
 }
 
