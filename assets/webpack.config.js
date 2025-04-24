@@ -12,7 +12,7 @@ if (!Encore.isRuntimeEnvironmentConfigured()) {
 
 Encore
   // directory where compiled assets will be stored
-  .setOutputPath(path.resolve(__dirname, 'public', 'build'))
+  .setOutputPath(path.resolve(__dirname, '..', 'public', 'build'))
   // public path used by the web server to access the output path
   .setPublicPath('/bundles/pimcorestudioexamplebundle/build')
 
