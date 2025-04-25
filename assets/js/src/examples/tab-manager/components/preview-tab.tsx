@@ -1,12 +1,19 @@
-import { Box } from '@pimcore/studio-ui-bundle/components'
+import { Alert, Content, Header } from '@pimcore/studio-ui-bundle/components'
 import React from 'react'
 
 export const PreviewTab = (): React.JSX.Element => {
   return (
-    <Box padding="small">
-      <h1>New preview tab</h1>
-      <p>This is a new preview tab.</p>
-      <p>It replaces the default preview tab.</p>
-    </Box>
+    <Content padded>
+      <Header title="New preview tab" />
+      <Alert
+        message={ (
+          <div>
+            This is a new preview tab.<br />
+            It replaces the default preview tab.
+          </div>
+      ) }
+        type="info"
+      />
+    </Content>
   )
 }
