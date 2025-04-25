@@ -12,7 +12,7 @@ export const AssetEditorToolbarButtonExtension: AbstractModule = {
       {
         name: 'customToolbarButton',
         component: CustomToolbarButton,
-        priority: 0
+        priority: 500
       }
     )
   }
