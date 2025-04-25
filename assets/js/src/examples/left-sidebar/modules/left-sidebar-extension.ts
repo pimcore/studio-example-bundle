@@ -8,7 +8,7 @@ export const LeftSidebarExtension: AbstractModule = {
     const componentRegistry = container.get<ComponentRegistry>(serviceIds['App/ComponentRegistry/ComponentRegistry'])
 
     componentRegistry.registerToSlot(
-      componentConfig.leftSidbar.slot.name,
+      componentConfig.leftSidebar.slot.name,
       {
         name: 'exampleButton',
         component: ExampleButton,
