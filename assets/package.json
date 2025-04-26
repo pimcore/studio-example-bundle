@@ -58,6 +58,7 @@
     "whatwg-fetch": "^3.6.20"
   },
   "dependencies": {
+    "@pimcore/studio-ui-bundle": "file:../../studio-ui-bundle/public/build/studio-npm-package.tgz",
     "react": "18.3.x",
     "react-dom": "18.3.x"
   }

@@ -4,6 +4,8 @@ import { AssetEditorToolbarButtonPlugin } from './examples/asset-editor-toolbar-
 import { TabManagerPlugin } from './examples/tab-manager'
 import { CustomIconPlugin } from './examples/custom-icons'
 import { CustomWidgetsPlugin } from './examples/custom-widgets'
+import { DynamicTypePlugin } from './examples/dynamic-types'
+import { ApiDataPlugin } from './examples/api-data'
 
 if (module.hot !== undefined) {
   module.hot.accept()
@@ -18,3 +20,5 @@ pluginSystem.registerPlugin(AssetEditorToolbarButtonPlugin)
 pluginSystem.registerPlugin(TabManagerPlugin)
 pluginSystem.registerPlugin(CustomIconPlugin)
 pluginSystem.registerPlugin(CustomWidgetsPlugin)
+pluginSystem.registerPlugin(DynamicTypePlugin)
+pluginSystem.registerPlugin(ApiDataPlugin)

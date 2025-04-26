@@ -6,6 +6,7 @@ export const ExampleWidget = (): React.JSX.Element => {
   const widgetManager = useWidgetManager()
   const [selectedOption, setSelectedOption] = React.useState<SelectProps['value']>(undefined)
   const [selectedWidget, setSelectedWidget] = React.useState<Record<string, any> | undefined>(undefined)
+  const areButtonsDisabled = selectedWidget === undefined
 
   const widgets = [
     {
@@ -73,19 +74,31 @@ export const ExampleWidget = (): React.JSX.Element => {
         direction='vertical'
         size='small'
       >
-        <Button onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }>
+        <Button
+          disabled={ areButtonsDisabled }
+          onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }
+        >
           Open main widget
         </Button>
 
-        <Button onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }>
+        <Button
+          disabled={ areButtonsDisabled }
+          onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }
+        >
           Open left widget
         </Button>
 
-        <Button onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }>
+        <Button
+          disabled={ areButtonsDisabled }
+          onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }
+        >
           Open right widget
         </Button>
 
-        <Button onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }>
+        <Button
+          disabled={ areButtonsDisabled }
+          onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }
+        >
           Open bottom widget
         </Button>
       </Space>
