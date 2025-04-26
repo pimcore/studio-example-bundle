@@ -1,19 +1,22 @@
-import { Box, Flex, Icon, IconButton, IconTextButton, Space } from '@pimcore/studio-ui-bundle/components'
+import { Card, Content, Flex, Header, Icon, IconButton, IconTextButton, Space } from '@pimcore/studio-ui-bundle/components'
 import React from 'react'
 
 export const CustomIcons = (): React.JSX.Element => {
   return (
-    <Box padding="small">
-      <Flex
-        align='center'
-        gap='small'
-      >
-        <h1>Custom Icons</h1>
-        <Icon
-          options={ { height: 35, width: 35, style: { rotate: '90deg' } } }
-          value="rocket-example"
-        />
-      </Flex>
+    <Content padded>
+      <Header title="Custom Icons" />
+      <Card>
+        <Flex
+          align='center'
+          gap='small'
+        >
+          <h1>Icon Example</h1>
+          <Icon
+            options={ { height: 35, width: 35, style: { rotate: '90deg' } } }
+            value="rocket-example"
+          />
+        </Flex>
+      </Card>
 
       <Space
         direction='vertical'
@@ -36,6 +39,6 @@ export const CustomIcons = (): React.JSX.Element => {
           Rocket
         </IconTextButton>
       </Space>
-    </Box>
+    </Content>
   )
 }

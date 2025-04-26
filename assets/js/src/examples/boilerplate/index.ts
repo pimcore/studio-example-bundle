@@ -1,9 +1,9 @@
-import { IAbstractPlugin } from "@pimcore/studio-ui-bundle";
+import { type IAbstractPlugin } from '@pimcore/studio-ui-bundle'
 
 export const BoilerplatePlugin: IAbstractPlugin = {
   name: 'BoilerplatePlugin',
 
-  onInit({ container }) {
+  onInit ({ container }) {
     // This is where you would initialize your plugin
     // Most common use case would be to register new services here
     // container.bind('some-service', SomeService);
