@@ -3,7 +3,7 @@
     "module": "ESNext",
     "target": "es2017",
     "moduleResolution": "bundler",
-    "types": ["reflect-metadata", "@types/webpack-env" ],
+    "types": ["@types/webpack-env" ],
     "baseUrl": "./js/",
     "strictNullChecks": true,
     "jsx": "react",
@@ -11,10 +11,15 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "noCheck": true,
+    "paths": {
+      "*": ["./@mf-types/*"]
+    }
   },
   
   "include": [
     "./js/**/*",
+    "./@mf-types/*"
   ],
 }

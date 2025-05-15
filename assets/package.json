@@ -2,10 +2,9 @@
   "name": "pimcore-studio-ui-demo-bundle",
   "version": "0.0.1",
   "scripts": {
-    "dev-server": "encore dev-server --port 3030 --hot",
-    "dev": "encore dev",
-    "watch": "encore dev --watch",
-    "build": "encore production --progress",
+    "dev": "NODE_ENV=development rsbuild build",
+    "dev-server": "NODE_ENV=dev-server rsbuild dev",
+    "build": "rsbuild build",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./js",
     "lint-fix": "eslint --ext .js,.jsx,.ts,.tsx ./js --fix"
   },
@@ -13,7 +12,10 @@
   "private": true,
   "devDependencies": {
     "@babel/preset-react": "^7.23.3",
+    "@module-federation/rsbuild-plugin": "^0.13.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
+    "@rsbuild/core": "^1.3.16",
+    "@rsbuild/plugin-react": "^1.3.1",
     "@rtk-query/codegen-openapi": "^1.2.0",
     "@storybook/addon-a11y": "^8.0.5",
     "@storybook/addon-essentials": "^8.0.5",
@@ -58,6 +60,9 @@
     "whatwg-fetch": "^3.6.20"
   },
   "dependencies": {
+    "@module-federation/enhanced": "^0.13.1",
+    "@pimcore/studio-ui-bundle": "file:../../../../../../../home/node/pimcore-studio-ui-bundle-0.0.1.tgz",
+    "inversify": "^6.1.4",
     "react": "18.3.x",
     "react-dom": "18.3.x"
   }

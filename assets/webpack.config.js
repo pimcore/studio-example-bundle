@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const path = require('path');
 const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const { ModuleFederationPlugin } = require('@module-federation/enhanced');
 const uuid = require('uuid');
 const buildId = uuid.v4();
 const fs = require('fs');
@@ -49,7 +50,8 @@ Encore
 
   // will require an extra script tag for runtime.js
   // but, you probably want this, unless you're building a single-page app
-  .disableSingleRuntimeChunk()
+  // .disableSingleRuntimeChunk()
+  .enableSingleRuntimeChunk()
 
   /*
     * FEATURE CONFIG
@@ -104,7 +106,7 @@ Encore
   .configureDevServerOptions(options => {
     options.host = '0.0.0.0';
     options.hot =  true;
-    options.port = 3030;
+    options.port = 3031;
     options.allowedHosts = 'all';
   })
 
@@ -113,15 +115,57 @@ Encore
     fix: true
   })
 
+  .addPlugin(new ModuleFederationPlugin({
+    name: 'pimcore_studio_example_bundle',
+    filename: 'remoteEntry.js',
+    exposes: {
+      '.': './js/src/plugins.ts',
+    },
+    remotes: {
+      '@pimcore/studio-ui-bundle': `promise new Promise(resolve => {
+        const studioUIBundleRemoteUrl = window.StudioUIBundleRemoteUrl
+        const script = document.createElement('script')
+        script.src = studioUIBundleRemoteUrl
+        script.onload = () => {
+          const proxy = {
+            get: (request) => window['pimcore_studio_ui_bundle'].get(request),
+            init: (...arg) => {
+              try {
+                return window['pimcore_studio_ui_bundle'].init(...arg)
+              } catch(e) {
+                console.log('remote container already initialized')
+              }
+            }
+          }
+          resolve(proxy)
+        }
+        document.head.appendChild(script);
+      })
+      `,
+    },
+    shared: {
+      react: {
+        singleton: true,
+        eager: true,
+        requiredVersion: false,
+      },
+      'react-dom': {
+        singleton: true,
+        eager: true,
+        requiredVersion: false,
+      },
+      'inversify': {
+        singleton: true,
+        eager: true,
+        requiredVersion: false,
+      },
+    },
+  }))
+
   .addAliases({
     '@Pimcore': path.resolve(__dirname, 'assets', 'js', 'src'),
     '@test-utils': path.resolve(__dirname, 'assets', 'js', 'test-utils'),
   })
-
-  .addPlugin(new webpack.DllReferencePlugin({
-    context: __dirname,
-    manifest: path.join(__dirname, 'node_modules', '@pimcore', 'studio-ui-bundle', 'dist', 'vendor',  'vendor-manifest.json')
-  }))
 ;
 
 if (!Encore.isDevServer()) {
@@ -163,5 +207,13 @@ config.module.rules.forEach(rule => {
     rule.exclude = /\.inline\.svg$/
   }
 })
+
+config = {
+  ...config,
+  output: {
+    ...config.output,
+    uniqueName: 'pimcore_studio_example_bundle',
+  },
+};
 
 module.exports = config;
