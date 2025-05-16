@@ -1,7 +1,7 @@
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
-import { pluginGenerateEntrypoints } from './bundler/plugins/entrypoints-generate';
+import { pluginGenerateEntrypoints } from '@pimcore/studio-ui-bundle/rsbuild/plugins';
 import path from 'path'
 import fs from 'fs';
 import { v4 } from 'uuid';
@@ -35,7 +35,7 @@ export default defineConfig({
     port: 3032,
   },
   dev: {
-    ...(!isDevServer ? {assetPrefix: './bundles/pimcorestudioexample/build/' + buildId} : {}),
+    ...(!isDevServer ? {assetPrefix: '/bundles/pimcorestudioexample/build/' + buildId} : {}),
     client: {
       host: 'localhost',
       port: 3032,
@@ -67,7 +67,7 @@ export default defineConfig({
     pluginReact(),
     pluginModuleFederation({
       name: 'pimcore_studio_example_bundle',
-      filename: './static/js/remoteEntry.js',
+      filename: 'static/js/remoteEntry.js',
       exposes: {
         '.': './js/src/plugins.ts',
       },
@@ -76,6 +76,33 @@ export default defineConfig({
         '@pimcore/studio-ui-bundle': `promise new Promise(resolve => {
           const studioUIBundleRemoteUrl = window.StudioUIBundleRemoteUrl
           const script = document.createElement('script')
+
+          let hasScript = false;
+
+          document.querySelectorAll('script').forEach((el) => {
+            const elPathname = el.src.replace(/https?:\\/\\/[^/]+/, '')
+            const studioUIBundleRemoteUrlPathname = studioUIBundleRemoteUrl.replace(/https?:\\/\\/[^/]+/, '')
+
+            if (elPathname === studioUIBundleRemoteUrlPathname) {
+              hasScript = true;
+              return;
+            }
+          })
+
+          if (hasScript) {
+            resolve({
+              get: (request) => window['pimcore_studio_ui_bundle'].get(request),
+              init: (...arg) => {
+                try {
+                  return window['pimcore_studio_ui_bundle'].init(...arg)
+                } catch(e) {
+                  console.log('remote container already initialized')
+                }
+              }
+            })
+            return
+          }
+
           script.src = studioUIBundleRemoteUrl
           script.onload = () => {
             const proxy = {
