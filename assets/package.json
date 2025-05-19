@@ -8,6 +8,7 @@
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./js",
     "lint-fix": "eslint --ext .js,.jsx,.ts,.tsx ./js --fix",
     "lint-fix-watch": "nodemon --watch './js/**/*' --exec \"eslint --ext .js,.jsx,.ts,.tsx ./js --fix --cache\" -e js,jsx,ts,tsx",
+    "check-types": "tsc --noEmit",
     "check-types-watch": "tsc --noEmit --watch"
   },
   "license": "PEL",
