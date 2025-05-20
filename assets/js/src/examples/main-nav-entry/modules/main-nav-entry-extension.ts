@@ -1,4 +1,4 @@
-import { type AbstractModule, container } from '@pimcore/studio-ui-bundle'
+import { container, type AbstractModule } from '@pimcore/studio-ui-bundle'
 import { serviceIds } from '@pimcore/studio-ui-bundle/app'
 import { type MainNavRegistry } from '@pimcore/studio-ui-bundle/modules/app'
 import { type WidgetRegistry } from '@pimcore/studio-ui-bundle/modules/widget-manager'

@@ -76,6 +76,7 @@ export const ExampleWidget = (): React.JSX.Element => {
       >
         <Button
           disabled={ areButtonsDisabled }
+          /* @ts-expect-error - type WidgetManagerTabConfig missing */
           onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }
         >
           Open main widget
@@ -83,6 +84,7 @@ export const ExampleWidget = (): React.JSX.Element => {
 
         <Button
           disabled={ areButtonsDisabled }
+          /* @ts-expect-error - type WidgetManagerTabConfig missing */
           onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }
         >
           Open left widget
@@ -90,6 +92,7 @@ export const ExampleWidget = (): React.JSX.Element => {
 
         <Button
           disabled={ areButtonsDisabled }
+          /* @ts-expect-error - type WidgetManagerTabConfig missing */
           onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }
         >
           Open right widget
@@ -97,6 +100,7 @@ export const ExampleWidget = (): React.JSX.Element => {
 
         <Button
           disabled={ areButtonsDisabled }
+          /* @ts-expect-error - type WidgetManagerTabConfig missing */
           onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }
         >
           Open bottom widget
