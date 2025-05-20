@@ -1,14 +1,14 @@
 import { Button, Content, Header, Select, Space, type SelectProps } from '@pimcore/studio-ui-bundle/components'
-import { useWidgetManager } from '@pimcore/studio-ui-bundle/modules/widget-manager'
+import { useWidgetManager, type WidgetManagerTabConfig } from '@pimcore/studio-ui-bundle/modules/widget-manager'
 import React from 'react'
 
 export const ExampleWidget = (): React.JSX.Element => {
   const widgetManager = useWidgetManager()
   const [selectedOption, setSelectedOption] = React.useState<SelectProps['value']>(undefined)
-  const [selectedWidget, setSelectedWidget] = React.useState<Record<string, any> | undefined>(undefined)
+  const [selectedWidget, setSelectedWidget] = React.useState<WidgetManagerTabConfig | undefined>(undefined)
   const areButtonsDisabled = selectedWidget === undefined
 
-  const widgets = [
+  const widgets: WidgetManagerTabConfig[] = [
     {
       name: 'Example widget',
       component: 'example-widget',
@@ -70,42 +70,40 @@ export const ExampleWidget = (): React.JSX.Element => {
         value={ selectedOption }
       />
 
-      <Space
-        direction='vertical'
-        size='small'
-      >
-        <Button
-          disabled={ areButtonsDisabled }
-          /* @ts-expect-error - type WidgetManagerTabConfig missing */
-          onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }
+      { selectedWidget !== undefined && (
+        <Space
+          direction='vertical'
+          size='small'
         >
-          Open main widget
-        </Button>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }
+          >
+            Open main widget
+          </Button>
 
-        <Button
-          disabled={ areButtonsDisabled }
-          /* @ts-expect-error - type WidgetManagerTabConfig missing */
-          onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }
-        >
-          Open left widget
-        </Button>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }
+          >
+            Open left widget
+          </Button>
 
-        <Button
-          disabled={ areButtonsDisabled }
-          /* @ts-expect-error - type WidgetManagerTabConfig missing */
-          onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }
-        >
-          Open right widget
-        </Button>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }
+          >
+            Open right widget
+          </Button>
 
-        <Button
-          disabled={ areButtonsDisabled }
-          /* @ts-expect-error - type WidgetManagerTabConfig missing */
-          onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }
-        >
-          Open bottom widget
-        </Button>
-      </Space>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }
+          >
+            Open bottom widget
+          </Button>
+        </Space>
+      )}
     </Content>
   )
 }
