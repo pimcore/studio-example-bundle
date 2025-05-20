@@ -70,38 +70,40 @@ export const ExampleWidget = (): React.JSX.Element => {
         value={ selectedOption }
       />
 
-      <Space
-        direction='vertical'
-        size='small'
-      >
-        <Button
-          disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openMainWidget(selectedWidget!) } }
+      { selectedWidget !== undefined && (
+        <Space
+          direction='vertical'
+          size='small'
         >
-          Open main widget
-        </Button>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }
+          >
+            Open main widget
+          </Button>
 
-        <Button
-          disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openLeftWidget(selectedWidget!) } }
-        >
-          Open left widget
-        </Button>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }
+          >
+            Open left widget
+          </Button>
 
-        <Button
-          disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openRightWidget(selectedWidget!) } }
-        >
-          Open right widget
-        </Button>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }
+          >
+            Open right widget
+          </Button>
 
-        <Button
-          disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openBottomWidget(selectedWidget!) } }
-        >
-          Open bottom widget
-        </Button>
-      </Space>
+          <Button
+            disabled={ areButtonsDisabled }
+            onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }
+          >
+            Open bottom widget
+          </Button>
+        </Space>
+      )}
     </Content>
   )
 }
