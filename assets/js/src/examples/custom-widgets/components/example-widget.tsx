@@ -76,28 +76,28 @@ export const ExampleWidget = (): React.JSX.Element => {
       >
         <Button
           disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openMainWidget(selectedWidget!) } }
+          onClick={ () => { widgetManager.openMainWidget(selectedWidget) } }
         >
           Open main widget
         </Button>
 
         <Button
           disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openLeftWidget(selectedWidget!) } }
+          onClick={ () => { widgetManager.openLeftWidget(selectedWidget) } }
         >
           Open left widget
         </Button>
 
         <Button
           disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openRightWidget(selectedWidget!) } }
+          onClick={ () => { widgetManager.openRightWidget(selectedWidget) } }
         >
           Open right widget
         </Button>
 
         <Button
           disabled={ areButtonsDisabled }
-          onClick={ () => { widgetManager.openBottomWidget(selectedWidget!) } }
+          onClick={ () => { widgetManager.openBottomWidget(selectedWidget) } }
         >
           Open bottom widget
         </Button>
