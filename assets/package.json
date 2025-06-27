@@ -56,6 +56,7 @@
     "whatwg-fetch": "^3.6.20"
   },
   "dependencies": {
+    "@pimcore/studio-ui-bundle": ">=1.0.0-canary.20250620-071159-0a2fb13",
     "inversify": "^6.1.4",
     "nodemon": "^3.1.10",
     "react": "18.3.x",
