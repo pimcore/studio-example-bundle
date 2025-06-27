@@ -133,13 +133,7 @@ export default defineConfig({
           singleton: true,
           eager: true,
           requiredVersion: false,
-        },
-        'inversify': {
-          // singleton: true,
-          eager: true,
-          version: '6.1.x',
-          requiredVersion: '6.1.x',
-        },
+        }
       },
     })
   ]

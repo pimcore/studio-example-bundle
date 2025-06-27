@@ -22,7 +22,7 @@
     "globalName": "pimcore_studio_example_bundle",
     "pluginVersion": "0.13.1",
     "prefetchInterface": false,
-    "publicPath": "/bundles/pimcorestudioexample/build/ad69f35e-91a7-452a-8745-28b3e7e2473b/"
+    "publicPath": "/bundles/pimcorestudioexample/build/473fab6c-6a4f-4010-a9f9-55d545e0c21f/"
   },
   "shared": [
     {
@@ -35,28 +35,8 @@
         "js": {
           "async": [],
           "sync": [
-            "static/js/643.faa3d456.js",
-            "static/js/remoteEntry.js"
-          ]
-        },
-        "css": {
-          "async": [],
-          "sync": []
-        }
-      }
-    },
-    {
-      "id": "pimcore_studio_example_bundle:inversify",
-      "name": "inversify",
-      "version": "6.1.x",
-      "singleton": true,
-      "requiredVersion": "6.1.x",
-      "assets": {
-        "js": {
-          "async": [],
-          "sync": [
-            "static/js/643.faa3d456.js",
-            "static/js/remoteEntry.js"
+            "static/js/remoteEntry.js",
+            "static/js/vendors-node_modules_react_index_js-_module-federation_runtime_rspack_js_data_text_javascript-50af55.js"
           ]
         },
         "css": {
@@ -123,7 +103,8 @@
       "assets": {
         "js": {
           "sync": [
-            "static/js/async/__federation_expose_default_export.efa81aeb.js"
+            "static/js/async/vendors-node_modules_react_jsx-dev-runtime_js-node_modules_tslib_tslib_es6_mjs.js",
+            "static/js/async/__federation_expose_default_export.js"
           ],
           "async": []
         },
