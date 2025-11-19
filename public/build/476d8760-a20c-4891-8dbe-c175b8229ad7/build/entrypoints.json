@@ -1,9 +1,0 @@
-{
-  "entrypoints": {
-    "main": {
-      "js": [
-        "http://localhost:3030/build/main.js"
-      ]
-    }
-  }
-}
