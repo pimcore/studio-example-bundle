@@ -1,32 +1,32 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from 'react'
 
 export interface IPqlFilterContext {
-  pqlFilter: string | null;
-  setPqlFilter: (filter: string | null) => void;
+  pqlFilter: string | null
+  setPqlFilter: (filter: string | null) => void
 }
 
-export const PqlFilterContext = createContext<IPqlFilterContext | undefined>(undefined);
+export const PqlFilterContext = createContext<IPqlFilterContext | undefined>(undefined)
 
 export interface IPqlFilterProviderProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export const PqlFilterProvider = ({ children }: IPqlFilterProviderProps): React.JSX.Element => {
-  const [pqlFilter, setPqlFilter] = useState<string | null>(null);
+  const [pqlFilter, setPqlFilter] = useState<string | null>(null)
 
-  return (
-    <PqlFilterContext.Provider value={{ pqlFilter, setPqlFilter }}>
+  return useMemo(() => (
+    <PqlFilterContext.Provider value={ { pqlFilter, setPqlFilter } }>
       {children}
     </PqlFilterContext.Provider>
-  );
+  ), [pqlFilter, children])
 }
 
 export const usePqlFilterContext = (): IPqlFilterContext => {
-  const context = useContext(PqlFilterContext);
+  const context = useContext(PqlFilterContext)
 
-  if (!context) {
-    throw new Error("usePqlFilterContext must be used within a PqlFilterProvider");
+  if (context === undefined) {
+    throw new Error('usePqlFilterContext must be used within a PqlFilterProvider')
   }
 
-  return context;
+  return context
 }

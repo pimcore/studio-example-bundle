@@ -1,28 +1,28 @@
-import React from "react";
-import { AbstractDecoratorProps } from "@pimcore/studio-ui-bundle/modules/element";
-import { Icon } from "@pimcore/studio-ui-bundle/components";
-import { PqlSidebar } from "./sidebar/pql-sidebar";
+import React from 'react'
+import { type AbstractDecoratorProps } from '@pimcore/studio-ui-bundle/modules/element'
+import { Icon } from '@pimcore/studio-ui-bundle/components'
+import { PqlSidebar } from './sidebar/pql-sidebar'
 
 export const withPqlFilterSidebar = (useBaseHook: AbstractDecoratorProps['useSidebarOptions']): AbstractDecoratorProps['useSidebarOptions'] => {
   const usePqlFilterSidebarOptions: AbstractDecoratorProps['useSidebarOptions'] = () => {
-    const { getProps: baseGetProps } = useBaseHook();
+    const { getProps: baseGetProps } = useBaseHook()
 
     const getProps: ReturnType<AbstractDecoratorProps['useSidebarOptions']>['getProps'] = () => {
-      const baseProps = baseGetProps();
+      const baseProps = baseGetProps()
 
       baseProps.entries.unshift({
-        key: "pql-filter",
+        key: 'pql-filter',
         component: <PqlSidebar />,
-        icon: <Icon value="pimcore" />,
-      });
+        icon: <Icon value="pimcore" />
+      })
 
-      return baseProps;
+      return baseProps
     }
 
     return {
-      getProps,
+      getProps
     }
   }
 
-  return usePqlFilterSidebarOptions;
+  return usePqlFilterSidebarOptions
 }

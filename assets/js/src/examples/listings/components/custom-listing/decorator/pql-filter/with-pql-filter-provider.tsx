@@ -1,6 +1,6 @@
-import React from "react";
-import { AbstractDecoratorProps } from "@pimcore/studio-ui-bundle/modules/element";
-import { PqlFilterProvider } from "./provider/pql-filter-provider";
+import React from 'react'
+import { type AbstractDecoratorProps } from '@pimcore/studio-ui-bundle/modules/element'
+import { PqlFilterProvider } from './provider/pql-filter-provider'
 
 export const withPqlFilterProvider = (ContextComponent: AbstractDecoratorProps['ContextComponent']): AbstractDecoratorProps['ContextComponent'] => {
   const PqlContextComponent = (): React.JSX.Element => {
@@ -8,8 +8,8 @@ export const withPqlFilterProvider = (ContextComponent: AbstractDecoratorProps['
       <PqlFilterProvider>
         <ContextComponent />
       </PqlFilterProvider>
-    );
+    )
   }
-  
+
   return PqlContextComponent
 }
