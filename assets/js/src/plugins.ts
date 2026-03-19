@@ -12,6 +12,7 @@ import { GdprDataExtractorPlugin } from './examples/gdpr-data-extractor'
 import { CustomDocumentTypePlugin } from './examples/custom-document-type'
 import { CustomAssetTypePlugin } from './examples/custom-asset-type'
 import { CustomDocumentEditablePlugin } from './examples/custom-document-editable'
+import { CustomObjectDatatypePlugin } from './examples/custom-object-datatype'
 
 // Examples are splitted into separate plugins to create a clear separation for better understanding.
 // You can also combine them into one plugin if you want to.
@@ -29,5 +30,6 @@ export {
   GdprDataExtractorPlugin,
   CustomDocumentTypePlugin,
   CustomAssetTypePlugin,
-  CustomDocumentEditablePlugin
+  CustomDocumentEditablePlugin,
+  CustomObjectDatatypePlugin
 }

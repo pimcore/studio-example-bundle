@@ -9,6 +9,11 @@ pimcore:
                     class: \Pimcore\Bundle\StudioExampleBundle\Model\Document\Book
                     direct_route: true
                     predefined_document_types: true
+    objects:
+        class_definitions:
+            data:
+                map:
+                    simpleText: \Pimcore\Bundle\StudioExampleBundle\Model\DataObject\ClassDefinition\Data\SimpleText
     assets:
         type_definitions:
             map:

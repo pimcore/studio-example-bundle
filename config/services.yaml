@@ -20,3 +20,11 @@ services:
     Pimcore\Bundle\StudioExampleBundle\Gdpr\MyDataProvider:
         tags:
             - { name: pimcore.studio_backend.gdpr_data_provider }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Definition\SimpleTextDefinition:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_definition }
+
+    Pimcore\Bundle\StudioExampleBundle\DataIndex\Filter\SimpleTextFilter:
+        tags:
+            - { name: pimcore.studio_backend.search_index.filter }
