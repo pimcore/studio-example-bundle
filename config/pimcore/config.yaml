@@ -14,6 +14,9 @@ pimcore:
             data:
                 map:
                     simpleText: \Pimcore\Bundle\StudioExampleBundle\Model\DataObject\ClassDefinition\Data\SimpleText
+            layout:
+                map:
+                    simpleTextLayout: \Pimcore\Bundle\StudioExampleBundle\Model\DataObject\ClassDefinition\Layout\SimpleTextLayout
     assets:
         type_definitions:
             map:
