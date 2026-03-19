@@ -12,6 +12,10 @@ services:
     Pimcore\Bundle\StudioExampleBundle\Installer:
         public: true
 
+    Pimcore\Bundle\StudioExampleBundle\EventSubscriber\CustomTreeStyleSubscriber: ~
+
+    Pimcore\Bundle\StudioExampleBundle\EventSubscriber\CustomAssetStyleSubscriber: ~
+
     Pimcore\Bundle\StudioExampleBundle\Webpack\WebpackEntryPointProvider:
         tags:
             - { name: pimcore_studio_ui.webpack_entry_point_provider }
