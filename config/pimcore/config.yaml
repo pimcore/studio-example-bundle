@@ -1,5 +1,8 @@
 pimcore:
     documents:
+        editables:
+            map:
+                markdown: \Pimcore\Bundle\StudioExampleBundle\Model\Document\Editable\Markdown
         type_definitions:
             map:
                 book:

@@ -15,6 +15,7 @@ services:
     Pimcore\Bundle\StudioExampleBundle\Webpack\WebpackEntryPointProvider:
         tags:
             - { name: pimcore_studio_ui.webpack_entry_point_provider }
+            - { name: pimcore_studio_ui.webpack_entry_point_provider.document_editor_iframe }
 
     Pimcore\Bundle\StudioExampleBundle\Gdpr\MyDataProvider:
         tags:
