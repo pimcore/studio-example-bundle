@@ -53,6 +53,8 @@ export const MyProviderTab = (
               <IconButton
                 icon={ { value: 'trash' } }
                 onClick={ () => {
+                  // A real implementation would call a delete API endpoint here.
+                  // Call refresh() afterward to reload the search results.
                   refresh?.()
                 } }
                 tooltip={ { title: 'Delete' } }
