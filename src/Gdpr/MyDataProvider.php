@@ -11,6 +11,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MyDataProvider implements DataProviderInterface
 {
+    /**
+     * The $gdprConfig parameter is required — a compiler pass injects the
+     * pimcore_studio_backend.gdpr_data_extractor configuration into every
+     * tagged provider. The container will fail to build without it.
+     */
     public function __construct(
         array $gdprConfig = []
     ) {

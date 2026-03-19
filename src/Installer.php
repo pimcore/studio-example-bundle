@@ -24,6 +24,8 @@ class Installer extends AbstractInstaller
 
     public function uninstall(): void
     {
+        // A production implementation should remove the ENUM value from
+        // the documents table and clean up any documents of this type.
     }
 
     public function needsReloadAfterInstall(): bool
