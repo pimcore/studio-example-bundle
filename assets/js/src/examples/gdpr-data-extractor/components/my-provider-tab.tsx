@@ -22,7 +22,7 @@ type TableRow = MyProviderRow['data'] & {
 export interface MyProviderTabProps extends GDPRProviderTabProps<MyProviderRow> {}
 
 export const MyProviderTab = (
-  { data, providerKey, refresh, ...gridProps }: MyProviderTabProps
+  { data, providerKey, refresh, onSortingChange, ...gridProps }: MyProviderTabProps
 ): React.JSX.Element => {
   const columnHelper = createColumnHelper<TableRow>()
   const columns = [
@@ -52,10 +52,10 @@ export const MyProviderTab = (
             { item.__gdprIsDeletable && (
               <IconButton
                 icon={ { value: 'trash' } }
-                tooltip={ { title: 'Delete' } }
                 onClick={ () => {
                   refresh?.()
                 } }
+                tooltip={ { title: 'Delete' } }
               />
             )}
           </Flex>

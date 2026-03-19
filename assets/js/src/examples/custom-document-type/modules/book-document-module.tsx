@@ -1,4 +1,3 @@
-import React from 'react'
 import { container, type AbstractModule } from '@pimcore/studio-ui-bundle'
 import { serviceIds, useTranslation } from '@pimcore/studio-ui-bundle/app'
 import {
@@ -25,7 +24,6 @@ import {
   type ContextMenuRegistry,
   type TreeContextMenuProps
 } from '@pimcore/studio-ui-bundle/modules/app'
-import { Icon } from '@pimcore/studio-ui-bundle/components'
 import { type BookTabManager } from '../document/editor/types/book/tab-manager/book-tab-manager'
 
 const BOOK_TAB_MANAGER_SERVICE_ID = 'ExampleBundle/Document/Editor/BookTabManager'
