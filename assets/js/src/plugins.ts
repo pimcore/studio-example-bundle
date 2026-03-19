@@ -10,6 +10,7 @@ import { DataObjectContextMenuPlugin } from './examples/data-object-context-menu
 import { ListingPlugin } from './examples/listings'
 import { GdprDataExtractorPlugin } from './examples/gdpr-data-extractor'
 import { CustomDocumentTypePlugin } from './examples/custom-document-type'
+import { CustomAssetTypePlugin } from './examples/custom-asset-type'
 
 // Examples are splitted into separate plugins to create a clear separation for better understanding.
 // You can also combine them into one plugin if you want to.
@@ -25,5 +26,6 @@ export {
   DataObjectContextMenuPlugin,
   ListingPlugin,
   GdprDataExtractorPlugin,
-  CustomDocumentTypePlugin
+  CustomDocumentTypePlugin,
+  CustomAssetTypePlugin
 }

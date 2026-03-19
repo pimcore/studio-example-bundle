@@ -6,3 +6,9 @@ pimcore:
                     class: \Pimcore\Bundle\StudioExampleBundle\Model\Document\Book
                     direct_route: true
                     predefined_document_types: true
+    assets:
+        type_definitions:
+            map:
+                indesign:
+                    class: \Pimcore\Bundle\StudioExampleBundle\Model\Asset\InDesign
+                    matching: ["/\\.indd/"]
