@@ -14,6 +14,7 @@ import { CustomAssetTypePlugin } from './examples/custom-asset-type'
 import { CustomDocumentEditablePlugin } from './examples/custom-document-editable'
 import { CustomObjectDatatypePlugin } from './examples/custom-object-datatype'
 import { CustomObjectLayoutTypePlugin } from './examples/custom-object-layout-type'
+import { CustomGridColumnPlugin } from './examples/custom-grid-column'
 
 // Examples are splitted into separate plugins to create a clear separation for better understanding.
 // You can also combine them into one plugin if you want to.
@@ -33,5 +34,6 @@ export {
   CustomAssetTypePlugin,
   CustomDocumentEditablePlugin,
   CustomObjectDatatypePlugin,
-  CustomObjectLayoutTypePlugin
+  CustomObjectLayoutTypePlugin,
+  CustomGridColumnPlugin
 }

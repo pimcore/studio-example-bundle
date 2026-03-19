@@ -24,3 +24,15 @@ services:
     Pimcore\Bundle\StudioExampleBundle\Grid\Column\Definition\SimpleTextDefinition:
         tags:
             - { name: pimcore.studio_backend.grid_column_definition }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Definition\ProgressBarDefinition:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_definition }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Resolver\ProgressBarResolver:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_resolver }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Collector\ProgressBarCollector:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_collector }
