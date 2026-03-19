@@ -1,0 +1,8 @@
+pimcore:
+    documents:
+        type_definitions:
+            map:
+                book:
+                    class: \Pimcore\Bundle\StudioExampleBundle\Model\Document\Book
+                    direct_route: true
+                    predefined_document_types: true

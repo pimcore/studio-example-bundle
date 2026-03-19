@@ -9,6 +9,7 @@ import { ApiDataPlugin } from './examples/api-data'
 import { DataObjectContextMenuPlugin } from './examples/data-object-context-menu'
 import { ListingPlugin } from './examples/listings'
 import { GdprDataExtractorPlugin } from './examples/gdpr-data-extractor'
+import { CustomDocumentTypePlugin } from './examples/custom-document-type'
 
 // Examples are splitted into separate plugins to create a clear separation for better understanding.
 // You can also combine them into one plugin if you want to.
@@ -23,5 +24,6 @@ export {
   ApiDataPlugin,
   DataObjectContextMenuPlugin,
   ListingPlugin,
-  GdprDataExtractorPlugin
+  GdprDataExtractorPlugin,
+  CustomDocumentTypePlugin
 }
