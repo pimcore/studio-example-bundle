@@ -9,6 +9,42 @@ services:
         # if you need to do this, you can override this setting on individual services
         public: false
 
+    Pimcore\Bundle\StudioExampleBundle\Installer:
+        public: true
+
+    Pimcore\Bundle\StudioExampleBundle\EventSubscriber\CustomTreeStyleSubscriber: ~
+
+    Pimcore\Bundle\StudioExampleBundle\EventSubscriber\CustomAssetStyleSubscriber: ~
+
     Pimcore\Bundle\StudioExampleBundle\Webpack\WebpackEntryPointProvider:
         tags:
             - { name: pimcore_studio_ui.webpack_entry_point_provider }
+            - { name: pimcore_studio_ui.webpack_entry_point_provider.document_editor_iframe }
+
+    Pimcore\Bundle\StudioExampleBundle\Gdpr\MyDataProvider:
+        tags:
+            - { name: pimcore.studio_backend.gdpr_data_provider }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Definition\SimpleTextDefinition:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_definition }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Definition\ProgressBarDefinition:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_definition }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Resolver\ProgressBarResolver:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_resolver }
+
+    Pimcore\Bundle\StudioExampleBundle\Grid\Column\Collector\ProgressBarCollector:
+        tags:
+            - { name: pimcore.studio_backend.grid_column_collector }
+
+    Pimcore\Bundle\StudioExampleBundle\Perspective\Repository\IframeWidgetConfigRepository:
+        tags:
+            - { name: pimcore.studio_backend.widget_repository }
+
+    Pimcore\Bundle\StudioExampleBundle\Perspective\Hydrator\IframeWidgetConfigHydrator:
+        tags:
+            - { name: pimcore.studio_backend.widget_hydrator }

@@ -1,0 +1,25 @@
+pimcore:
+    documents:
+        editables:
+            map:
+                markdown: \Pimcore\Bundle\StudioExampleBundle\Model\Document\Editable\Markdown
+        type_definitions:
+            map:
+                book:
+                    class: \Pimcore\Bundle\StudioExampleBundle\Model\Document\Book
+                    direct_route: true
+                    predefined_document_types: true
+    objects:
+        class_definitions:
+            data:
+                map:
+                    simpleText: \Pimcore\Bundle\StudioExampleBundle\Model\DataObject\ClassDefinition\Data\SimpleText
+            layout:
+                map:
+                    simpleTextLayout: \Pimcore\Bundle\StudioExampleBundle\Model\DataObject\ClassDefinition\Layout\SimpleTextLayout
+    assets:
+        type_definitions:
+            map:
+                indesign:
+                    class: \Pimcore\Bundle\StudioExampleBundle\Model\Asset\InDesign
+                    matching: ["/\\.indd/"]
