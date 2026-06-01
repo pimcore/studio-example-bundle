@@ -16,6 +16,8 @@ services:
 
     Pimcore\Bundle\StudioExampleBundle\EventSubscriber\CustomAssetStyleSubscriber: ~
 
+    Pimcore\Bundle\StudioExampleBundle\EventSubscriber\WorkflowReviewersSubscriber: ~
+
     Pimcore\Bundle\StudioExampleBundle\Webpack\WebpackEntryPointProvider:
         tags:
             - { name: pimcore_studio_ui.webpack_entry_point_provider }

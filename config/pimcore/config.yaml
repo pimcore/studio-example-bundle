@@ -23,3 +23,48 @@ pimcore:
                 indesign:
                     class: \Pimcore\Bundle\StudioExampleBundle\Model\Asset\InDesign
                     matching: ["/\\.indd/"]
+    workflows:
+        # Example workflow used by "Extend the Workflow Transition Modal".
+        simple_approval:
+            label: 'Studio Example Bundle Workflow'
+            type: state_machine
+            initial_markings:
+                - draft
+            supports:
+                - \Pimcore\Model\DataObject\Concrete
+            marking_store:
+                type: state_table
+            places:
+                draft:
+                    label: 'Draft'
+                    color: '#3572b0'
+                in_review:
+                    label: 'In Review'
+                    color: '#ffa500'
+                approved:
+                    label: 'Approved'
+                    color: '#008000'
+            transitions:
+                request_review:
+                    from: draft
+                    to: in_review
+                    options:
+                        label: 'Request Review'
+                        notes:
+                            commentEnabled: true
+                            commentRequired: false
+                approve:
+                    from: in_review
+                    to: approved
+                    options:
+                        label: 'Approve'
+                        notes:
+                            commentEnabled: true
+                reject:
+                    from: in_review
+                    to: draft
+                    options:
+                        label: 'Reject'
+                        notes:
+                            commentEnabled: true
+                            commentRequired: true
