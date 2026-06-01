@@ -10,6 +10,9 @@ export const WorkflowModalExtension: AbstractModule = {
     )
 
     componentRegistry.registerToSlot(
+      // TODO: remove these directives once studio-ui-bundle#3647 is released and the SDK pin here is bumped.
+      // @ts-expect-error the workflow.modal slot config is added in studio-ui-bundle#3647, which is not yet in a published canary.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- slot name resolves to any until studio-ui-bundle#3647 is published.
       componentConfig.element.editor.workflow.modal.slots.center.name,
       {
         name: 'reviewers',
