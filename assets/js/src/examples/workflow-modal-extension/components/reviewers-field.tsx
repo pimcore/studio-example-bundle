@@ -1,7 +1,5 @@
 import React from 'react'
 import { Form, Select } from '@pimcore/studio-ui-bundle/components'
-// TODO: remove this directive once studio-ui-bundle#3647 is released and the SDK pin here is bumped.
-// @ts-expect-error useWorkflow becomes a public export of modules/element in studio-ui-bundle#3647, which is not yet in a published canary.
 import { useWorkflow } from '@pimcore/studio-ui-bundle/modules/element'
 import { useUserGetCollectionQuery } from '@pimcore/studio-ui-bundle/api/user'
 
