@@ -1,0 +1,22 @@
+#
+# Studio Dashboards integration - custom `top_assets` widget type.
+#
+# This file is only loaded when the PimcoreStudioDashboardsBundle is installed (see
+# PimcoreStudioExampleExtension). The repository, hydrator, and resolver are picked up by
+# the dashboards bundle through the #[AutoconfigureTag] attributes on the classes; only
+# the storage-related constructor arguments need explicit wiring here.
+#
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Pimcore\Bundle\StudioExampleBundle\Dashboards\Repository\TopAssetsConfigRepository:
+        arguments:
+            $widgetConfigurations: '%pimcore_studio_example_bundle.top_assets_widgets%'
+            $storageConfig: '%pimcore_studio_example_bundle.config_location.top_assets_widgets%'
+
+    Pimcore\Bundle\StudioExampleBundle\Dashboards\Hydrator\TopAssetsConfigHydrator: ~
+
+    Pimcore\Bundle\StudioExampleBundle\Dashboards\Resolver\TopAssetsResolver: ~
