@@ -52,8 +52,8 @@ export class DynamicTypeThemeExampleOcean extends DynamicTypeThemeAbstract {
         // The base's #00bab3 accent is only 2.42:1 on white (fails even the UI floor); replaced.
         colorAccent: '#087881',
         colorAccentSecondary: '#0B6B73',
-        colorBorderActive: '#087881',        // 5.23:1
-        colorBorderActiveTab: '#00595E',     // 8.11:1 — bold brand underline on the active tab
+        colorBorderActive: '#087881', // 5.23:1
+        colorBorderActiveTab: '#00595E', // 8.11:1 — bold brand underline on the active tab
         colorLogo: '#00595E',
 
         // --- Interaction pass (retint the base's pale-purple washes to teal) ---
@@ -62,7 +62,7 @@ export class DynamicTypeThemeExampleOcean extends DynamicTypeThemeAbstract {
         // ceiling that keeps that label legible — a solid dark bar would need a component change,
         // which a token set must never require. Measured against #404655:
         controlItemBgActiveHover: '#DEF1F1', // hover    — 8.07:1 (AAA); light
-        controlItemBgActive: '#A7D8D8',      // selected — 6.05:1 (AA); a step above hover, not a heavy band
+        controlItemBgActive: '#A7D8D8', // selected — 6.05:1 (AA); a step above hover, not a heavy band
         controlOutline: 'rgba(0, 89, 94, 0.12)', // focus ring — teal, was purple
 
         // Fills (chips, alternating rows, hover fills) — teal tints, were purple
@@ -73,8 +73,8 @@ export class DynamicTypeThemeExampleOcean extends DynamicTypeThemeAbstract {
         colorFillNav: 'rgba(0, 89, 94, 0.08)',
 
         // Tabs: selected text on brand, hover/unselected fills retinted to teal
-        itemActiveColor: '#00595E',          // 8.11:1
-        itemSelectedColor: '#00595E',        // 8.11:1
+        itemActiveColor: '#00595E', // 8.11:1
+        itemSelectedColor: '#00595E', // 8.11:1
         itemHoverColor: 'rgba(127, 199, 199, 0.45)',
         colorBgUnselectedTab: 'rgba(127, 199, 199, 0.22)',
         colorBgHoverUnselectedTab: 'rgba(127, 199, 199, 0.40)',
@@ -87,15 +87,15 @@ export class DynamicTypeThemeExampleOcean extends DynamicTypeThemeAbstract {
         colorBorderFieldset: '#CFE6E6',
 
         // --- Remaining purple accents retinted (icons, borders, sidebar, info) ---
-        colorIconSecondary: '#3E5C5C',        // 7.27:1  (was #4d4169 purple-slate)
-        colorIconSidebar: '#06363A',          // 13.15:1 (was #22075e deep purple)
-        itemUnselectedIconColor: '#3E5C5C',   // 7.27:1  (was #4d4169)
-        colorTextSidebarTitle: '#00595E',     // 8.11:1  (was #531dab)
-        colorBorderTertiary: '#E1EAEA',       // teal-grey (was #eae8ed purple-grey)
+        colorIconSecondary: '#3E5C5C', // 7.27:1  (was #4d4169 purple-slate)
+        colorIconSidebar: '#06363A', // 13.15:1 (was #22075e deep purple)
+        itemUnselectedIconColor: '#3E5C5C', // 7.27:1  (was #4d4169)
+        colorTextSidebarTitle: '#00595E', // 8.11:1  (was #531dab)
+        colorBorderTertiary: '#E1EAEA', // teal-grey (was #eae8ed purple-grey)
         colorBorderContainer: '#E1EAEA',
-        colorBorderPanelTitle: '#A7D8D8',     // panel-title separator (was #d3adf7)
-        colorInfoBorderHover: '#4FB3BA',      // info hover border (was #b37feb)
-        colorFillAdditional: '#EAF6F6',       // (was #f5f3fa purple-grey)
+        colorBorderPanelTitle: '#A7D8D8', // panel-title separator (was #d3adf7)
+        colorInfoBorderHover: '#4FB3BA', // info hover border (was #b37feb)
+        colorFillAdditional: '#EAF6F6', // (was #f5f3fa purple-grey)
 
         // Boot palette — seeds the loading screen via resolveTokenDefaults
         // (colorPrimary + colorBgCanvas + colorBgLogoOrbit; colorBgContainer inherited)
