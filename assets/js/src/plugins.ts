@@ -16,6 +16,7 @@ import { CustomObjectDatatypePlugin } from './examples/custom-object-datatype'
 import { CustomObjectLayoutTypePlugin } from './examples/custom-object-layout-type'
 import { CustomGridColumnPlugin } from './examples/custom-grid-column'
 import { WorkflowModalExtensionPlugin } from './examples/workflow-modal-extension'
+import { CustomThemePlugin } from './examples/custom-theme'
 
 // Examples are splitted into separate plugins to create a clear separation for better understanding.
 // You can also combine them into one plugin if you want to.
@@ -37,5 +38,6 @@ export {
   CustomObjectDatatypePlugin,
   CustomObjectLayoutTypePlugin,
   CustomGridColumnPlugin,
-  WorkflowModalExtensionPlugin
+  WorkflowModalExtensionPlugin,
+  CustomThemePlugin
 }
