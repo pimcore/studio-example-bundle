@@ -4,6 +4,7 @@ import { AssetEditorToolbarButtonPlugin } from './examples/asset-editor-toolbar-
 import { TabManagerPlugin } from './examples/tab-manager'
 import { CustomIconPlugin } from './examples/custom-icons'
 import { CustomWidgetsPlugin } from './examples/custom-widgets'
+import { CustomDashboardWidgetsPlugin } from './examples/custom-dashboard-widgets'
 import { DynamicTypePlugin } from './examples/dynamic-types'
 import { ApiDataPlugin } from './examples/api-data'
 import { DataObjectContextMenuPlugin } from './examples/data-object-context-menu'
@@ -27,6 +28,7 @@ export {
   TabManagerPlugin,
   CustomIconPlugin,
   CustomWidgetsPlugin,
+  CustomDashboardWidgetsPlugin,
   DynamicTypePlugin,
   ApiDataPlugin,
   DataObjectContextMenuPlugin,
