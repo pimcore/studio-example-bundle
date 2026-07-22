@@ -11,7 +11,7 @@
     "check-types": "tsc --noEmit",
     "check-types-watch": "tsc --noEmit --watch"
   },
-  "license": "PEL",
+  "license": "POCL",
   "private": true,
   "devDependencies": {
     "@babel/preset-react": "^7.23.3",
