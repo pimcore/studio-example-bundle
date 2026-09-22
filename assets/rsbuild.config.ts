@@ -19,10 +19,12 @@ const buildPath = path.resolve(buildRoot, buildId);
 // Drop stale build dirs: studio-package-build picks the build id deterministically from the
 // .build-id files it finds on disk, not "the newest", so a leftover dir from an earlier source
 // state could otherwise end up in the archive instead of this build.
+// Only directories are swept: plain files at this level must survive, in particular the
+// tracked .gitkeep that keeps public/build/ in git once the expanded build is gitignored.
 if (fs.existsSync(buildRoot)) {
-  fs.readdirSync(buildRoot).forEach((file) => {
-    if (file !== buildId && file !== 'studio-npm-package.tgz') {
-      fs.rmSync(path.resolve(buildRoot, file), { recursive: true, force: true });
+  fs.readdirSync(buildRoot, { withFileTypes: true }).forEach((entry) => {
+    if (entry.isDirectory() && entry.name !== buildId) {
+      fs.rmSync(path.resolve(buildRoot, entry.name), { recursive: true, force: true });
     }
   })
 }

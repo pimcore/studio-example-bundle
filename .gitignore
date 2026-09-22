@@ -37,4 +37,5 @@ nbproject
 /config.json
 
 # Expanded frontend build is generated from build-dist/build-<id>.zip, not committed
-/public/build/
+/public/build/*
+!/public/build/.gitkeep
