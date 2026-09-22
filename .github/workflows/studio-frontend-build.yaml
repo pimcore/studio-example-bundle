@@ -1,29 +1,149 @@
 name: "Studio Frontend Build"
 
-# Lints, type-checks and builds the frontend, then packages it into
-# build-dist/build-<id>.zip and commits only that archive. The expanded
-# public/build/ is gitignored and reconstructed by the Studio UI Bundle's
-# extractor during cache warmup.
-
 on:
   push:
     paths:
       - "assets/**"
-      - "build-dist/**"
-  pull_request:
+  pull_request_target:
     paths:
       - "assets/**"
   workflow_dispatch:
-
-concurrency:
-  group: studio-frontend-build-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  
+env:
+ BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  studio-frontend-build:
-    uses: pimcore/workflows-collection-public/.github/workflows/reusable-studio-frontend-build-packaged.yaml@main
-    with:
-      working-directory: assets
+  install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./assets/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        working-directory: ./assets
+        run: npm ci
+
+
+  lint:
+    needs: install
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./assets/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Run code linting
+        working-directory: ./assets
+        run: npm run lint-fix
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+            commit_message: Apply eslint-fixer changes
+
+  check-types:
+    needs: install
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./assets/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Run type checking
+        working-directory: ./assets
+        run: npm run check-types
+
+  build:
+    needs: 
+      - lint
+      - check-types
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./assets/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Run production build
+        working-directory: ./assets
+        run: npm run build
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: './public/'
+          commit_message: Automatic frontend build

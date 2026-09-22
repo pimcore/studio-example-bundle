@@ -1,0 +1,29 @@
+name: "Studio Frontend Build Packaged"
+
+# Lints, type-checks and builds the frontend, then packages it into
+# build-dist/build-<id>.zip and commits only that archive. The expanded
+# public/build/ is gitignored and reconstructed by the Studio UI Bundle's
+# extractor during cache warmup.
+
+on:
+  push:
+    paths:
+      - "assets/**"
+      - "build-dist/**"
+  pull_request:
+    paths:
+      - "assets/**"
+  workflow_dispatch:
+
+concurrency:
+  group: studio-frontend-build-packaged-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  studio-frontend-build:
+    uses: pimcore/workflows-collection-public/.github/workflows/reusable-studio-frontend-build-packaged.yaml@main
+    with:
+      working-directory: assets
