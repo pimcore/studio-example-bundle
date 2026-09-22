@@ -1,10 +1,5 @@
 name: "Studio Frontend Build Packaged"
 
-# Lints, type-checks and builds the frontend, then packages it into
-# build-dist/build-<id>.zip and commits only that archive. The expanded
-# public/build/ is gitignored and reconstructed by the Studio UI Bundle's
-# extractor during cache warmup.
-
 on:
   push:
     paths:
