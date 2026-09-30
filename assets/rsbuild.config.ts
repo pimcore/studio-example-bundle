@@ -1,20 +1,30 @@
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
-import { pluginGenerateEntrypoints } from '@pimcore/studio-ui-bundle/rsbuild/plugins';
+import { pluginGenerateEntrypoints, pluginWriteBuildId } from '@pimcore/studio-ui-bundle/rsbuild/plugins';
 import { createDynamicRemote } from '@pimcore/studio-ui-bundle/rsbuild/utils';
+import { getBuildGroupId } from '@pimcore/studio-ui-bundle/bundler/build-id';
 import path from 'path'
 import fs from 'fs';
-import { v4 } from 'uuid';
 import packages from './package.json'
 
-const buildId = v4();
-const buildPath = path.resolve(__dirname, '..', 'public', 'build', buildId);
+// Content-derived id for this assets tree (node_modules and dist excluded), so an unchanged
+// source yields the same id - and therefore the same build-dist/build-<id>.zip - instead of a
+// fresh archive on every build. The build output lives outside this directory, otherwise each
+// build would change the id.
+const buildId = getBuildGroupId(__dirname);
+const buildRoot = path.resolve(__dirname, '..', 'public', 'build');
+const buildPath = path.resolve(buildRoot, buildId);
 
-if (fs.existsSync( path.resolve(__dirname, '..', 'public', 'build'))) {
-  fs.readdirSync(path.resolve(__dirname, '..', 'public', 'build')).forEach((file) => {
-    if (file !== 'studio-npm-package.tgz') {
-      fs.rmSync(path.resolve(__dirname, '..', 'public', 'build', file), { recursive: true });
+// Drop stale build dirs: studio-package-build picks the build id deterministically from the
+// .build-id files it finds on disk, not "the newest", so a leftover dir from an earlier source
+// state could otherwise end up in the archive instead of this build.
+// Only directories are swept: plain files at this level must survive, in particular the
+// tracked .gitkeep that keeps public/build/ in git once the expanded build is gitignored.
+if (fs.existsSync(buildRoot)) {
+  fs.readdirSync(buildRoot, { withFileTypes: true }).forEach((entry) => {
+    if (entry.isDirectory() && entry.name !== buildId) {
+      fs.rmSync(path.resolve(buildRoot, entry.name), { recursive: true, force: true });
     }
   })
 }
@@ -65,6 +75,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    pluginWriteBuildId({ buildId }),
     pluginGenerateEntrypoints(),
     pluginReact(),
     pluginModuleFederation({
