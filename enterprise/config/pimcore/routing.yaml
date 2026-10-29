@@ -1,0 +1,15 @@
+# Read by Pimcore's BundleRoutingLoader from every registered bundle: the application's config/routes.yaml never has
+# to know this bundle (Portal Engine docs, "Portal Frontend Plugins", "Serving your own page"). Not under config/*.yaml
+# on purpose: the extension loads those as service files.
+
+# The portal page "Talk": the slide viewer full-screen, see assets/portal/talk/README.md.
+pimcore_studio_example_enterprise_talk:
+    # the portal's language/site prefix, so the page sits inside the portal
+    path: /{_portal_engine_prefix}talk
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkController
+    # without it the route answers on every site of the installation
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    # the same requirement Portal Engine's own routes carry
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_

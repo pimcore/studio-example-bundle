@@ -11,5 +11,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["js/src", "rsbuild.config.ts"]
+  "include": ["js/src", "talk", "rsbuild.config.ts"]
 }

@@ -60,3 +60,10 @@ Run these three steps in the root of your Pimcore application, in this order. Th
 - `src/PimcoreStudioExampleEnterpriseBundle.php`: the bundle class
 - `src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php`: loads every `config/*.yaml` of this folder
 - `config/services.yaml`: the services of the examples; an example may add its own `config/<name>.yaml`
+- `config/pimcore/routing.yaml`: the bundle's routes, read by Pimcore from every registered bundle
+- `templates/`: the bundle's Twig templates (`@PimcoreStudioExampleEnterprise/...`)
+
+## Examples
+
+- [Portal page "Talk"](assets/portal/talk/README.md): the slide viewer as a portal page, with its own route,
+  a chrome-less page template and an entry in the portal navigation

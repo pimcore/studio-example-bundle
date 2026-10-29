@@ -1,0 +1,21 @@
+parameters:
+    # Where the portal page "Talk" loads the slide viewer from (the standalone talk.html). Set PORTAL_TALK_VIEWER_URL
+    # in the application's .env.local to point it elsewhere; see assets/portal/talk/README.md.
+    pimcore_studio_example_enterprise.talk.default_viewer_url: '/bundles/pimcorestudioexampleenterprise/talk/talk.html'
+    pimcore_studio_example_enterprise.talk.viewer_url: '%env(default:pimcore_studio_example_enterprise.talk.default_viewer_url:PORTAL_TALK_VIEWER_URL)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # The page's controller, routed by config/pimcore/routing.yaml. The tag is needed: autoconfigure alone does not
+    # set it for a bundle, and the action would fail with "has no container set".
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkController:
+        arguments:
+            $viewerUrl: '%pimcore_studio_example_enterprise.talk.viewer_url%'
+        tags: ['controller.service_arguments']
+
+    # The page's URL for the "Talk" navigation entry, handed to the frontend by the portal plugin provider.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkPage: ~

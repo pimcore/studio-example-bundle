@@ -1,0 +1,21 @@
+{% extends '@PimcorePortalEngine/layout/studio.html.twig' %}
+
+{# The portal page "Talk" (src/Portal/Talk/TalkController.php): the slide viewer full-screen. The portal's own app
+   bundle is not loaded: with the chrome gone there is no island for it to mount, and the viewer brings its own code. #}
+
+{% block studioHead %}
+    <style>
+        {# the frame covers the whole window, above whatever the layout still draws #}
+        .pe-talk-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 1000; background: #000; }
+    </style>
+{% endblock %}
+
+{# A talk is shown full-screen: no header, no navigation rail, no footer. #}
+{% block shellHeader %}{% endblock %}
+{% block shellNav %}{% endblock %}
+{% block shellFooter %}{% endblock %}
+
+{% block studioContent %}
+    {# allow="fullscreen": the viewer's F key puts the frame itself into full screen #}
+    <iframe class="pe-talk-frame" src="{{ viewerUrl }}" title="{{ pageTitleOverride }}" allow="fullscreen" allowfullscreen></iframe>
+{% endblock %}
