@@ -8,15 +8,15 @@ import { join } from 'path'
 const registerMainNavItem = jest.fn()
 const registerWidget = jest.fn()
 
-// Studio's SDK is a module-federation remote at runtime; the tests replace it with the two registries they check.
+// Studio's SDK is a module-federation remote at runtime (jest can't resolve its paths, hence virtual); the tests replace it with the two registries they check.
 jest.mock('@pimcore/studio-ui-bundle', () => ({
   container: {
     get: (id: string) => id === 'mainNavRegistry' ? { registerMainNavItem } : { registerWidget }
   }
-}))
+}), { virtual: true })
 jest.mock('@pimcore/studio-ui-bundle/app', () => ({
   serviceIds: { mainNavRegistry: 'mainNavRegistry', widgetManager: 'widgetManager' }
-}))
+}), { virtual: true })
 
 /* eslint-disable import/first */
 import { TalkSlidesPlugin } from '../index'
@@ -64,10 +64,14 @@ describe('talk-slides example', () => {
 
   it('AC3: once the iframe has loaded, keyboard focus moves into it', () => {
     render(<TalkSlidesWidget />)
-    const frame = screen.getByTitle('Talk')
+    const frame = screen.getByTitle('Talk') as HTMLIFrameElement
+    // jsdom has no window.focus; the stub also shows the viewer's own window gets the focus
+    const focusViewer = jest.fn()
+    frame.contentWindow!.focus = focusViewer
     expect(document.activeElement).not.toBe(frame)
     fireEvent.load(frame)
     expect(document.activeElement).toBe(frame)
+    expect(focusViewer).toHaveBeenCalled()
   })
 
   it('AC4: the example folder has a README that names the extension points used', () => {

@@ -18,6 +18,7 @@ import { CustomObjectLayoutTypePlugin } from './examples/custom-object-layout-ty
 import { CustomGridColumnPlugin } from './examples/custom-grid-column'
 import { WorkflowModalExtensionPlugin } from './examples/workflow-modal-extension'
 import { CustomThemePlugin } from './examples/custom-theme'
+import { TalkSlidesPlugin } from './examples/talk-slides'
 
 // Examples are splitted into separate plugins to create a clear separation for better understanding.
 // You can also combine them into one plugin if you want to.
@@ -41,5 +42,6 @@ export {
   CustomObjectLayoutTypePlugin,
   CustomGridColumnPlugin,
   WorkflowModalExtensionPlugin,
-  CustomThemePlugin
+  CustomThemePlugin,
+  TalkSlidesPlugin
 }
