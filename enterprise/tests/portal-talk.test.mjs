@@ -56,7 +56,7 @@ test('AC2: the page template extends the portal studio layout, overrides shellHe
   assert.match(php, /viewerUrl/);
 });
 
-test('AC3: the plugin source registers a "Talk" entry in slots.navEntries', () => {
+test('AC3: the plugin source registers a Talk entry in slots.navEntries', () => {
   const plugin = read(join(portalDir, 'js/src/plugin.tsx'));
   assert.match(plugin, /componentRegistry\.registerToSlot\(\s*slots\.navEntries\s*,\s*\{[^}]*component:\s*TalkNavEntry/);
   const imported = plugin.match(/import \{[^}]*TalkNavEntry[^}]*\} from '([^']+)'/);
