@@ -31,7 +31,7 @@ describe('talk-slides example', () => {
     registerWidget.mockClear()
   })
 
-  it('AC1: loading the module registers a main-nav entry "Talk" and its widget', () => {
+  it('AC1: loading the module registers the main-nav entry Talk and its widget', () => {
     const registerModule = jest.fn()
     TalkSlidesPlugin.onStartup?.({ moduleSystem: { registerModule } } as any)
     expect(registerModule).toHaveBeenCalledWith(TalkSlidesExtension)
