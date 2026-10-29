@@ -1,0 +1,27 @@
+{
+  "name": "pimcore_studio_example_enterprise_portal",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Portal Engine frontend plugin of the Pimcore Studio Example Enterprise Bundle, built into ../../public/portal (needs vendor access, see README.md)",
+  "license": "proprietary",
+  "scripts": {
+    "build": "rsbuild build",
+    "check-types": "tsc --noEmit --pretty false"
+  },
+  "dependencies": {
+    "@pimcore/portal-ui-kit": "file:../../../portal-ui-kit/frontend/portal-ui-kit",
+    "react": "18.3.x",
+    "react-dom": "18.3.x"
+  },
+  "devDependencies": {
+    "@module-federation/rsbuild-plugin": "^2.9.0",
+    "@pimcore/portal-plugin-sdk": "^2026.3.0",
+    "@rsbuild/core": "^1.7.6",
+    "@rsbuild/plugin-react": "^1.4.6",
+    "@types/node": "^22",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "typescript": "^5.9.3"
+  }
+}

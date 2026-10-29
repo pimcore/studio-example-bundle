@@ -1,0 +1,10 @@
+services:
+    _defaults:
+        autowire: true
+        # tagged below; autoconfiguration would add the same tag a second time
+        autoconfigure: false
+        public: false
+
+    # The portal plugin built from assets/portal (see assets/portal/README.md).
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterprisePortalPlugin:
+        tags: ['portal_engine.plugin_provider']

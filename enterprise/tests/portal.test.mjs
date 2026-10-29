@@ -16,7 +16,7 @@ test('AC1: the portal build declares the file: dependency on portal-ui-kit and t
   const uiKit = pkg.dependencies?.['@pimcore/portal-ui-kit'];
   assert.ok(uiKit, 'depends on @pimcore/portal-ui-kit');
   assert.match(uiKit, /^file:.*portal-ui-kit\/frontend\/portal-ui-kit$/);
-  assert.ok(pkg.dependencies?.['@pimcore/portal-plugin-sdk'], 'depends on @pimcore/portal-plugin-sdk for its types');
+  assert.ok(pkg.devDependencies?.['@pimcore/portal-plugin-sdk'], 'installs @pimcore/portal-plugin-sdk for its types and rsbuild helper');
   assert.ok(pkg.scripts?.build, 'has a build script');
 
   const config = read(join(portalDir, 'rsbuild.config.ts'));
