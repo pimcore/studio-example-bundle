@@ -1,0 +1,28 @@
+{
+  "name": "pimcore/studio-example-enterprise-bundle",
+  "license": "proprietary",
+  "type": "pimcore-bundle",
+  "description": "Pimcore Studio Example Enterprise Bundle: examples for Pimcore enterprise bundles (Portal Engine, Change Control)",
+  "config": {
+    "sort-packages": true
+  },
+  "prefer-stable": true,
+  "minimum-stability": "dev",
+  "require": {
+    "pimcore/change-control-bundle": "^2026.1",
+    "pimcore/portal-engine": "^2026.1",
+    "pimcore/studio-example-bundle": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\": "src/"
+    }
+  },
+  "extra": {
+    "pimcore": {
+      "bundles": [
+        "Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\PimcoreStudioExampleEnterpriseBundle"
+      ]
+    }
+  }
+}
