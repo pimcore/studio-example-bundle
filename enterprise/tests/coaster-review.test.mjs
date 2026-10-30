@@ -55,6 +55,7 @@ const buildSlotRows = (s, shaping) => {
       ...shaping.extras(key, sample),
       key,
       label: shaping.label(key, sample),
+      type: shaping.type(key, sample),
       current: c,
       proposed: p,
       changed: !(key in current) || !(key in proposed) || !same(c, p),

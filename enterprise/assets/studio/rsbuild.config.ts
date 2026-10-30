@@ -87,6 +87,8 @@ export default defineConfig({
       dts: false,
       remotes: {
         '@pimcore/studio-ui-bundle': createDynamicRemote('pimcore_studio_ui_bundle'),
+        // Change Control's public SDK (types from the npm package, code from the installed bundle): the coaster review tab
+        '@pimcore/change-control-bundle': createDynamicRemote('pimcore_change_control_bundle'),
       },
       shared: {
         ...packages.dependencies,
