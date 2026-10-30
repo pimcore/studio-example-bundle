@@ -1,5 +1,5 @@
 import type { ChangeSetReviewActionParameters, RowShaping, SlotRow } from '@pimcore/change-control-bundle/sdk'
-import { diffCoaster } from '../../../../shared/coaster/diff/diff.mjs'
+import { align, diffCoaster, ordinals } from '../../../../shared/coaster/diff/diff.mjs'
 
 // The review tab's logic, free of React and of the Studio runtime (enterprise/tests/coaster-review.test.mjs runs it in
 // Node). Change Control reviews a .coaster asset through its 'metadata' slot: one entry per metadata leaf, keyed by
@@ -134,31 +134,32 @@ export function readableRows (rows: SlotRow[]): CoasterRow[] {
     .map(row => ({ ...row, label: texts.get(row.name) ?? coasterLine(row.name, row.current, row.proposed) }))
 }
 
-/** the n-th element (1-based) of a type in an element list, as F43 numbers them */
-const nthOfType = (track: TrackElement[], type: string, n: number): number => {
-  let seen = 0
-  return track.findIndex(element => element.type === type && ++seen === n)
-}
-
-/** the proposed element list with the changes of the excluded coaster keys taken back */
+/**
+ * The proposed element list with the changes of the excluded coaster keys taken back. It walks F43's own pairing of
+ * the two lists, so each change lands on the element it was found on, even when elements were added or removed
+ * before it: a left-out field keeps its old value, a left-out added element stays out, a left-out removal stays in.
+ */
 function trackWithout (before: TrackElement[], after: TrackElement[], excludedNames: Set<string>): TrackElement[] {
-  const track = after.map(element => ({ ...element }))
-  const removals: number[] = []
-  for (const change of trackChanges(before, after)) {
-    if (!excludedNames.has(change.metadata.key)) continue
-    const [, , type, n, field] = change.metadata.key.split('.')
-    if (change.kind === 'changed' && field !== undefined) {
-      // a changed element keeps its old number; the elements before it of its type are the same on both sides
-      const element = track[nthOfType(track, type, Number(n))] as Record<string, unknown> | undefined
-      if (element === undefined) continue
-      if (change.metadata.old === null) delete element[field] // eslint-disable-line @typescript-eslint/no-dynamic-delete
-      else element[field] = change.metadata.old
-    } else if (change.kind === 'added') {
-      removals.push(nthOfType(after, type, Number(n)))
+  const oldNumber: number[] = ordinals(before)
+  const newNumber: number[] = ordinals(after)
+  const track: TrackElement[] = []
+  for (const [i, j] of align(before, after) as Array<[number | undefined, number | undefined]>) {
+    if (i !== undefined && j !== undefined) {
+      const element: Record<string, unknown> = { ...after[j] }
+      const keyBase = `coaster.track.${before[i].type}.${oldNumber[i]}`
+      for (const field of new Set([...Object.keys(before[i]), ...Object.keys(after[j])])) {
+        if (!excludedNames.has(`${keyBase}.${field}`)) continue
+        if (before[i][field] === undefined) delete element[field] // eslint-disable-line @typescript-eslint/no-dynamic-delete
+        else element[field] = before[i][field]
+      }
+      track.push(element as TrackElement)
+    } else if (i !== undefined) {
+      if (excludedNames.has(`coaster.track.${before[i].type}.${oldNumber[i]}`)) track.push({ ...before[i] })
+    } else if (j !== undefined && !excludedNames.has(`coaster.track.${after[j].type}.${newNumber[j]}`)) {
+      track.push({ ...after[j] })
     }
-    // a removed element left out of the merge would have to be put back in place: not needed for the demo
   }
-  return track.filter((_, index) => !removals.includes(index))
+  return track
 }
 
 /**

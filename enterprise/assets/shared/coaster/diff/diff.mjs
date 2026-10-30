@@ -42,8 +42,9 @@ function fieldChanges(before, after, { prefix, keyBase, skip = new Set(), extra 
 
 // Pairs the elements of two tracks in ride order: the most elements of the same type, and among those pairings
 // the most identical ones (so inserting a loop next to another marks the new one as added, not the old as changed).
-// Returns [oldIndex, newIndex] pairs; an index missing on one side is an added or removed element.
-function align(before, after) {
+// Returns [oldIndex, newIndex] pairs; an index missing on one side is an added or removed element. Exported for
+// callers that rebuild a track from part of the changes (the Studio review tab, F53).
+export function align(before, after) {
   const better = (a, b) => (a[0] !== b[0] ? a[0] > b[0] : a[1] >= b[1]);
   const n = before.length;
   const m = after.length;
@@ -82,7 +83,7 @@ function align(before, after) {
 }
 
 // The 1-based number of each element among the elements of its type, e.g. [1, 1, 1, 1, 1, 1, 2, 1, 2].
-const ordinals = (track) => {
+export const ordinals = (track) => {
   const seen = {};
   return track.map((element) => (seen[element.type] = (seen[element.type] ?? 0) + 1));
 };

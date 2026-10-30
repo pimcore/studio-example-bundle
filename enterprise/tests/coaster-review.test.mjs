@@ -1,7 +1,7 @@
 // F53: Studio review tab for the coaster change set, in Change Control's own diff table. Run (node 24 needs the glob):
 // node --test 'enterprise/tests/*.test.mjs'
-// The tab's logic lives in coaster-review-model.ts (Node strips its types); the React parts are checked statically,
-// since enterprise/assets/studio has no node_modules here (Studio and Change Control load at runtime).
+// The tab's logic lives in coaster-review-model.ts (Node strips its types); the React parts are checked statically
+// here (Studio and Change Control load at runtime) and type-checked with `npm run check-types` in enterprise/assets/studio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -149,6 +149,38 @@ test('AC2: all rows ticked merges everything; all unticked leaves the element li
   assert.deepEqual(model.mergeRequest('cs-3', all, []).changeSetReviewActionParameters, { excludePaths: [] });
   const none = model.mergeRequest('cs-3', all, [leaf(LOOP), leaf(HEIGHT)]).changeSetReviewActionParameters;
   assert.deepEqual(none, { excludePaths: [leaf(LOOP), leaf(HEIGHT), leaf('coaster.track')] });
+});
+
+test('AC2: left-out changes are taken back on the element they were found on, also after elements added or removed', () => {
+  // revision 3 plus a loop inserted before the others and without its brake run
+  const after = structuredClone(rev3.track);
+  after.splice(1, 0, { type: 'loop', diameter: 12 });
+  after.splice(after.findIndex((element) => element.type === 'brakeRun'), 1);
+  const changes = diffCoaster({ ...rev2 }, { ...rev2, track: after });
+  const data = (value) => (typeof value === 'object' ? JSON.stringify(value) : String(value));
+  const current = { [leaf('coaster.track')]: entry('coaster.track', 'textarea', JSON.stringify(rev2.track)) };
+  const proposed = { [leaf('coaster.track')]: entry('coaster.track', 'textarea', JSON.stringify(after)) };
+  for (const { metadata: { key, old, new: value } } of changes) {
+    if (old !== null) current[leaf(key)] = entry(key, 'input', data(old));
+    if (value !== null) proposed[leaf(key)] = entry(key, 'input', data(value));
+  }
+  const all = rowsOf({ shape: 'entry-set', current, proposed });
+
+  // the reviewer leaves out the new height, the added loop and the removed brake run
+  const leftOut = changes.filter((change) => change.kind !== 'changed' || change.metadata.key === HEIGHT);
+  assert.equal(leftOut.length, 3);
+  const params = model.mergeRequest('cs-4', all, leftOut.map((change) => leaf(change.metadata.key)))
+    .changeSetReviewActionParameters;
+  const track = JSON.parse(params.amendments[leaf('coaster.track')].data);
+
+  // what goes in is exactly the ticked rest: the loop change stays on its loop, the brake run stays in place
+  assert.deepEqual(
+    diffCoaster({ ...rev2 }, { ...rev2, track }).map((change) => change.text),
+    changes.filter((change) => !leftOut.includes(change)).map((change) => change.text),
+  );
+  const expected = structuredClone(rev2.track);
+  expected.find((element) => element.type === 'loop' && element.diameter === 24).diameter = 30;
+  assert.deepEqual(track, expected);
 });
 
 test('AC3: the README explains how the review slot is used', () => {
