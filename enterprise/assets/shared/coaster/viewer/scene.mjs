@@ -73,9 +73,11 @@ const tube = (points, radius, material, name) => {
 };
 
 // An open piece of tube along `points`, for the marks over a part of the circuit.
+// Samples closer than 1 cm are dropped (a zero-length step twists the tube's frames into fins at the joins).
 const segment = (points, radius, material, name) => {
-  const curve = new THREE.CatmullRomCurve3(points);
-  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(2, points.length), radius, 8, false), material);
+  const kept = points.filter((p, i) => i === 0 || p.distanceTo(points[i - 1]) > 0.01);
+  const curve = new THREE.CatmullRomCurve3(kept.length > 1 ? kept : points, false, 'centripetal');
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(2, kept.length * 2), radius, 8, false), material);
   mesh.name = name;
   return mesh;
 };
