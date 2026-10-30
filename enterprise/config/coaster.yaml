@@ -1,0 +1,16 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # The PHP port of the coaster metadata extraction (assets/shared/coaster/metadata/metadata.ts) and the schema check.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Coaster\CoasterValidator: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Coaster\CoasterMetadataExtractor: ~
+
+    # Writes max height, length, inversions, top speed and duration as metadata of every .coaster asset before it is
+    # saved, on upload and on update; logs to the application log why an invalid file got none.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Coaster\CoasterMetadataListener:
+        tags:
+            - { name: kernel.event_listener, event: pimcore.asset.preAdd, method: onAssetSave }
+            - { name: kernel.event_listener, event: pimcore.asset.preUpdate, method: onAssetSave }

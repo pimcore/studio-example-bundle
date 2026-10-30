@@ -72,3 +72,7 @@ Run these three steps in the root of your Pimcore application, in this order. Th
 
 - [Portal page "Talk"](assets/portal/talk/README.md): the slide viewer as a portal page, with its own route,
   a chrome-less page template and an entry in the portal navigation
+- Coaster metadata on upload (`src/Coaster/`, `config/coaster.yaml`): saving a `.coaster` asset fills its metadata
+  `maxHeight`, `length`, `inversions`, `topSpeed` and `duration` (units in `CoasterMetadataExtractor::UNITS`), computed
+  by a PHP port of [the TypeScript reference](assets/shared/coaster/metadata/metadata.ts) and checked against the same
+  golden file `demo-data/expected-metadata.json`. An invalid file gets no metadata; the application log says why.
