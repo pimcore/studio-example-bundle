@@ -60,7 +60,8 @@ const mouse = (type, x, y, extra = {}) =>
   page.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', pointerType: 'mouse', ...extra });
 
 test('AC1: in the browser the orbit view stops drawing once the camera is still, and draws again when it moves', async () => {
-  await open('demo.html', 'width=1000&height=600');
+  // small, so headless Chromium's software WebGL draws the damping's frames quickly
+  await open('demo.html', 'width=480&height=300');
   const viewer = 'window.coasterViewer';
   await until(() => page.evaluate(`!${viewer}.looping()`), 10, 'the loop stopped after the first frame');
   const idle = await page.evaluate(`${viewer}.renders()`);
@@ -69,14 +70,16 @@ test('AC1: in the browser the orbit view stops drawing once the camera is still,
   assert.equal(await page.evaluate(`${viewer}.renders()`), idle, 'no redraw while the camera is idle for 2 s');
 
   // the next ordinary step: the user drags, the view follows, then settles and stops drawing again
-  await mouse('mouseMoved', 500, 300, { button: 'none' });
-  await mouse('mousePressed', 500, 300, { buttons: 1, clickCount: 1 });
-  for (let x = 520; x <= 700; x += 20) await mouse('mouseMoved', x, 300, { buttons: 1 });
-  await mouse('mouseReleased', 700, 300, { buttons: 0, clickCount: 1 });
+  await mouse('mouseMoved', 200, 150, { button: 'none' });
+  await mouse('mousePressed', 200, 150, { buttons: 1, clickCount: 1 });
+  for (let x = 210; x <= 280; x += 10) await mouse('mouseMoved', x, 150, { buttons: 1 });
+  await mouse('mouseReleased', 280, 150, { buttons: 0, clickCount: 1 });
   const dragged = await page.evaluate(`${viewer}.renders()`);
   assert.ok(dragged > idle, `dragging draws (${idle} → ${dragged} frames)`);
-  await until(() => page.evaluate(`!${viewer}.looping()`), 15, 'the damping settled and the loop stopped');
+  // the damping eases out over its frames; a software renderer draws them slowly
+  await until(() => page.evaluate(`!${viewer}.looping()`), 180, 'the damping settled and the loop stopped');
   const settled = await page.evaluate(`${viewer}.renders()`);
+  console.log(`orbit view: ${settled - idle} frames from the drag until the camera stood still`);
   await sleep(2200);
   assert.equal(await page.evaluate(`${viewer}.renders()`), settled, 'idle again: no redraw for 2 s');
   assert.deepEqual(page.errors, []);
@@ -206,7 +209,7 @@ test('AC4: in the browser the side-by-side review opened and closed 10 times dis
     const opened = [];
     for (let i = 0; i < 10; i++) {
       const host = document.createElement('div');
-      host.style.width = '1000px';
+      host.style.width = '480px'; // small: a quick software WebGL draw per frame
       document.body.append(host);
       React.ref = { current: host };
       RidePair({ left: { file: live, title: 'Live', marks: marks.left }, right: { file: proposed, title: 'Proposed', marks: marks.right }, speed: 20 });

@@ -10,8 +10,9 @@
 //   });
 //   pair.play(); pair.pause(); pair.restart();
 //   pair.state();   // { playing, ended, rides: [left.state(), right.state()] }
-//   pair.dispose();
+//   pair.dispose(); // both rides with their WebGL contexts, the bar's loop, the DOM
 import { align } from '../diff/diff.mjs';
+import { watchVisible } from './display.mjs';
 import { mountCoasterRide } from './ride.mjs';
 
 /**
@@ -108,7 +109,8 @@ export function mountRidePair(container, { left, right, speed, colors, antialias
     return { playing: all.some((s) => s.playing), ended: all.every((s) => s.ended), rides: all };
   };
   const view = doc.defaultView;
-  let frame; // the bar follows the trains while one of them rides
+  let frame; // the bar follows the trains while one of them rides and the pair is on screen
+  let watch;
   const showState = () => {
     const { playing, ended, rides: all } = state();
     playButton.textContent = playing ? 'Pause' : 'Play';
@@ -116,12 +118,18 @@ export function mountRidePair(container, { left, right, speed, colors, antialias
     progress.textContent = ended
       ? 'Both back in the station'
       : all.map((s, n) => `${n === 0 ? 'Live' : 'Proposed'}: ${Math.round(s.distance)} m of ${Math.round(s.length)} m`).join(' · ');
-    frame = playing && view ? view.requestAnimationFrame(showState) : undefined;
+    frame = playing && view && watch?.visible() !== false ? view.requestAnimationFrame(showState) : undefined;
+  };
+  const unfollow = () => {
+    if (frame !== undefined) view?.cancelAnimationFrame(frame);
+    frame = undefined;
   };
   const follow = () => {
-    if (frame !== undefined) view?.cancelAnimationFrame(frame);
+    unfollow();
     showState();
   };
+  // Hidden, the rides stop their loops (ride.mjs) and the bar its own; shown again, all three go on.
+  watch = watchVisible(root, (visible) => (visible ? follow() : unfollow()));
 
   // Both trains start, stop and go back in the same click. A train already back in the station waits there for the
   // other one; once both are back, Play rides both again from the station.
@@ -152,8 +160,10 @@ export function mountRidePair(container, { left, right, speed, colors, antialias
     pause,
     restart,
     state,
+    looping: () => frame !== undefined,
     dispose() {
-      if (frame !== undefined) view?.cancelAnimationFrame(frame);
+      watch.disconnect();
+      unfollow();
       for (const ride of rides) ride.dispose();
       root.remove();
     },

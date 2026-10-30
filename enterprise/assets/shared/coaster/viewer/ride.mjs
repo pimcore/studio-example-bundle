@@ -7,11 +7,13 @@
 //   ride.play(); ride.pause(); ride.restart();
 //   ride.state();  // { playing, ended, distance, length, progress }
 //   ride.stats();  // { frames, seconds, fps } since the ride last started playing
+//   ride.renders(); // frames drawn so far; ride.looping(): whether the animation loop runs
 //   ride.dispose(); // when the host removes it
 //
 // createRide() is the ride without a renderer (the camera's path, the clock and the buttons' logic), so it also runs
 // in Node, for tests.
 import * as THREE from 'three';
+import { capPixelRatio, watchVisible } from './display.mjs';
 import { readCoasterFile } from './orbit.mjs';
 import { buildCoasterScene, trackFrames } from './scene.mjs';
 
@@ -128,7 +130,8 @@ const BUTTON_STYLE =
  * @param {HTMLElement} container
  * @param {{ file: string | object, size?: { width: number, height: number }, autoplay?: boolean,
  *   colors?: Partial<import('./scene.mjs').DEFAULT_COLORS>, marks?: number[] } & Partial<typeof RIDE_DEFAULTS>} options
- *   `marks`: the track elements drawn in the mark colour (see buildCoasterScene)
+ *   `marks`: the track elements drawn in the mark colour (see buildCoasterScene); `pixelRatio`: default the
+ *   window's, at most 1.5 (display.mjs)
  */
 export function mountCoasterRide(container, { file, size, colors, marks, autoplay = false, antialias = true, pixelRatio, ...rideOptions } = {}) {
   const doc = container.ownerDocument;
@@ -139,13 +142,16 @@ export function mountCoasterRide(container, { file, size, colors, marks, autopla
     message.setAttribute('role', 'alert');
     message.textContent = error;
     container.append(message);
-    return { error, play() {}, pause() {}, restart() {}, render() {}, setSize() {}, dispose: () => message.remove() };
+    return {
+      error, play() {}, pause() {}, restart() {}, render() {}, setSize() {}, renders: () => 0, looping: () => false,
+      dispose: () => message.remove(),
+    };
   }
 
   const { scene, line, radius } = buildCoasterScene(design, { colors, marks });
   const ride = createRide(line, rideOptions);
   const renderer = new THREE.WebGLRenderer({ antialias });
-  renderer.setPixelRatio(pixelRatio ?? doc.defaultView?.devicePixelRatio ?? 1);
+  renderer.setPixelRatio(capPixelRatio(pixelRatio, doc.defaultView));
   const canvas = renderer.domElement;
   canvas.className = 'coaster-viewer coaster-ride';
   canvas.setAttribute('aria-label', `Front-seat ride on the coaster ${design.meta?.name ?? ''}`.trim());
@@ -194,7 +200,11 @@ export function mountCoasterRide(container, { file, size, colors, marks, autopla
       ? 'Back in the station'
       : `${Math.round(distance)} m of ${Math.round(length)} m`;
   };
-  const render = () => renderer.render(scene, camera);
+  let frames = 0;
+  const render = () => {
+    frames++;
+    renderer.render(scene, camera);
+  };
   const setSize = (next = size) => {
     const width = next?.width ?? container.clientWidth;
     const height = next?.height ?? container.clientHeight;
@@ -212,8 +222,14 @@ export function mountCoasterRide(container, { file, size, colors, marks, autopla
   observer?.observe(container);
 
   // The animation loop runs only while the train moves; a standing train is drawn once, so a paused ride costs
-  // nothing (a laptop on battery, a busy headless browser).
+  // nothing (a laptop on battery, a busy headless browser). A hidden ride stops it too: the train waits where it is
+  // and rides on when the ride is shown again.
   let last; // the loop's previous timestamp in ms; unset when it starts, so the train does not jump
+  let looping = false;
+  const stop = () => {
+    looping = false;
+    renderer.setAnimationLoop(null);
+  };
   const tick = (time) => {
     const dt = last === undefined ? 0 : (time - last) / 1000;
     last = time;
@@ -222,12 +238,19 @@ export function mountCoasterRide(container, { file, size, colors, marks, autopla
       showState();
     }
     render();
-    if (!ride.state().playing) renderer.setAnimationLoop(null);
+    if (!ride.state().playing) stop();
   };
   const run = () => {
+    if (looping || !watch.visible()) return;
     last = undefined;
+    looping = true;
     renderer.setAnimationLoop(tick);
   };
+  const watch = watchVisible(canvas, (visible) => {
+    if (!visible) stop();
+    else if (ride.state().playing) run();
+    else render();
+  });
 
   const play = () => {
     ride.play();
@@ -262,14 +285,18 @@ export function mountCoasterRide(container, { file, size, colors, marks, autopla
     pose: ride.pose,
     render,
     setSize,
+    renders: () => frames,
+    looping: () => looping,
     dispose() {
-      renderer.setAnimationLoop(null);
+      watch.disconnect();
+      stop();
       observer?.disconnect();
       scene.traverse((object) => {
         object.geometry?.dispose();
         object.material?.dispose?.();
       });
       renderer.dispose();
+      renderer.forceContextLoss(); // the WebGL context goes back now (see orbit.mjs)
       frame.remove();
     },
   };
