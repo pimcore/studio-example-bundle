@@ -1,0 +1,12 @@
+{
+  "name": "pimcore_studio_example_enterprise_coaster_viewer",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Coaster viewer: draws a .coaster track in three.js with an orbit camera (see README.md)",
+  "license": "proprietary",
+  "main": "index.mjs",
+  "dependencies": {
+    "three": "0.187.0"
+  }
+}
