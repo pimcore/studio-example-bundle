@@ -1,0 +1,6 @@
+# npm
+/assets/studio/node_modules
+
+# Expanded frontend build is generated from build-dist/build-<id>.zip, not committed
+/public/build/*
+!/public/build/.gitkeep
