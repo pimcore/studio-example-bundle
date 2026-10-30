@@ -1,0 +1,17 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # Demo 2's Change Control change set (src/ChangeControl/README.md): coaster-demo:change-set opens it, and
+    # coaster-demo:reset discards it through the reset listener.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ChangeControl\CoasterChangeSetCommand: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ChangeControl\CoasterChangeSetResetListener: ~
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ChangeControl\CoasterChangeSet: ~
+
+    # Pimcore and Change Control's authoring facade behind it; the tests use an in-memory one instead.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ChangeControl\PimcoreChangeSetEnvironment: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ChangeControl\ChangeSetEnvironment:
+        alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\ChangeControl\PimcoreChangeSetEnvironment
