@@ -1,4 +1,4 @@
-// F39: the .coaster format, its JSON Schema and FORMAT.md. Run: node --test enterprise/tests/
+// F39: the .coaster format, its JSON Schema and FORMAT.md. Run (node 24 needs the glob): node --test 'enterprise/tests/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
