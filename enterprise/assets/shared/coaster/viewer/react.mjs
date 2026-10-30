@@ -10,7 +10,13 @@
 //
 //   const CoasterRide = createCoasterRide(React);
 //   <CoasterRide file={text} size={{ width: 800, height: 500 }} />
+//
+// Two rides side by side under one Play (pair.mjs), props `left`, `right` ({ file, title, marks }) and `speed`:
+//
+//   const RidePair = createRidePair(React);
+//   <RidePair left={{ file: live, title: 'Live' }} right={{ file: proposed, title: 'Proposed', marks: [3] }} />
 import { mountCoasterViewer } from './orbit.mjs';
+import { mountRidePair } from './pair.mjs';
 import { mountCoasterRide } from './ride.mjs';
 
 /** @param {typeof import('react')} React */
@@ -51,6 +57,26 @@ export function createCoasterRide(React) {
       ref,
       className: ['coaster-ride-host', className].filter(Boolean).join(' '),
       style: size ? { width, height } : { width: '100%', height: '100%' },
+    });
+  };
+}
+
+/** @param {typeof import('react')} React */
+export function createRidePair(React) {
+  const { createElement, useEffect, useRef } = React;
+  return function RidePair({ left, right, speed, colors, className }) {
+    const ref = useRef(null);
+    // Mounted again only when what is drawn changes, not on every render of the host.
+    const drawn = JSON.stringify([left, right, speed]);
+    useEffect(() => {
+      if (!ref.current) return undefined;
+      const pair = mountRidePair(ref.current, { left, right, speed, colors });
+      return () => pair.dispose();
+    }, [drawn]);
+    return createElement('div', {
+      ref,
+      className: ['coaster-ride-pair-host', className].filter(Boolean).join(' '),
+      style: { width: '100%' },
     });
   };
 }

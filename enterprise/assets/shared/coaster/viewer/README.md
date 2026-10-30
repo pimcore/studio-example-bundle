@@ -25,9 +25,15 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 - `react.mjs`: `createCoasterViewer(React)`, the same as a React component with the props `file` and `size`. The
   host passes its own React in, so no second copy of React is loaded. `createCoasterRide(React)` is the ride view,
   with the extra props `speed` and `autoplay`.
-- `scene.mjs`: `buildCoasterScene(design)`, the three.js scene (rails, spine, ties, supports, station, ground)
+- `pair.mjs`: `mountRidePair(element, { left, right, speed })`, two rides side by side for a review, each side
+  `{ file, title, marks }`, under one Play/Pause and Restart that drive both trains at once (each ride's own buttons
+  are hidden). `pairMarks(before, after)` gives the elements to mark on each side from the coaster diff's pairing of
+  the two element lists: a changed element on both sides, a removed one on the left, an added one on the right.
+  `createRidePair(React)` in `react.mjs` is the same as a component, props `left`, `right` and `speed`.
+- `scene.mjs`: `buildCoasterScene(design, { colors, marks })`, the three.js scene (rails, spine, ties, supports, station, ground)
   without a renderer; it also builds in Node, for tests.
-- `demo.html`: the orbit view on its own page; `ride.html` the ride view.
+- `demo.html`: the orbit view on its own page; `ride.html` the ride view; `pair.html` two rides side by side
+  (`?live=<url>&proposed=<url>&speed=<m/s>`, default Thunder Loop revision 2 and 3).
 
 ## Props
 
@@ -35,7 +41,8 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 | -------- | -------------------------------------- | -------------------------------------------------------------------------- |
 | `file`   | string or parsed object                | the `.coaster` file; it is validated against the schema first             |
 | `size`   | `{ width, height }` in CSS pixels      | the canvas size; without it the canvas fills its element and follows it   |
-| `colors` | `{ background, ground, grid, rail, steel, station }` | optional colour overrides (e.g. the host's accent for `rail`) |
+| `colors` | `{ background, ground, grid, rail, steel, station, mark }` | optional colour overrides (e.g. the host's accent for `rail`) |
+| `marks`  | number[]                               | indices into `track` of the elements to mark: their rails are drawn over in `mark` (magenta) |
 
 The ride view also takes:
 

@@ -127,9 +127,10 @@ const BUTTON_STYLE =
  * Mounts the ride view in `container`: the canvas, and a bar with Play/Pause, Restart and the ride's progress.
  * @param {HTMLElement} container
  * @param {{ file: string | object, size?: { width: number, height: number }, autoplay?: boolean,
- *   colors?: Partial<import('./scene.mjs').DEFAULT_COLORS> } & Partial<typeof RIDE_DEFAULTS>} options
+ *   colors?: Partial<import('./scene.mjs').DEFAULT_COLORS>, marks?: number[] } & Partial<typeof RIDE_DEFAULTS>} options
+ *   `marks`: the track elements drawn in the mark colour (see buildCoasterScene)
  */
-export function mountCoasterRide(container, { file, size, colors, autoplay = false, antialias = true, pixelRatio, ...rideOptions } = {}) {
+export function mountCoasterRide(container, { file, size, colors, marks, autoplay = false, antialias = true, pixelRatio, ...rideOptions } = {}) {
   const doc = container.ownerDocument;
   const { design, error } = readCoasterFile(file);
   if (error) {
@@ -141,7 +142,7 @@ export function mountCoasterRide(container, { file, size, colors, autoplay = fal
     return { error, play() {}, pause() {}, restart() {}, render() {}, setSize() {}, dispose: () => message.remove() };
   }
 
-  const { scene, line, radius } = buildCoasterScene(design, { colors });
+  const { scene, line, radius } = buildCoasterScene(design, { colors, marks });
   const ride = createRide(line, rideOptions);
   const renderer = new THREE.WebGLRenderer({ antialias });
   renderer.setPixelRatio(pixelRatio ?? doc.defaultView?.devicePixelRatio ?? 1);

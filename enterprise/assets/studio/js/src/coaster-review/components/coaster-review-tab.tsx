@@ -11,11 +11,13 @@ import {
 import {
   METADATA_SLOT, coasterShaping, mergeRequest, mergeSummary, readableRows, type MergeSummary
 } from '../coaster-review-model'
+import { CoasterSideBySide } from '../side-by-side/coaster-side-by-side'
 
 /** change sets still waiting for a review: 'draft' and 'in_review' (merged and discarded ones are done) */
 const isOpen = (state: string): boolean => state === 'draft' || state === 'in_review'
 
 interface ChangeSetReviewProps {
+  readonly assetId: number
   readonly changeSetId: string
   readonly onMerged: (summary: MergeSummary) => void
 }
@@ -24,7 +26,7 @@ interface ChangeSetReviewProps {
  * One change set in Change Control's own diff table: one readable line per coaster leaf, each with the table's
  * include checkbox; Merge sends the unticked rows as excludePaths.
  */
-const CoasterChangeSetReview = ({ changeSetId, onMerged }: ChangeSetReviewProps): React.JSX.Element => {
+const CoasterChangeSetReview = ({ assetId, changeSetId, onMerged }: ChangeSetReviewProps): React.JSX.Element => {
   const { data: review, isLoading, error } = useBundleChangeControlGetChangeSetReviewQuery({ changeSetId })
   const [merge, { isLoading: isMerging }] = useBundleChangeControlMergeChangeSetMutation()
   const [excluded, setExcluded] = useState<string[]>([])
@@ -53,6 +55,11 @@ const CoasterChangeSetReview = ({ changeSetId, onMerged }: ChangeSetReviewProps)
   return (
     <Flex gap="small" vertical>
       <Header title={ review.meta.label } />
+      {/* the proposal against the live ride; it gets the slot only, so the ticks below leave it as it is */}
+      <CoasterSideBySide
+        assetId={ assetId }
+        slot={ slot }
+      />
       <SlotDiffTable
         conflicts={ review.meta.preview.conflicts }
         onToggleInclude={ setExcluded }
@@ -99,6 +106,7 @@ export const CoasterReviewTab = (): React.JSX.Element => {
       )}
       {open !== undefined && (
         <CoasterChangeSetReview
+          assetId={ id }
           changeSetId={ open.id }
           key={ open.id }
           onMerged={ setSummary }

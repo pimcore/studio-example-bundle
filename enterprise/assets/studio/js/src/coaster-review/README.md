@@ -17,6 +17,10 @@ For revision 3 of Thunder Loop the change set holds two changes, and the tab lis
 | ☑ | loop #1: diameter 24 -> 30 | 24 | 30 |
 | ☑ | liftHill #1: height 45 -> 52 | 45 | 52 |
 
+Above the table, **both rides side by side** (`side-by-side/`): revision 2 as it is live on the left, the proposed
+revision 3 on the right, the changed elements (the lift hill and the first loop) drawn in magenta on both. One
+**Play** starts both trains together, Pause stops both, Restart takes both back to the station.
+
 Below the table, **Merge ticked changes** merges the change set. Afterwards the tab says what went in and what was
 left out.
 
@@ -48,6 +52,18 @@ The tab uses the slot in three steps (`coaster-review-model.ts`, `components/coa
 The tab does not add a slot renderer: registering one for `'metadata'` would change the diff of every asset in
 Change Control.
 
+## Side by side
+
+`side-by-side/side-by-side-model.ts`, `previewPair(liveText, slot)`, builds the two rides: the left one is the asset's
+file (`AssetApiSlice.useAssetGetTextDataByIdQuery`), the right one that file with the slot's **proposed** side applied:
+the element list from `coaster.track`, the `coaster.train.<field>` and `coaster.meta.<field>` leaves, and the revision
+one up. The marks come from the viewer's `pairMarks`, so a ride marks exactly the elements the coaster diff pairs as
+changed, removed or added. `side-by-side/coaster-side-by-side.tsx` draws them with the viewer's `createRidePair`
+(`enterprise/assets/shared/coaster/viewer/pair.mjs`).
+
+The preview takes the slot and nothing else: unticking a row changes what a merge would do, not the proposal, so both
+rides stay as they are.
+
 ## Merging
 
 `mergeRequest(changeSetId, rows, excluded)` builds the argument for `useBundleChangeControlMergeChangeSetMutation`:
@@ -67,9 +83,11 @@ with only the bigger loop, and keeps the lift hill at 45 m.
    `npm run package-build`, then `bin/console cache:warmup`). Change Control 2026.3 must be installed, since its
    remote `pimcore_change_control_bundle` provides the SDK at runtime.
 2. Open a change set on the Thunder Loop asset with revision 3 (the change set command of the coaster demo).
-3. In Studio, open the `.coaster` asset and select the **Review** tab: two rows, both ticked.
+3. In Studio, open the `.coaster` asset and select the **Review** tab: the two rides side by side, the lift hill and
+   the first loop marked, and two rows, both ticked. **Play** starts both rides together.
 4. Untick "liftHill #1: height 45 -> 52" and click **Merge ticked changes**. The tab reports "Merged: loop #1:
    diameter 24 -> 30" and "Left out: liftHill #1: height 45 -> 52". The asset's metadata now has the 30 m loop and
    the 45 m lift hill.
 
-Tests: `node --test 'enterprise/tests/coaster-review.test.mjs'` (from the repository root).
+Tests: `node --test 'enterprise/tests/coaster-review.test.mjs' 'enterprise/tests/coaster-side-by-side.test.mjs'` (from
+the repository root; the second opens `viewer/pair.html` in headless Chromium).

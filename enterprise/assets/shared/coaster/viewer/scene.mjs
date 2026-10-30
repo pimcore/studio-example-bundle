@@ -17,6 +17,7 @@ export const DEFAULT_COLORS = Object.freeze({
   rail: '#ffd200',
   steel: '#c9d1d9',
   station: '#00d0ff',
+  mark: '#ff3df2', // the changed elements in a side-by-side review (pair.mjs)
 });
 
 const GAUGE = 1.2; // metres between the rails
@@ -71,12 +72,21 @@ const tube = (points, radius, material, name) => {
   return mesh;
 };
 
+// An open piece of tube along `points`, for the marks over a part of the circuit.
+const segment = (points, radius, material, name) => {
+  const curve = new THREE.CatmullRomCurve3(points);
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(2, points.length), radius, 8, false), material);
+  mesh.name = name;
+  return mesh;
+};
+
 /**
  * Builds the three.js scene of a coaster design (a parsed, valid `.coaster` file, see FORMAT.md).
  * @param {object} design
- * @param {{ colors?: Partial<typeof DEFAULT_COLORS> }} [options]
+ * @param {{ colors?: Partial<typeof DEFAULT_COLORS>, marks?: number[] }} [options] `marks`: indices into
+ *   `design.track` of the elements to mark: their rails are drawn over in the `mark` colour (group 'coaster-marks')
  */
-export function buildCoasterScene(design, { colors = {} } = {}) {
+export function buildCoasterScene(design, { colors = {}, marks = [] } = {}) {
   const c = { ...DEFAULT_COLORS, ...colors };
   const line = buildTrack(design);
   const points = line.points.map((p) => new THREE.Vector3(p.x, p.y, p.z));
@@ -147,6 +157,17 @@ export function buildCoasterScene(design, { colors = {} } = {}) {
   track.add(platform);
   scene.add(track);
 
+  // Marked elements: both rails again over the element's samples, a little thicker, in the mark colour.
+  const marked = new THREE.Group();
+  marked.name = 'coaster-marks';
+  const markMaterial = new THREE.MeshStandardMaterial({ color: c.mark, roughness: 0.4, emissive: c.mark, emissiveIntensity: 0.35 });
+  for (const element of line.elements.filter((e) => marks.includes(e.index))) {
+    const range = (side) => offset(side, 0).slice(element.start, element.end + 1);
+    marked.add(segment(range(-GAUGE / 2), RAIL_RADIUS * 1.35, markMaterial, `mark-${element.index}-left`));
+    marked.add(segment(range(GAUGE / 2), RAIL_RADIUS * 1.35, markMaterial, `mark-${element.index}-right`));
+  }
+  if (marked.children.length > 0) scene.add(marked);
+
   const box = new THREE.Box3().setFromObject(track);
   const center = box.getCenter(new THREE.Vector3());
   const sphere = box.getBoundingSphere(new THREE.Sphere());
@@ -163,5 +184,5 @@ export function buildCoasterScene(design, { colors = {} } = {}) {
   grid.position.set(center.x, -0.6, center.z);
   scene.add(grid);
 
-  return { scene, track, line, center, radius: sphere.radius };
+  return { scene, track, marks: marked, line, center, radius: sphere.radius };
 }

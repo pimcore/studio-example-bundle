@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Two rides side by side, as the Studio review tab shows them: serve the enterprise folder over HTTP (README.md) and
+     open /assets/shared/coaster/viewer/pair.html. ?live=<url of a .coaster file>&proposed=<url>&speed=<m/s>
+     (default: Thunder Loop revision 2 and 3) -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Coaster rides side by side</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      html, body { margin: 0; background: #f5f6f8; color: #0d1117; font: 16px system-ui, sans-serif; }
+      #pair { padding: 16px; }
+      .coaster-viewer-error { margin: 2rem; }
+    </style>
+  </head>
+  <body>
+    <div id="pair"></div>
+    <script type="module">
+      import { mountRidePair, pairMarks } from './index.mjs';
+
+      const query = new URLSearchParams(location.search);
+      const load = async (url) => (await fetch(url)).json();
+      const live = await load(query.get('live') ?? '../../../../demo-data/thunder-loop-rev2.coaster');
+      const proposed = await load(query.get('proposed') ?? '../../../../demo-data/thunder-loop-rev3.coaster');
+      const speed = Number(query.get('speed')) || undefined;
+      const marks = pairMarks(live.track, proposed.track);
+      window.coasterPair = mountRidePair(document.getElementById('pair'), {
+        left: { file: live, title: `Revision ${live.meta.revision} (live)`, marks: marks.left },
+        right: { file: proposed, title: `Revision ${proposed.meta.revision} (proposed)`, marks: marks.right },
+        speed,
+      });
+      document.body.dataset.ready = 'true';
+    </script>
+  </body>
+</html>
