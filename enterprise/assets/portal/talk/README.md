@@ -41,6 +41,13 @@ documentation, "Portal Frontend Plugins", section "Serving your own page".
 3. Clear the cache (`bin/console cache:clear`) and enable "Studio Example Enterprise" in the **Enabled plugins**
    field of the portal's configuration document.
 
+## The slides in the portal's colours
+
+The page frames the viewer as `<viewer URL>?host=portal&accent=<brand>`: the brand colour is the portal
+configuration's `colorPrimary`, the same colour Portal Engine's layout writes into `--pe-brand`. The viewer's title
+slides, headings and links take it instead of the neutral default of the standalone `talk.html` and the PDF (the
+talk's `viewer/README.md` lists the variables; its `theme.css` overrides them, in the portal too).
+
 ## Try it
 
 Log into the portal. Below the navigation rail's own items there is **Talk**. Click it: the page `/<language>/talk`

@@ -17,5 +17,9 @@
 
 {% block studioContent %}
     {# allow="fullscreen": the viewer's F key puts the frame itself into full screen #}
+    {# F38: the viewer is told it is shown in the portal and takes the portal's brand colour, the colour the layout
+       writes into --pe-brand #}
+    {% set talkBrand = portalEngine_portalConfig().colorPrimary|default('#2B0080') %}
+    {% set viewerUrl = viewerUrl ~ ('?' in viewerUrl ? '&' : '?') ~ 'host=portal&accent=' ~ talkBrand|url_encode %}
     <iframe class="pe-talk-frame" src="{{ viewerUrl }}" title="{{ pageTitleOverride }}" allow="fullscreen" allowfullscreen></iframe>
 {% endblock %}
