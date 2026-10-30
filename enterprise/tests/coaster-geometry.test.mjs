@@ -189,7 +189,8 @@ test('AC3: two files that differ in one element have the same line up to that el
 
 test('AC3: a change in the first element changes the line from the start, and the same file gives the same line', () => {
   const [before, after] = changedAt(0, { length: 10 });
-  assert.notDeepEqual(after.points.slice(1, 5), before.points.slice(1, 5));
+  assert.equal(after.elements[0].start, 0);
+  assert.notDeepEqual(after.points.slice(0, before.elements[0].end + 1), before.points.slice(0, before.elements[0].end + 1));
   assert.deepEqual(buildTrack(thunderLoop()), buildTrack(thunderLoop()));
 });
 
