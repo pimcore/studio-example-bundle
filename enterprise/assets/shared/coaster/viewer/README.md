@@ -81,7 +81,11 @@ shows the track, a drag orbits the camera, and the screenshot is kept in `COASTE
 
 `enterprise/tests/coaster-ride.test.mjs` rides the sample circuit in Node (station to station, through the loops,
 pause and restart) and in headless Chromium: the buttons work with real clicks, the camera comes back to the
-station, and the frame rate is printed and must be 30 fps or more (`coaster ride frame rate: ...`). Headless
-Chromium limits the frame rate of software WebGL far below a real screen, so the test turns that limiter off
-(`--disable-gpu-vsync --disable-frame-rate-limit`); ties and supports are instanced meshes, one draw call each, so the
-scene stays fast on a software renderer.
+station.
+
+`enterprise/tests/coaster-ride.perf.mjs` measures the ride's frame rate, which is printed and must be 30 fps or more
+(`coaster ride frame rate: ...`). Software WebGL tracks the machine's load, so this measurement is not part of the
+regular suite: run it at a quiet moment, with no other heavy work on the machine (nightly, or before the dry run):
+`node --test 'enterprise/tests/*.perf.mjs'`. Headless Chromium limits the frame rate of software WebGL far below a
+real screen, so the measurement turns that limiter off (`--disable-gpu-vsync --disable-frame-rate-limit`); ties and
+supports are instanced meshes, one draw call each, so the scene stays fast on a software renderer.

@@ -2,18 +2,17 @@
 // with Play/Pause and Restart. Run (node 24 needs the glob; the viewer's three.js first: npm ci in
 // enterprise/assets/shared/coaster/viewer):
 // node --test 'enterprise/tests/*.test.mjs'
-// The browser tests drive headless Chromium over the DevTools protocol (CHROMIUM, else chromium on the PATH), print
-// the measured frame rate and keep a screenshot of the paused ride in COASTER_RIDE_SCREENSHOT (default:
-// coaster-ride.png in the system's temp folder).
+// The browser tests drive headless Chromium over the DevTools protocol (coaster-ride-browser.mjs) and keep a screenshot
+// of the paused ride in COASTER_RIDE_SCREENSHOT (default: coaster-ride.png in the system's temp folder). The frame rate
+// (F45 AC3, 30 fps or more) is measured apart, at a quiet moment, by coaster-ride.perf.mjs (DR-F83-4).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, extname, join, normalize } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { serve, launchChromium, closeAll } from './coaster-ride-browser.mjs';
 
 const enterpriseDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const viewerDir = join(enterpriseDir, 'assets/shared/coaster/viewer');
@@ -118,107 +117,9 @@ test('AC1: the React component mounts the ride into its element with the file, s
   assert.equal(appended.length, 0);
 });
 
-// --- headless Chromium -------------------------------------------------------------------------------------------
+// --- headless Chromium (coaster-ride-browser.mjs) ----------------------------------------------------------------
 
-const TYPES = { '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json' };
-let server;
-let port;
-const browsers = []; // { process, profile, session }
 let page; // a browser with Chromium's usual frame pacing: for the buttons and the ride round the circuit
-let fast; // one without the frame limiter: for the frame rate (see launchChromium)
-
-// Serves the enterprise folder, so the ride page reaches the geometry, the schema and the demo data.
-const serve = () =>
-  new Promise((resolve) => {
-    server = createServer((req, res) => {
-      const path = normalize(join(enterpriseDir, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
-      if (!path.startsWith(enterpriseDir) || !existsSync(path) || !statSync(path).isFile()) {
-        res.writeHead(404).end();
-        return;
-      }
-      res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' });
-      res.end(readFileSync(path));
-    });
-    server.listen(0, '127.0.0.1', () => resolve(server.address().port));
-  });
-
-// A DevTools protocol session on a new headless Chromium's first page, over Node's built-in WebSocket.
-// Headless Chromium paces frames by a virtual display that, with software WebGL (SwiftShader), holds even a page that
-// only clears a 1280x720 canvas near 20 frames per second and this ride near 2. `unlimited` turns that limiter off
-// (--disable-gpu-vsync, --disable-frame-rate-limit), so the frame rate is what the ride itself draws, as on a real
-// screen up to its refresh; such a browser answers slowly while a page draws flat out, so only the measurement uses it.
-async function launchChromium({ unlimited = false } = {}) {
-  const profile = mkdtempSync(join(tmpdir(), 'coaster-ride-'));
-  const binary = process.env.CHROMIUM ?? 'chromium';
-  const child = spawn(binary, [
-    '--headless=new', '--no-sandbox', '--no-first-run', '--disable-gpu-sandbox', '--use-angle=swiftshader',
-    '--enable-unsafe-swiftshader', ...(unlimited ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []),
-    '--window-size=1280,800', '--hide-scrollbars', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
-    'about:blank',
-  ], { stdio: 'ignore' });
-  const entry = { process: child, profile };
-  browsers.push(entry);
-  const portFile = join(profile, 'DevToolsActivePort');
-  for (let i = 0; i < 100 && !existsSync(portFile); i++) await sleep(100);
-  assert.ok(existsSync(portFile), `${binary} started with its DevTools port`);
-  const devtools = readFileSync(portFile, 'utf8').split('\n')[0];
-  const targets = await (await fetch(`http://127.0.0.1:${devtools}/json/list`)).json();
-  const socket = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => {
-    socket.onopen = resolve;
-    socket.onerror = reject;
-  });
-  let id = 0;
-  const pending = new Map();
-  const errors = [];
-  socket.onmessage = ({ data }) => {
-    const message = JSON.parse(data);
-    if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails);
-    const call = pending.get(message.id);
-    if (!call) return;
-    pending.delete(message.id);
-    message.error ? call.reject(new Error(message.error.message)) : call.resolve(message.result);
-  };
-  const send = (method, params = {}) =>
-    new Promise((resolve, reject) => {
-      pending.set(++id, { resolve, reject });
-      socket.send(JSON.stringify({ id, method, params }));
-    });
-  const evaluate = async (expression) => {
-    const { result, exceptionDetails } = await send('Runtime.evaluate', {
-      expression, awaitPromise: true, returnByValue: true,
-    });
-    if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
-    return result.value;
-  };
-  await send('Runtime.enable');
-  await send('Page.enable');
-  // The page itself 1280x800 (the window's frame takes some of --window-size), so the 720 high ride and its buttons fit.
-  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
-
-  const session = { send, evaluate, errors, close: () => socket.close() };
-  session.open = async (query) => {
-    await send('Page.navigate', { url: `http://127.0.0.1:${port}/assets/shared/coaster/viewer/ride.html?${query}` });
-    await sleep(200);
-    for (let i = 0; i < 300; i++) {
-      if (await evaluate('document.body?.dataset.ready === "true"').catch(() => false)) return;
-      await sleep(100);
-    }
-    assert.fail(`the ride page never got ready: ${JSON.stringify(errors.map((e) => e.exception?.description))}`);
-  };
-  // A real mouse click on a ride button, at its place on the screen.
-  session.click = async (name) => {
-    const { x, y } = await evaluate(`(() => {
-      const r = document.querySelector('.coaster-ride-controls button[name=${name}]').getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-    })()`);
-    for (const type of ['mousePressed', 'mouseReleased']) {
-      await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
-    }
-  };
-  entry.session = session;
-  return session;
-}
 
 const state = () => page.evaluate('window.coasterRide.state()');
 const eye = () => page.evaluate('window.coasterRide.camera.position.toArray()');
@@ -234,35 +135,11 @@ const until = async (check, seconds, what) => {
 };
 
 before(async () => {
-  port = await serve();
+  await serve();
   page = await launchChromium();
-  fast = await launchChromium({ unlimited: true });
 });
 
-after(async () => {
-  for (const { process: child, profile, session } of browsers) {
-    session?.close();
-    if (child.exitCode === null) {
-      const exited = new Promise((resolve) => child.once('exit', resolve));
-      child.kill();
-      await exited;
-    }
-    rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
-  }
-  server?.close();
-});
-
-test('AC3: the ride runs at 30 frames per second or more in headless Chromium on the sample file', async () => {
-  await fast.open('width=1280&height=720');
-  assert.equal(await fast.evaluate('window.coasterRide.error ?? null'), null);
-  await fast.click('play');
-  await sleep(5000);
-  const { frames, seconds, fps } = await fast.evaluate('(() => { const r = window.coasterRide; r.pause(); return r.stats(); })()');
-  console.log(`coaster ride frame rate: ${fps.toFixed(1)} fps (${frames} frames in ${seconds.toFixed(2)} s, 1280x720)`);
-  assert.ok(seconds > 4, `measured over ${seconds} s`);
-  assert.ok(fps >= 30, `at least 30 fps, got ${fps.toFixed(1)}`);
-  assert.deepEqual(fast.errors, []);
-});
+after(closeAll);
 
 test('AC2: in the browser the Pause button stops the ride, Play goes on, Restart puts it back in the station', async () => {
   await page.open('width=1280&height=720&speed=60&autoplay=1');
