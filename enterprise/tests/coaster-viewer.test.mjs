@@ -95,7 +95,7 @@ test('AC2: package.json pins three to exactly 0.187.0, and the lock file and ins
 });
 
 // F71: F44's review findings, each one held by a test.
-test('AC4: How to try: demo.html\'s import map, default file and query parameters point to files that exist', () => {
+test('AC4: How to try: the import map, default file and query parameters of demo.html point to files that exist', () => {
   const html = readFileSync(join(viewerDir, 'demo.html'), 'utf8');
   const { imports } = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]);
   assert.ok(existsSync(join(viewerDir, imports.three)), `${imports.three} is installed by npm ci in viewer/`);
@@ -117,7 +117,7 @@ test('AC8: every file the viewer folder ships is described in its README', () =>
   }
 });
 
-test('AC9: these tests sit where TEST_CMD\'s node --test enterprise/tests/*.test.mjs finds them, with the lock file its npm ci needs', () => {
+test('AC9: these tests sit where node --test enterprise/tests/*.test.mjs in TEST_CMD finds them, with the lock file its npm ci needs', () => {
   const self = fileURLToPath(import.meta.url);
   assert.equal(dirname(self), join(enterpriseDir, 'tests'));
   assert.match(self, /\.test\.mjs$/);
