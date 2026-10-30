@@ -323,3 +323,23 @@ test('AC6: after the canvas shows, the next ordinary step: the page opens anothe
   assert.ok(pixels.track > pixels.total * 0.002, `rev1's yellow track is drawn: ${pixels.track} of ${pixels.total}`);
   console.log(`coaster viewer rev1: ${await keepScreenshot('coaster-viewer-rev1.png')}`);
 });
+
+test('AC3: on a phone the 1200x700 canvas fits the screen, no sideways scrolling, still drawn', async () => {
+  await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  try {
+    await openDemo('width=1200&height=700');
+    const fit = await page.evaluate(`({
+      page: document.scrollingElement.scrollWidth,
+      window: window.innerWidth,
+      shown: window.coasterViewer.canvas.getBoundingClientRect().width,
+    })`);
+    assert.equal(fit.window, 390, 'the page uses the phone width, not a 980 px desktop layout');
+    assert.ok(fit.page <= fit.window, `no sideways scrolling: page ${fit.page} px in a ${fit.window} px window`);
+    assert.ok(fit.shown <= fit.window && fit.shown > 300, `the canvas is shown ${fit.shown} px wide`);
+    const pixels = await canvasPixels();
+    assert.ok(pixels.width >= 1200, `the drawing keeps its asked size, got ${pixels.width}`);
+    assert.ok(pixels.track > pixels.total * 0.002, `the yellow track is drawn: ${pixels.track} of ${pixels.total}`);
+  } finally {
+    await page.send('Emulation.clearDeviceMetricsOverride');
+  }
+});
