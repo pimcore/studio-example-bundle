@@ -1,0 +1,32 @@
+{
+  "units": {
+    "maxHeight": "m",
+    "length": "m",
+    "inversions": "",
+    "topSpeed": "km/h",
+    "duration": "s"
+  },
+  "revisions": {
+    "thunder-loop-rev1.coaster": {
+      "maxHeight": 40,
+      "length": 402.7,
+      "inversions": 2,
+      "topSpeed": 98.3,
+      "duration": 62
+    },
+    "thunder-loop-rev2.coaster": {
+      "maxHeight": 45,
+      "length": 522.3,
+      "inversions": 2,
+      "topSpeed": 103.3,
+      "duration": 71
+    },
+    "thunder-loop-rev3.coaster": {
+      "maxHeight": 52,
+      "length": 552,
+      "inversions": 2,
+      "topSpeed": 103.3,
+      "duration": 76
+    }
+  }
+}
