@@ -63,7 +63,7 @@ Run these three steps in the root of your Pimcore application, in this order. Th
 - `config/pimcore/routing.yaml`: the bundle's routes, read by Pimcore from every registered bundle
 - `templates/`: the bundle's Twig templates (`@PimcoreStudioExampleEnterprise/...`)
 - `assets/studio/`: the sub-bundle's own Studio frontend (Module Federation remote `pimcore_studio_example_enterprise_bundle`,
-  plugins in `js/src/plugins.ts`); build it with `npm ci && npm run build && npm run package-build` there, which writes
+  plugins in `js/src/plugins.ts`); build it with `npm install && npm run build && npm run package-build` there, which writes
   `build-dist/build-<id>.zip`
 - `src/Webpack/WebpackEntryPointProvider.php` (registered in `config/studio.yaml`): extracts `build-dist/build*.zip` into
   `public/build/` on `cache:warmup`, so Studio loads the plugins
