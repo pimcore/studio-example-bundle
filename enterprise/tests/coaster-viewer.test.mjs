@@ -31,8 +31,9 @@ test('AC1: a valid file builds the track: rails, spine, ties and supports follow
   for (const name of ['rail-left', 'rail-right', 'spine', 'ties', 'supports', 'station']) {
     assert.ok(track.getObjectByName(name), `the track has its ${name}`);
   }
-  assert.ok(track.getObjectByName('ties').children.length > 50, 'ties along the whole circuit');
-  assert.ok(track.getObjectByName('supports').children.length > 5, 'supports under the raised track');
+  // Ties and supports are instanced (one draw call each, F45): count their instances.
+  assert.ok(track.getObjectByName('ties').count > 50, 'ties along the whole circuit');
+  assert.ok(track.getObjectByName('supports').count > 5, 'supports under the raised track');
 
   // The rails follow the centre line: the track's box holds every point, and reaches the lift's 52 m.
   const box = new THREE.Box3().setFromObject(track);
