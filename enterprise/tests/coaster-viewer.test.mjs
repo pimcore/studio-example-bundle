@@ -94,6 +94,42 @@ test('AC2: package.json pins three to exactly 0.187.0, and the lock file and ins
   assert.equal(THREE.REVISION, '187');
 });
 
+// F71: F44's review findings, each one held by a test.
+test('AC4: How to try: demo.html\'s import map, default file and query parameters point to files that exist', () => {
+  const html = readFileSync(join(viewerDir, 'demo.html'), 'utf8');
+  const { imports } = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]);
+  assert.ok(existsSync(join(viewerDir, imports.three)), `${imports.three} is installed by npm ci in viewer/`);
+  assert.ok(existsSync(join(viewerDir, imports['three/addons/'], 'controls/OrbitControls.js')), 'the addons too');
+  const fallback = html.match(/query\.get\('file'\) \?\? '([^']+)'/)[1];
+  assert.ok(existsSync(join(viewerDir, fallback)), `the default file ${fallback} exists`);
+  for (const rev of [1, 2, 3]) assert.ok(existsSync(join(demoDataDir, `thunder-loop-rev${rev}.coaster`)));
+  for (const param of ['file', 'width', 'height']) assert.ok(html.includes(`query.get('${param}')`), `reads ?${param}`);
+  const readme = readFileSync(join(viewerDir, 'README.md'), 'utf8');
+  assert.match(readme, /python3 -m http\.server/);
+  assert.match(readme, /\/assets\/shared\/coaster\/viewer\/demo\.html/);
+});
+
+test('AC8: every file the viewer folder ships is described in its README', () => {
+  const readme = readFileSync(join(viewerDir, 'README.md'), 'utf8');
+  for (const file of ['orbit.mjs', 'ride.mjs', 'react.mjs', 'scene.mjs', 'demo.html', 'ride.html', 'package.json']) {
+    assert.ok(existsSync(join(viewerDir, file)), `${file} exists`);
+    assert.ok(readme.includes(`\`${file}\``), `README describes ${file}`);
+  }
+});
+
+test('AC9: these tests sit where TEST_CMD\'s node --test enterprise/tests/*.test.mjs finds them, with the lock file its npm ci needs', () => {
+  const self = fileURLToPath(import.meta.url);
+  assert.equal(dirname(self), join(enterpriseDir, 'tests'));
+  assert.match(self, /\.test\.mjs$/);
+  assert.ok(existsSync(join(viewerDir, 'package-lock.json')), 'viewer/package-lock.json for npm ci');
+});
+
+test('AC10: the README tells hosts to run npm ci in viewer/ before building a plugin that imports the viewer', () => {
+  const readme = readFileSync(join(viewerDir, 'README.md'), 'utf8');
+  assert.match(readme, /cd enterprise\/assets\/shared\/coaster\/viewer && npm ci/);
+  assert.match(readme, /`npm ci` here before building a plugin/);
+});
+
 // --- headless Chromium -------------------------------------------------------------------------------------------
 
 const TYPES = { '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json' };
@@ -101,6 +137,7 @@ let server;
 let browser;
 let page;
 let profile;
+let port;
 
 // Serves the enterprise folder, so the demo page reaches the geometry, the schema and the demo data.
 const serve = () =>
@@ -165,33 +202,9 @@ async function launchChromium() {
 
 const cameraPosition = () => page.evaluate('window.coasterViewer.camera.position.toArray()');
 
-before(async () => {
-  const port = await serve();
-  page = await launchChromium();
-  await page.send('Page.enable');
-  await page.send('Page.navigate', {
-    url: `http://127.0.0.1:${port}/assets/shared/coaster/viewer/demo.html?width=1200&height=700`,
-  });
-  for (let i = 0; i < 150; i++) {
-    if (await page.evaluate('document.body?.dataset.ready === "true"').catch(() => false)) return;
-    await sleep(100);
-  }
-  assert.fail(`the demo page never got ready: ${JSON.stringify(page.errors.map((e) => e.exception?.description))}`);
-});
-
-after(async () => {
-  page?.close();
-  if (browser && browser.exitCode === null) {
-    const exited = new Promise((resolve) => browser.once('exit', resolve));
-    browser.kill();
-    await exited;
-  }
-  server?.close();
-  if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
-});
-
-test('AC3: in headless Chromium the canvas is not empty: the yellow track is drawn on the dark ground', async () => {
-  const pixels = await page.evaluate(`(() => {
+// Counts the canvas's yellow track pixels and its drawn (not dark) pixels.
+const canvasPixels = () =>
+  page.evaluate(`(() => {
     const { canvas, render } = window.coasterViewer;
     render(); // draw now, so the buffer is still there for the copy below
     const copy = document.createElement('canvas');
@@ -208,6 +221,44 @@ test('AC3: in headless Chromium the canvas is not empty: the yellow track is dra
     }
     return { width: copy.width, height: copy.height, track, lit, total: data.length / 4 };
   })()`);
+
+// Opens demo.html with the given query and waits until it has mounted the viewer.
+async function openDemo(query) {
+  await page.send('Page.navigate', { url: `http://127.0.0.1:${port}/assets/shared/coaster/viewer/demo.html?${query}` });
+  for (let i = 0; i < 150; i++) {
+    if (await page.evaluate('document.body?.dataset.ready === "true"').catch(() => false)) return;
+    await sleep(100);
+  }
+  assert.fail(`the demo page never got ready: ${JSON.stringify(page.errors.map((e) => e.exception?.description))}`);
+}
+
+const keepScreenshot = async (name) => {
+  const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
+  const file = join(tmpdir(), name);
+  writeFileSync(file, Buffer.from(data, 'base64'));
+  return file;
+};
+
+before(async () => {
+  port = await serve();
+  page = await launchChromium();
+  await page.send('Page.enable');
+  await openDemo('width=1200&height=700');
+});
+
+after(async () => {
+  page?.close();
+  if (browser && browser.exitCode === null) {
+    const exited = new Promise((resolve) => browser.once('exit', resolve));
+    browser.kill();
+    await exited;
+  }
+  server?.close();
+  if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
+});
+
+test('AC3: in headless Chromium the canvas is not empty: the yellow track is drawn on the dark ground', async () => {
+  const pixels = await canvasPixels();
   assert.ok(pixels.width >= 1200 && pixels.height >= 700, `canvas at the asked size, got ${pixels.width}x${pixels.height}`);
   assert.ok(pixels.track > pixels.total * 0.002, `yellow track pixels: ${pixels.track} of ${pixels.total}`);
   assert.ok(pixels.lit > pixels.total * 0.01, `drawn pixels: ${pixels.lit} of ${pixels.total}`);
@@ -237,4 +288,38 @@ test('AC1: in the browser the user orbits the track by dragging, and the camera 
   assert.ok(moved > distance(start) * 0.3, `the camera swung round the track (moved ${moved.toFixed(1)} m)`);
   assert.ok(Math.abs(distance(end) - distance(start)) < distance(start) * 0.05, 'orbiting keeps the distance');
   assert.ok(Math.abs(end[1] - start[1]) < distance(start) * 0.1, 'a sideways drag keeps the height');
+});
+
+test('AC5: after orbiting, the next ordinary step: the mouse wheel zooms towards the track, still aimed at it', async () => {
+  const target = await page.evaluate('window.coasterViewer.controls.target.toArray()');
+  const distance = (p) => Math.hypot(p[0] - target[0], p[1] - target[1], p[2] - target[2]);
+  const start = await cameraPosition();
+  for (let i = 0; i < 5; i++) {
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 600, y: 350, deltaX: 0, deltaY: -200 });
+  }
+  await sleep(1000); // let the damping settle
+  const end = await cameraPosition();
+  assert.ok(distance(end) < distance(start) * 0.8,
+    `zoomed in from ${distance(start).toFixed(1)} to ${distance(end).toFixed(1)} m`);
+  assert.deepEqual(await page.evaluate('window.coasterViewer.controls.target.toArray()'), target);
+  const pixels = await canvasPixels();
+  assert.ok(pixels.track > pixels.total * 0.002, `the track is still drawn: ${pixels.track} yellow pixels`);
+  console.log(`coaster viewer zoomed: ${await keepScreenshot('coaster-viewer-zoom.png')}`);
+});
+
+test('AC7: what a crawl of the demo page would see: no script error and no error message on the page', async () => {
+  assert.deepEqual(page.errors, []);
+  assert.equal(await page.evaluate('document.querySelector(".coaster-viewer-error")'), null);
+  assert.equal(await page.evaluate('document.querySelectorAll("canvas.coaster-viewer").length'), 1);
+});
+
+test('AC6: after the canvas shows, the next ordinary step: the page opens another file at another size and draws it', async () => {
+  await openDemo('file=../../../../demo-data/thunder-loop-rev1.coaster&width=800&height=500');
+  assert.deepEqual(page.errors, []);
+  assert.equal(await page.evaluate('window.coasterViewer.error ?? null'), null);
+  const pixels = await canvasPixels();
+  assert.ok(pixels.width >= 800 && pixels.width < 1200 && pixels.height >= 500 && pixels.height < 700,
+    `canvas at the new size, got ${pixels.width}x${pixels.height}`);
+  assert.ok(pixels.track > pixels.total * 0.002, `rev1's yellow track is drawn: ${pixels.track} of ${pixels.total}`);
+  console.log(`coaster viewer rev1: ${await keepScreenshot('coaster-viewer-rev1.png')}`);
 });
