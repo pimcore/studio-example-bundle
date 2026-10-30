@@ -4,6 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Coaster viewer</title>
     <script type="importmap">
       {
@@ -16,7 +17,9 @@
     <style>
       html, body { margin: 0; height: 100%; background: #0d1117; color: #f0f6fc; font: 16px system-ui, sans-serif; }
       #viewer { width: 100vw; height: 100vh; }
-      #viewer.sized { width: auto; height: auto; display: inline-block; }
+      #viewer.sized { width: auto; height: auto; display: inline-block; max-width: 100%; }
+      /* a fixed size wider than the screen (a phone) shrinks to fit instead of scrolling sideways */
+      #viewer.sized canvas { max-width: 100%; height: auto !important; }
       .coaster-viewer-error { margin: 2rem; }
     </style>
   </head>
