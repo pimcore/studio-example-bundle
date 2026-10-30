@@ -68,11 +68,20 @@ Run these three steps in the root of your Pimcore application, in this order. Th
 - `src/Webpack/WebpackEntryPointProvider.php` (registered in `config/studio.yaml`): extracts `build-dist/build*.zip` into
   `public/build/` on `cache:warmup`, so Studio loads the plugins
 
-## Examples
+## Extension points
 
-- [Portal page "Talk"](assets/portal/talk/README.md): the slide viewer as a portal page, with its own route,
-  a chrome-less page template and an entry in the portal navigation
-- Coaster metadata on upload (`src/Coaster/`, `config/coaster.yaml`): saving a `.coaster` asset fills its metadata
-  `maxHeight`, `length`, `inversions`, `topSpeed` and `duration` (units in `CoasterMetadataExtractor::UNITS`), computed
-  by a PHP port of [the TypeScript reference](assets/shared/coaster/metadata/metadata.ts) and checked against the same
-  golden file `demo-data/expected-metadata.json`. An invalid file gets no metadata; the application log says why.
+Each example shows one extension point and has its own README with the same three sections: **What it shows**,
+**How to run** and **Extension point**. The docs section names the part of the portal developer documentation (in
+draft, not published yet) that the example backs; "none yet" means that part is still to be written.
+
+| Extension point | Example folder | README | Docs section |
+| --- | --- | --- | --- |
+| Upload metadata listener (asset event listener on `pimcore.asset.preAdd` and `preUpdate`) | `src/Coaster/` | [README](src/Coaster/README.md) | none yet |
+| Demo setup command (Symfony console commands, and the `CoasterDemoResetEvent` for other demo state) | `src/Command/` | [README](src/Command/README.md) | none yet |
+| Change Control change set (the authoring facade, from a console command) | `src/ChangeControl/` | [README](src/ChangeControl/README.md) | Change Control in a portal: "Approval is per field" |
+| Studio asset editor tab (the coaster Review tab on Change Control's review slot) | `assets/studio/js/src/coaster-review/` | [README](assets/studio/js/src/coaster-review/README.md) | Change Control in a portal: "The review slot" |
+| Side-by-side view (live and proposed ride inside the Review tab) | `assets/studio/js/src/coaster-review/side-by-side/` | [README](assets/studio/js/src/coaster-review/side-by-side/README.md) | Change Control in a portal: "The review slot" |
+| Portal frontend plugin (plugin provider and Module Federation remote) | `assets/portal/` | [README](assets/portal/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugins") |
+| Portal page (bundle route, portal layout blocks, the `slots.navEntries` navigation slot) | `assets/portal/talk/` | [README](assets/portal/talk/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugins", "Serving your own page") |
+| None: the shared coaster viewer the side-by-side view hosts | `assets/shared/coaster/viewer/` | [README](assets/shared/coaster/viewer/README.md) | none |
+| None: the demo data the examples work on | `demo-data/` | [README](demo-data/README.md) | none |

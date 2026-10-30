@@ -185,7 +185,7 @@ test('AC2: left-out changes are taken back on the element they were found on, al
 
 test('AC3: the README explains how the review slot is used', () => {
   const readme = read('README.md');
-  for (const heading of ['## What it shows', '## The review slot', '## Merging', '## Try it']) {
+  for (const heading of ['## What it shows', '## The review slot', '## Merging', '## How to run']) {
     assert.ok(readme.includes(heading), `README has ${heading}`);
   }
   for (const term of ["'metadata'", 'leaf address', 'SlotDiffTable', 'buildSlotRows', 'onToggleInclude', 'excludePaths',

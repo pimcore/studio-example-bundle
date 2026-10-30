@@ -1,5 +1,7 @@
 # Coaster viewer: orbit view and ride view
 
+## What it shows
+
 Draws the track of a `.coaster` file (see [`../FORMAT.md`](../FORMAT.md)) in 3D with
 [three.js](https://threejs.org) **0.187.0** (pinned exactly in `package.json`), and lets the user orbit it: drag
 to turn around the track, wheel or pinch to zoom, right-drag to pan. Yellow rails on a dark ground, so it reads on a
@@ -11,6 +13,13 @@ goes on from there, Restart puts it back in the station and rides again. The tra
 physics); the sample circuit takes about 47 s.
 
 The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); this folder only draws it.
+
+## Extension point
+
+None of its own: the viewer is a shared component that the extension points host. Plain DOM (`orbit.mjs`,
+`ride.mjs`, `pair.mjs`) mounts it in any element; React hosts take the component from `react.mjs` and pass their own
+React in, as the Studio Review tab's side-by-side view does
+([`studio/js/src/coaster-review/side-by-side/`](../../../studio/js/src/coaster-review/side-by-side/README.md)).
 
 ## Files
 
@@ -62,7 +71,7 @@ const CoasterViewer = createCoasterViewer(React);
 export const Preview = ({ text }) => <CoasterViewer file={text} size={{ width: 800, height: 500 }} />;
 ```
 
-## Install and try
+## How to run
 
 three.js is this folder's own dependency: install it once, then serve the `enterprise` folder over HTTP (ES modules
 don't load from `file://`) and open the demo page.

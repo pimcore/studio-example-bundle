@@ -4,15 +4,21 @@ Demo 2 needs an open change set on the Thunder Loop asset: the designer's revisi
 (the file Demo 1 ends with), for the safety team to review in Studio's coaster **Review** tab
 (`assets/studio/js/src/coaster-review/`).
 
+## How to run
+
+With Change Control 2026.3 installed and the demo set up (`bin/console coaster-demo:setup`, see
+[`src/Command/README.md`](../Command/README.md)):
+
 ```bash
 bin/console coaster-demo:change-set                      # open it; a second run changes nothing
 bin/console coaster-demo:change-set --upload-revision-2  # rehearse Demo 2 alone: upload revision 2 first
 bin/console coaster-demo:reset                           # discards it (and goes back to revision 1)
 ```
 
-`--user` (default `admin`) names the Studio user the change set is authored by.
+`--user` (default `admin`) names the Studio user the change set is authored by. Then open the asset in Studio and
+review it in the **Review** tab.
 
-## What the change set holds
+## What it shows
 
 Change Control on 2026.3 reviews an asset's metadata, not its file (its binary is out of draft scope). So revision 3
 is recorded as metadata leaves, named as the coaster diff names them (`assets/shared/coaster/diff/diff.mjs`):
@@ -29,9 +35,10 @@ so the review shows old against new. Nothing else reaches the live asset before 
 A reviewer who leaves the height out and merges gets the 30 m loop and keeps the 45 m lift hill: each change is its
 own leaf, and the Review tab amends the element list to the ticked changes.
 
-## How it uses Change Control
+## Extension point
 
-The only way to author a change set on 2026.3 is the PHP facade `ChangeControlAuthoringInterface` (no REST for it):
+**Change Control's authoring facade**, called from a console command (and a listener of the demo's reset event). The
+only way to author a change set on 2026.3 is the PHP facade `ChangeControlAuthoringInterface` (no REST for it):
 
 ```php
 $branch = $authoring->open($subject, 'Thunder Loop revision 3', Schema::CREATED_VIA_USER, $userId, null, ['coasterDemo' => 'revision-3']);

@@ -4,9 +4,11 @@ A Studio asset editor tab, **Review**, on `.coaster` assets. It shows the open C
 in Change Control's own diff table, with one readable line per change ("loop #1: diameter 24 -> 30") next to the
 table's include checkbox. The reviewer unticks what they reject and merges the rest.
 
-Extension point: **an asset editor tab** (`Asset/Editor/TextTabManager` and `Asset/Editor/UnknownTabManager`,
-hidden on every asset that is not a `.coaster` file). Everything else is Change Control's public Studio SDK,
-`@pimcore/change-control-bundle/sdk` (2026.3), used as it is.
+## Extension point
+
+**An asset editor tab** (`Asset/Editor/TextTabManager` and `Asset/Editor/UnknownTabManager`, hidden on every asset
+that is not a `.coaster` file), registered in `modules/coaster-review-tab-extension.tsx`. Everything else is Change
+Control's public Studio SDK, `@pimcore/change-control-bundle/sdk` (2026.3), used as it is.
 
 ## What it shows
 
@@ -77,7 +79,7 @@ rides stay as they are.
 So for Thunder Loop, unticking the height row merges `coaster.track.loop.1.diameter` (24 -> 30) and the element list
 with only the bigger loop, and keeps the lift hill at 45 m.
 
-## Try it
+## How to run
 
 1. Build and install the enterprise Studio frontend (see `enterprise/assets/studio`: `npm install`, `npm run build`,
    `npm run package-build`, then `bin/console cache:warmup`). Change Control 2026.3 must be installed, since its

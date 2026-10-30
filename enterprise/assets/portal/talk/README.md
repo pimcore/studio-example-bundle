@@ -1,5 +1,7 @@
 # Portal page "Talk"
 
+## What it shows
+
 The slides of the talk as a page of the portal: **Talk** in the portal's navigation rail opens the slide viewer
 full-screen, without the portal's header, navigation rail and footer. The viewer itself is the standalone
 `talk.html` (built from the talk's Markdown deck); the page shows it in a frame that fills the window.
@@ -7,7 +9,9 @@ full-screen, without the portal's header, navigation rail and footer. The viewer
 The page is an example of a portal plugin owning a portal page. How that works is described in the Portal Engine
 documentation, "Portal Frontend Plugins", section "Serving your own page".
 
-## The three extension points
+## Extension point
+
+Three: a route, the layout's blocks and a navigation slot.
 
 1. **A bundle route**, in `config/pimcore/routing.yaml` of this sub-bundle. Pimcore's `BundleRoutingLoader` reads
    that file from every registered bundle, so the application's `config/routes.yaml` stays unchanged. The route
@@ -24,7 +28,7 @@ documentation, "Portal Frontend Plugins", section "Serving your own page".
    from the server: `src/Portal/StudioExampleEnterprisePortalPlugin.php` generates it in `getFrontendConfig()` and
    the entry reads it with `config('studio-example-enterprise')`.
 
-## Set it up
+## How to run
 
 1. Install the sub-bundle as described in [the enterprise README](../../../README.md), and build the portal plugin
    as described in [the portal plugin README](../README.md) (needs vendor access).

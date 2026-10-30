@@ -3,6 +3,10 @@
 Two console commands put a developer laptop into the state Demo 1 starts from, and back there between runs. The
 runbook relies on them.
 
+## How to run
+
+In your application, with the sub-bundle installed (see [the enterprise README](../../README.md)):
+
 ```bash
 bin/console coaster-demo:setup               # create what is missing; a second run changes nothing
 bin/console coaster-demo:reset               # back to revision 1 (between demo runs)
@@ -12,7 +16,9 @@ bin/console coaster-demo:reset --all         # back to the state before setup: r
 Both take `--domain` (default `portal.localhost`), the portal's domain when the portal has to be created. Each prints
 one line per change and ends with the demo login.
 
-## What setup creates
+## What it shows
+
+### What setup creates
 
 | What | Where |
 | --- | --- |
@@ -25,7 +31,7 @@ one line per change and ends with the demo login.
 
 Setup never overwrites a design the demo uploaded; it only adds what is missing and repairs the supplier and the brief.
 
-## What reset does
+### What reset does
 
 - `coaster-demo:reset` deletes every other asset in `/Theme Park of Tomorrow/Thunder Loop`, replaces a changed
   `thunder-loop.coaster` with a fresh revision 1 (no version history), then runs setup. At revision 1 it changes
@@ -40,6 +46,16 @@ too (the Change Control seed discards its open change set there):
 #[AsEventListener(event: CoasterDemoResetEvent::class)]
 public function onReset(CoasterDemoResetEvent $event): void { /* ... */ }
 ```
+
+## Extension point
+
+**Symfony console commands** (`#[AsCommand]`, registered as services in `config/commands.yaml`), which create
+portals, users and assets through the Portal Engine and Pimcore. The reset command offers one extension point of its
+own: **the event `CoasterDemoResetEvent`**, for other examples to drop their demo state on reset (the listener
+above).
+
+Test, from the repository root: `enterprise/tests/coaster-setup.test.mjs` runs setup and reset against an in-memory
+environment.
 
 ## Code
 

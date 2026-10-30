@@ -1,9 +1,25 @@
 # Portal plugin
 
 The Portal Engine frontend plugin of the enterprise examples: its own Module Federation remote, loaded by the portal
-(the `portal_engine_host` container) on every portal that enables it. It contributes nothing yet; the portal demo adds
-its extension points in `js/src/plugin.tsx`. How such a plugin works is described in the Portal Engine documentation,
-"Portal Frontend Plugins".
+(the `portal_engine_host` container) on every portal that enables it. The examples register their extension points in
+`js/src/plugin.tsx`. How such a plugin works is described in the Portal Engine documentation, "Portal Frontend
+Plugins".
+
+## What it shows
+
+"Studio Example Enterprise" in the **Enabled plugins** field of a portal's configuration document, and, once enabled,
+what the examples register: today the **Talk** entry under the portal's navigation rail
+([the portal page "Talk"](talk/README.md)).
+
+## Extension point
+
+**A Portal Engine plugin**, in two halves:
+
+- the server side, `src/Portal/StudioExampleEnterprisePortalPlugin.php`, a service tagged
+  `portal_engine.plugin_provider` (`config/portal.yaml`): it names the plugin, points Portal Engine at the build's
+  `entrypoints.json` and hands the frontend its configuration (`getFrontendConfig()`);
+- the frontend, `js/src/plugin.tsx`: `pluginSystem.definePlugin()` from `@pimcore/portal-plugin-sdk`, whose module
+  registers components to the portal's slots in `onInit`.
 
 ## Only with vendor access
 
@@ -17,7 +33,7 @@ The path `file:../../../portal-ui-kit/frontend/portal-ui-kit` is right when this
 [the enterprise README](../../README.md), i.e. in `vendor/pimcore/studio-example-enterprise-bundle`. In a checkout
 elsewhere, point it at your application's `vendor/pimcore/portal-ui-kit/frontend/portal-ui-kit` first.
 
-## Build
+## How to run
 
 In this folder (`enterprise/assets/portal`):
 
