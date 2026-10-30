@@ -103,28 +103,37 @@ export function buildCoasterScene(design, { colors = {} } = {}) {
   track.add(tube(offset(GAUGE / 2, 0), RAIL_RADIUS, railMaterial, 'rail-right'));
   track.add(tube(offset(0, SPINE_DROP), RAIL_RADIUS * 1.6, steelMaterial, 'spine'));
 
-  const ties = new THREE.Group();
+  // Ties and supports are one instanced mesh each: a draw call apiece instead of hundreds, so the ride keeps its
+  // frame rate even on a software renderer (a headless browser, a projector laptop without a graphics card).
+  const tieAt = [];
+  for (let i = 0; i < points.length - 1; i += TIE_EVERY) tieAt.push(i);
+  const ties = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.12, GAUGE + 0.2), steelMaterial, tieAt.length);
   ties.name = 'ties';
-  const tieGeometry = new THREE.BoxGeometry(0.15, 0.12, GAUGE + 0.2);
-  for (let i = 0; i < points.length - 1; i += TIE_EVERY) {
+  const placed = new THREE.Matrix4();
+  tieAt.forEach((i, n) => {
     const { tangent, up, right } = frames[i];
-    const tie = new THREE.Mesh(tieGeometry, steelMaterial);
-    tie.matrixAutoUpdate = false;
-    tie.matrix.makeBasis(tangent, up, right).setPosition(points[i].clone().addScaledVector(up, -0.1));
-    ties.add(tie);
-  }
+    placed.makeBasis(tangent, up, right).setPosition(points[i].clone().addScaledVector(up, -0.1));
+    ties.setMatrixAt(n, placed);
+  });
+  ties.computeBoundingSphere();
   track.add(ties);
 
-  // Supports where the rails are upright and off the ground (none from inside a loop's crown).
-  const supports = new THREE.Group();
-  supports.name = 'supports';
+  // Supports where the rails are upright and off the ground (none from inside a loop's crown): a post of height 1
+  // stretched to each foot's height.
+  const feet = [];
   for (let i = 0; i < points.length - 1; i += SUPPORT_EVERY) {
     const foot = points[i].clone().addScaledVector(frames[i].up, -SPINE_DROP);
     if (foot.y < 1.5 || frames[i].up.y < 0.5) continue;
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.25, foot.y, 6), steelMaterial);
-    post.position.set(foot.x, foot.y / 2, foot.z);
-    supports.add(post);
+    feet.push(foot);
   }
+  const supports = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.25, 1, 6), steelMaterial, feet.length);
+  supports.name = 'supports';
+  const upright = new THREE.Quaternion();
+  feet.forEach((foot, n) => {
+    placed.compose(new THREE.Vector3(foot.x, foot.y / 2, foot.z), upright, new THREE.Vector3(1, foot.y, 1));
+    supports.setMatrixAt(n, placed);
+  });
+  supports.computeBoundingSphere();
   track.add(supports);
 
   const stationElement = line.elements.find((e) => e.type === 'station');

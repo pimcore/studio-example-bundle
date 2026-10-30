@@ -1,9 +1,14 @@
-# Coaster viewer: orbit view
+# Coaster viewer: orbit view and ride view
 
 Draws the track of a `.coaster` file (see [`../FORMAT.md`](../FORMAT.md)) in 3D with
 [three.js](https://threejs.org) **0.187.0** (pinned exactly in `package.json`), and lets the user orbit it: drag
 to turn around the track, wheel or pinch to zoom, right-drag to pan. Yellow rails on a dark ground, so it reads on a
 projector. It needs no backend: hand it the file's text and it draws.
+
+The **ride view** puts the camera in the front seat instead: Play takes it from the station round the whole circuit
+(lift hill, drop, loops, helix) and back into the station, where it stops. Pause stops the train where it is, Play
+goes on from there, Restart puts it back in the station and rides again. The train runs at a steady speed (no
+physics); the sample circuit takes about 47 s.
 
 The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); this folder only draws it.
 
@@ -12,11 +17,17 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 - `orbit.mjs`: `mountCoasterViewer(element, { file, size, colors })`, the viewer in any DOM element (plain DOM, no
   framework). Returns `{ canvas, camera, controls, scene, render, setSize, dispose }`, or `{ error }` with the reason
   shown in the element when the file is not a valid `.coaster` file.
+- `ride.mjs`: `mountCoasterRide(element, { file, size, colors, speed, autoplay })`, the ride view with its Play/Pause
+  and Restart buttons over the canvas. Returns `{ canvas, camera, scene, controls, play, pause, restart, state,
+  stats, pose, render, setSize, dispose }`; `state()` gives `{ playing, ended, distance, length, progress }`,
+  `stats()` the frames per second since Play. `createRide(line, options)` is the ride without a renderer (the
+  camera's path and the buttons' logic), for tests.
 - `react.mjs`: `createCoasterViewer(React)`, the same as a React component with the props `file` and `size`. The
-  host passes its own React in, so no second copy of React is loaded.
+  host passes its own React in, so no second copy of React is loaded. `createCoasterRide(React)` is the ride view,
+  with the extra props `speed` and `autoplay`.
 - `scene.mjs`: `buildCoasterScene(design)`, the three.js scene (rails, spine, ties, supports, station, ground)
   without a renderer; it also builds in Node, for tests.
-- `demo.html`: the viewer on its own page.
+- `demo.html`: the orbit view on its own page; `ride.html` the ride view.
 
 ## Props
 
@@ -25,6 +36,14 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 | `file`   | string or parsed object                | the `.coaster` file; it is validated against the schema first             |
 | `size`   | `{ width, height }` in CSS pixels      | the canvas size; without it the canvas fills its element and follows it   |
 | `colors` | `{ background, ground, grid, rail, steel, station }` | optional colour overrides (e.g. the host's accent for `rail`) |
+
+The ride view also takes:
+
+| Prop        | Type    | Meaning                                                                         |
+| ----------- | ------- | ------------------------------------------------------------------------------- |
+| `speed`     | number  | metres per second, default 18                                                   |
+| `autoplay`  | boolean | start riding at once (default: wait for Play)                                   |
+| `antialias` | boolean | smooth edges, default true; false is faster on a machine without a graphics card |
 
 ```jsx
 import React from 'react';
@@ -46,6 +65,8 @@ cd ../../../.. && python3 -m http.server 8044
 # open http://localhost:8044/assets/shared/coaster/viewer/demo.html
 #   ?file=<url of a .coaster file>  (default: demo-data/thunder-loop-rev3.coaster)
 #   &width=1200&height=700           (default: the whole window)
+# the ride: http://localhost:8044/assets/shared/coaster/viewer/ride.html  (same parameters, plus &speed=<m/s>
+#   and &autoplay=1)
 ```
 
 A bundler (rsbuild in the portal and Studio plugins) resolves `three` from this folder's `node_modules`, so run
@@ -57,3 +78,10 @@ A bundler (rsbuild in the portal and Studio plugins) resolves `three` from this 
 checks the pin, and opens `demo.html` in headless Chromium (`CHROMIUM`, else `chromium` on the PATH): the canvas
 shows the track, a drag orbits the camera, and the screenshot is kept in `COASTER_VIEWER_SCREENSHOT` (default
 `coaster-viewer.png` in the temp folder).
+
+`enterprise/tests/coaster-ride.test.mjs` rides the sample circuit in Node (station to station, through the loops,
+pause and restart) and in headless Chromium: the buttons work with real clicks, the camera comes back to the
+station, and the frame rate is printed and must be 30 fps or more (`coaster ride frame rate: ...`). Headless
+Chromium limits the frame rate of software WebGL far below a real screen, so the test turns that limiter off
+(`--disable-gpu-vsync --disable-frame-rate-limit`); ties and supports are instanced meshes, one draw call each, so the
+scene stays fast on a software renderer.
