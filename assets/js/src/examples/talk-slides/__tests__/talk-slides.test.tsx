@@ -11,11 +11,18 @@ const registerWidget = jest.fn()
 // Studio's SDK is a module-federation remote at runtime (jest can't resolve its paths, hence virtual); the tests replace it with the two registries they check.
 jest.mock('@pimcore/studio-ui-bundle', () => ({
   container: {
-    get: (id: string) => id === 'mainNavRegistry' ? { registerMainNavItem } : { registerWidget }
+    get: (id: string) => id === 'mainNavRegistry'
+      ? { registerMainNavItem }
+      // F38: the widget asks the theme registry for Studio's accent; this theme has none (see talk-slides-theme.test.tsx)
+      : id === 'themeRegistry' ? { resolveMergedTheme: () => ({ token: {} }) } : { registerWidget }
   }
 }), { virtual: true })
 jest.mock('@pimcore/studio-ui-bundle/app', () => ({
-  serviceIds: { mainNavRegistry: 'mainNavRegistry', widgetManager: 'widgetManager' }
+  serviceIds: { mainNavRegistry: 'mainNavRegistry', widgetManager: 'widgetManager', 'DynamicTypes/ThemeRegistry': 'themeRegistry' },
+  useAppSelector: (selector: (state: any) => unknown) => selector({ theme: { themeId: 'studio-default-light' } })
+}), { virtual: true })
+jest.mock('@pimcore/studio-ui-bundle/modules/app', () => ({
+  selectThemeId: (state: any) => state.theme.themeId
 }), { virtual: true })
 
 /* eslint-disable import/first */
@@ -54,12 +61,13 @@ describe('talk-slides example', () => {
   it('AC2: the widget shows an iframe with /talk/talk.html by default', () => {
     expect(DEFAULT_TALK_URL).toBe('/talk/talk.html')
     render(<TalkSlidesWidget />)
-    expect(screen.getByTitle('Talk').getAttribute('src')).toBe('/talk/talk.html')
+    // F38: the viewer is told it is shown in Studio
+    expect(screen.getByTitle('Talk').getAttribute('src')).toBe('/talk/talk.html?host=studio')
   })
 
   it('AC2: the widget shows an iframe with the configured URL', () => {
     render(<TalkSlidesWidget url='https://example.test/deck/talk.html' />)
-    expect(screen.getByTitle('Talk').getAttribute('src')).toBe('https://example.test/deck/talk.html')
+    expect(screen.getByTitle('Talk').getAttribute('src')).toBe('https://example.test/deck/talk.html?host=studio')
   })
 
   it('AC3: once the iframe has loaded, keyboard focus moves into it', () => {
