@@ -1,0 +1,22 @@
+{
+  "format": "coaster-design",
+  "version": "1.0",
+  "meta": {
+    "name": "Thunder Loop",
+    "designer": "Loopwerk Engineering",
+    "park": "Theme Park of Tomorrow",
+    "revision": 2
+  },
+  "train": { "cars": 6, "seatsPerCar": 4 },
+  "track": [
+    { "type": "station", "length": 30 },
+    { "type": "liftHill", "height": 45, "angle": 40 },
+    { "type": "drop", "height": 42, "angle": 75 },
+    { "type": "loop", "diameter": 24 },
+    { "type": "airtimeHill", "height": 18 },
+    { "type": "helix", "turns": 1.5, "radius": 15, "bank": 60 },
+    { "type": "loop", "diameter": 18 },
+    { "type": "brakeRun", "length": 25 },
+    { "type": "station", "length": 0 }
+  ]
+}
