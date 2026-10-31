@@ -8,3 +8,7 @@
 
 # build-all.sh output: zips and manifest.json, built on the build machine, copied to the laptop
 /dist/
+# the build-dist lock and its staging folders next to dist/ (portal-talk try/build-dist.sh)
+/dist.lock
+/dist.new.*
+/dist.old.*
