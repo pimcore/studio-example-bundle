@@ -86,7 +86,7 @@ test('AC1: the stage reads the file from the bundle route, scoped by data pool a
   assert.match(route[1], /controller: Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\Coaster\\CoasterFileController/);
   assert.match(route[1], /condition: "request\.attributes\.get\('isPortalEngineSite'\)"/);
   assert.match(route[1], /methods: \[GET\]/);
-  assert.match(read(join(enterpriseDir, 'config/portal.yaml')), /Portal\\Coaster\\CoasterFileController:\n\s+tags: \['controller\.service_arguments'\]/);
+  assert.match(read(join(enterpriseDir, 'config/portal.yaml')), /Portal\\Coaster\\CoasterFileController:\n\s+tags: \['controller\.service_arguments', 'container\.service_subscriber'\]/);
 
   const php = read(join(enterpriseDir, 'src/Portal/Coaster/CoasterFileController.php'));
   assert.match(php, /class CoasterFileController extends FrontendController/);
