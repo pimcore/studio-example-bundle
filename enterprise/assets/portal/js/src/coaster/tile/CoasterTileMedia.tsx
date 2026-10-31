@@ -18,7 +18,7 @@ const OUTLINE_SIZE: OutlineSize = { width: 240, height: 150 }
  * `p-tile-fallback` of the kit's published class contract): the thumbnail, or the asset icon with "No preview".
  * The region replaces the picture of every tile, so every other tile is drawn with this.
  */
-function DefaultTileMedia ({ name, thumbnail }: TileRegionProps): React.JSX.Element {
+export function DefaultTileMedia ({ name, thumbnail }: TileRegionProps): React.JSX.Element {
   if (thumbnail !== null && thumbnail !== '') {
     return <span aria-label={ name } className="p-tile-img" role="img" style={ { backgroundImage: `url('${thumbnail}')` } } />
   }
@@ -66,13 +66,11 @@ function useTrackOutline (id: number): TrackOutline | undefined {
   return outline
 }
 
-/** A .coaster tile: the side view of its track, drawn as a line in the portal's brand colour. */
-function CoasterTrackPicture (props: TileRegionProps): React.JSX.Element {
-  const outline = useTrackOutline(props.id)
-  if (outline === undefined) return <DefaultTileMedia { ...props } />
+/** The side view of a track, drawn as a line in the portal's brand colour into the tile's media region. */
+export function TrackOutlinePicture ({ name, outline }: { name: string, outline: TrackOutline }): React.JSX.Element {
   return (
     <svg
-      aria-label={ `${props.name}: track outline` }
+      aria-label={ `${name}: track outline` }
       data-testid="coaster-tile-outline"
       preserveAspectRatio="xMidYMid meet"
       role="img"
@@ -90,6 +88,13 @@ function CoasterTrackPicture (props: TileRegionProps): React.JSX.Element {
       />
     </svg>
   )
+}
+
+/** A .coaster tile: its track outline once the file is read, the default picture until then and when it cannot be. */
+function CoasterTrackPicture (props: TileRegionProps): React.JSX.Element {
+  const outline = useTrackOutline(props.id)
+  if (outline === undefined) return <DefaultTileMedia { ...props } />
+  return <TrackOutlinePicture name={ props.name } outline={ outline } />
 }
 
 /**

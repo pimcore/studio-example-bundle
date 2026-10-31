@@ -68,11 +68,13 @@ Portal Engine documentation:
 
 Tests, from the repository root: `node --test 'enterprise/tests/*.test.mjs'`;
 `enterprise/tests/coaster-tile.test.mjs` checks which tiles get the outline, the outline itself, the registration and
-this README.
+this README; `enterprise/tests/f87-coaster-tile-followup.test.mjs` renders the component `plugin.tsx` registers
+(React on the server, a stand-in SDK and kit `Icon`) for a row of tiles.
 
 ## Files
 
-- `CoasterTileMedia.tsx`: the region component (the outline for `.coaster` tiles, the kit's default for every other)
+- `CoasterTileMedia.tsx`: the region component (the outline for `.coaster` tiles, the kit's default for every other),
+  with `TrackOutlinePicture` (the outline as SVG) and `DefaultTileMedia` (the kit's picture) as its parts
 - `coaster-tile-model.ts`: which tiles get the outline, the page's data pool, the file's URL and the side view of the
   centre line, without React (tested in Node)
 - `../../plugin.tsx`: the registration under `tileRegions.media`
