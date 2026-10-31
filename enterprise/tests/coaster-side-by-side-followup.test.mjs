@@ -92,3 +92,31 @@ test('AC7: the Studio review tab mounts the same ride pair as pair.html: createR
   assert.match(readFileSync(join(viewerDir, 'pair.html'), 'utf8'), /mountRidePair\(document\.getElementById\('pair'\)/);
   assert.ok(existsSync(join(enterpriseDir, 'assets/studio/js/src/coaster-review/side-by-side/coaster-side-by-side.tsx')));
 });
+
+// AC1 to AC3 held already (F54's browser tests in coaster-side-by-side.test.mjs); these hold the parts F85 touches.
+test('AC1: the lift hill and the first loop are marked in magenta on both rides, live and proposed', () => {
+  const marks = pairMarks(rev2.track, rev3.track);
+  const liftHill = rev2.track.findIndex((element) => element.type === 'liftHill');
+  const firstLoop = rev2.track.findIndex((element) => element.type === 'loop');
+  for (const [file, side] of [[rev2, marks.left], [rev3, marks.right]]) {
+    assert.deepEqual(side, [liftHill, firstLoop]);
+    const { marks: group } = buildCoasterScene(file, { marks: side });
+    assert.equal(group.children.length, 4, 'both rails of both elements');
+    for (const mesh of group.children) assert.equal(`#${mesh.material.color.getHexString()}`, '#ff3df2', `${mesh.name} is magenta`);
+  }
+});
+
+test('AC2: one Play drives both rides: Play, Pause and Restart each act on both rides of the pair', () => {
+  const pair = readFileSync(join(viewerDir, 'pair.mjs'), 'utf8');
+  assert.match(pair, /const pause = \(\) => \{\s*for \(const ride of rides\) ride\.pause\(\);/);
+  assert.match(pair, /const restart = \(\) => \{\s*for \(const ride of rides\) ride\.restart\(\);/);
+  assert.match(pair, /playButton\.addEventListener\('click', \(\) => \(state\(\)\.playing \? pause\(\) : play\(\)\)\);/);
+  assert.match(pair, /if \(ride\.controls\) ride\.controls\.style\.display = 'none';/, "each ride's own buttons are hidden");
+});
+
+test('AC3: the side-by-side component takes only the asset and the change set slot, never the ticked rows', () => {
+  const tab = readFileSync(join(reviewDir, 'side-by-side/coaster-side-by-side.tsx'), 'utf8');
+  const props = tab.match(/interface CoasterSideBySideProps \{([\s\S]*?)\n\}/)[1];
+  assert.deepEqual([...props.matchAll(/readonly (\w+)/g)].map((m) => m[1]), ['assetId', 'slot']);
+  assert.doesNotMatch(tab, /excluded|ticked/);
+});
