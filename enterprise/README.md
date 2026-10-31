@@ -68,6 +68,15 @@ Run these three steps in the root of your Pimcore application, in this order. Th
 - `src/Webpack/WebpackEntryPointProvider.php` (registered in `config/studio.yaml`): extracts `build-dist/build*.zip` into
   `public/build/` on `cache:warmup`, so Studio loads the plugins
 
+## Prebuilt frontends
+
+`bin/build-all.sh` builds the Studio build, the portal plugin and the Portal Engine frontend once, on a machine with
+vendor access and clones of `portal_engine` and `enterprise_monorepo` (see the comment at its top for the paths). It
+builds from commits only (this repository's `HEAD`, `portal_engine`'s `integration`) and writes to `dist/`:
+`build-<id>.zip`, `portal-plugin.zip`, `portal-engine-frontend.zip` and `manifest.json` (per zip: part, source repo,
+commit SHA, size, gzip size; how to install each). A machine that only runs the demo installs these zips and builds
+nothing. The script exits non-zero naming the part that failed, and when the plugin's entry chunk is over 150 KB gzip.
+
 ## Extension points
 
 Each example shows one extension point and has its own README with the same three sections: **What it shows**,

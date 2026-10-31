@@ -5,3 +5,6 @@
 /public/build/*
 !/public/build/.gitkeep
 /assets/shared/coaster/viewer/node_modules
+
+# build-all.sh output: zips and manifest.json, built on the build machine, copied to the laptop
+/dist/
