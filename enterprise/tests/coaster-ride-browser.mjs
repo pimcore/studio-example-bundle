@@ -52,7 +52,11 @@ export async function launchChromium({ unlimited = false } = {}) {
   // Up to 60 s: under the tooling queue (nice, ionice) on a loaded machine Chromium can take well over 10 s to start.
   for (let i = 0; i < 600 && !existsSync(portFile) && child.exitCode === null; i++) await sleep(100);
   assert.ok(existsSync(portFile), `${binary} started with its DevTools port (exit code ${child.exitCode})`);
-  const devtools = readFileSync(portFile, 'utf8').split('\n')[0];
+  // Chromium creates the file before it writes the port into it (an empty read went to port 80, F80): wait for it.
+  const readPort = () => readFileSync(portFile, 'utf8').split('\n')[0].trim();
+  for (let i = 0; i < 100 && !readPort() && child.exitCode === null; i++) await sleep(100);
+  const devtools = readPort();
+  assert.ok(devtools, `${binary} wrote its DevTools port into ${portFile}`);
   const targets = await (await fetch(`http://127.0.0.1:${devtools}/json/list`)).json();
   const socket = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
