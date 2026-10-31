@@ -30,7 +30,7 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
   are hidden). `pairMarks(before, after)` gives the elements to mark on each side from the coaster diff's pairing of
   the two element lists: a changed element on both sides, a removed one on the left, an added one on the right.
   `createRidePair(React)` in `react.mjs` is the same as a component, props `left`, `right` and `speed`.
-- `display.mjs`: the pixel ratio cap and visibility watch for the projector; see [PROJECTOR.md](PROJECTOR.md).
+- `display.mjs`: the pixel ratio cap and visibility watch for the projector (F80); see [PROJECTOR.md](PROJECTOR.md).
 - `scene.mjs`: `buildCoasterScene(design, { colors, marks })`, the three.js scene (rails, spine, ties, supports, station, ground)
   without a renderer; it also builds in Node, for tests.
 - `demo.html`: the orbit view on its own page; `ride.html` the ride view; `pair.html` two rides side by side
