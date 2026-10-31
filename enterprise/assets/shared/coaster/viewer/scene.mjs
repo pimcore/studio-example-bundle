@@ -65,20 +65,38 @@ export function trackFrames(points, banks) {
   });
 }
 
-const tube = (points, radius, material, name) => {
+const RADIAL = 8;
+
+// A closed curve through a rail's samples (the last sample repeats the first). Its arc length is measured finely, so
+// the tube's rings, placed by arc length, and the marks' ranges agree with the samples.
+const railCurve = (points) => {
   const curve = new THREE.CatmullRomCurve3(points.slice(0, -1), true);
-  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, points.length, radius, 8, true), material);
+  curve.arcLengthDivisions = points.length * 4;
+  return curve;
+};
+
+const tube = (curve, radius, material, name) => {
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, curve.points.length + 1, radius, RADIAL, true), material);
   mesh.name = name;
   return mesh;
 };
 
-// An open piece of tube along `points`, for the marks over a part of the circuit.
-// Samples closer than 1 cm are dropped (a zero-length step twists the tube's frames into fins at the joins).
-const segment = (points, radius, material, name) => {
-  const kept = points.filter((p, i) => i === 0 || p.distanceTo(points[i - 1]) > 0.01);
-  const curve = new THREE.CatmullRomCurve3(kept.length > 1 ? kept : points, false, 'centripetal');
-  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(2, kept.length * 2), radius, 8, false), material);
-  mesh.name = name;
+// Where along the closed curve (0..1 of its length) sample `k` lies.
+const along = (curve, k) => {
+  const lengths = curve.getLengths();
+  const d = (Math.min(k, curve.points.length) / curve.points.length) * (lengths.length - 1);
+  const i = Math.min(Math.floor(d), lengths.length - 2);
+  return (lengths[i] + (lengths[i + 1] - lengths[i]) * (d - i)) / lengths[lengths.length - 1];
+};
+
+// A mark over samples from..to of a rail: the rail's own tube, thicker, drawn only over the rings of that range. Same
+// curve, same rings, same frames as the rail, so the mark cannot twist or flare off it at the joins.
+const segment = (curve, from, to, radius, material, name) => {
+  const mesh = tube(curve, radius, material, name);
+  const rings = mesh.geometry.parameters.tubularSegments;
+  const first = Math.max(0, Math.floor(along(curve, from) * rings));
+  const last = Math.min(rings, Math.max(first + 1, Math.ceil(along(curve, to) * rings)));
+  mesh.geometry.setDrawRange(first * RADIAL * 6, (last - first) * RADIAL * 6);
   return mesh;
 };
 
@@ -111,9 +129,10 @@ export function buildCoasterScene(design, { colors = {}, marks = [] } = {}) {
 
   const offset = (side, down) =>
     points.map((p, i) => p.clone().addScaledVector(frames[i].right, side).addScaledVector(frames[i].up, -down));
-  track.add(tube(offset(-GAUGE / 2, 0), RAIL_RADIUS, railMaterial, 'rail-left'));
-  track.add(tube(offset(GAUGE / 2, 0), RAIL_RADIUS, railMaterial, 'rail-right'));
-  track.add(tube(offset(0, SPINE_DROP), RAIL_RADIUS * 1.6, steelMaterial, 'spine'));
+  const rails = { left: railCurve(offset(-GAUGE / 2, 0)), right: railCurve(offset(GAUGE / 2, 0)) };
+  track.add(tube(rails.left, RAIL_RADIUS, railMaterial, 'rail-left'));
+  track.add(tube(rails.right, RAIL_RADIUS, railMaterial, 'rail-right'));
+  track.add(tube(railCurve(offset(0, SPINE_DROP)), RAIL_RADIUS * 1.6, steelMaterial, 'spine'));
 
   // Ties and supports are one instanced mesh each: a draw call apiece instead of hundreds, so the ride keeps its
   // frame rate even on a software renderer (a headless browser, a projector laptop without a graphics card).
@@ -159,14 +178,14 @@ export function buildCoasterScene(design, { colors = {}, marks = [] } = {}) {
   track.add(platform);
   scene.add(track);
 
-  // Marked elements: both rails again over the element's samples, a little thicker, in the mark colour.
+  // Marked elements: both rails again over the element's rings, a little thicker, in the mark colour.
   const marked = new THREE.Group();
   marked.name = 'coaster-marks';
   const markMaterial = new THREE.MeshStandardMaterial({ color: c.mark, roughness: 0.4, emissive: c.mark, emissiveIntensity: 0.35 });
   for (const element of line.elements.filter((e) => marks.includes(e.index))) {
-    const range = (side) => offset(side, 0).slice(element.start, element.end + 1);
-    marked.add(segment(range(-GAUGE / 2), RAIL_RADIUS * 1.35, markMaterial, `mark-${element.index}-left`));
-    marked.add(segment(range(GAUGE / 2), RAIL_RADIUS * 1.35, markMaterial, `mark-${element.index}-right`));
+    for (const side of ['left', 'right']) {
+      marked.add(segment(rails[side], element.start, element.end, RAIL_RADIUS * 1.35, markMaterial, `mark-${element.index}-${side}`));
+    }
   }
   if (marked.children.length > 0) scene.add(marked);
 
