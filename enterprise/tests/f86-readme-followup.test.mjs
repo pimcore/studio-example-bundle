@@ -26,15 +26,15 @@ test('AC1: the two READMEs that were missing exist and the index links them', ()
   }
 });
 
-test('AC2: the index has nine rows, seven extension points and two None rows, each with a docs cell', () => {
+test('AC2: the index has ten rows, eight extension points and two None rows, each with a docs cell', () => {
   const all = rows();
-  assert.equal(all.length, 9);
+  assert.equal(all.length, 10); // F48 added the portal preview stage
   assert.equal(all.filter((r) => r.point.startsWith('None:')).length, 2);
   for (const r of all) assert.ok(r.docs, `row "${r.point}" has a docs cell`);
   assert.doesNotMatch(read('README.md'), /^## Examples$/m, 'the old "Examples" list is gone');
 });
 
-test('AC3: each of the nine READMEs has the exact lines What it shows, How to run and Extension point', () => {
+test('AC3: each of the ten READMEs has the exact lines What it shows, How to run and Extension point', () => {
   for (const r of rows()) {
     const lines = read(r.readme).split('\n');
     for (const h of ['## What it shows', '## How to run', '## Extension point']) {
