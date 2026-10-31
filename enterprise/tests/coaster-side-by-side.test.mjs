@@ -154,9 +154,14 @@ async function launchChromium() {
   ], { stdio: 'ignore' });
   browser = { process: child, profile };
   const portFile = join(profile, 'DevToolsActivePort');
-  for (let i = 0; i < 100 && !existsSync(portFile); i++) await sleep(100);
-  assert.ok(existsSync(portFile), `${binary} started with its DevTools port`);
-  const devtools = readFileSync(portFile, 'utf8').split('\n')[0];
+  // Up to 60 s, as in coaster-ride-browser.mjs (F84): Chromium starts slowly on a loaded machine.
+  for (let i = 0; i < 600 && !existsSync(portFile) && child.exitCode === null; i++) await sleep(100);
+  assert.ok(existsSync(portFile), `${binary} started with its DevTools port (exit code ${child.exitCode})`);
+  // Chromium creates the file before it writes the port into it (an empty read went to port 80, F80): wait for it.
+  const readPort = () => readFileSync(portFile, 'utf8').split('\n')[0].trim();
+  for (let i = 0; i < 100 && !readPort() && child.exitCode === null; i++) await sleep(100);
+  const devtools = readPort();
+  assert.ok(devtools, `${binary} wrote its DevTools port into ${portFile}`);
   const targets = await (await fetch(`http://127.0.0.1:${devtools}/json/list`)).json();
   const socket = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
