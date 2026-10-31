@@ -15,11 +15,11 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 ## Files
 
 - `orbit.mjs`: `mountCoasterViewer(element, { file, size, colors })`, the viewer in any DOM element (plain DOM, no
-  framework). Returns `{ canvas, camera, controls, scene, render, setSize, renders, looping, dispose }`, or `{ error }` with the reason
+  framework). Returns `{ canvas, camera, controls, scene, render, setSize, dispose }`, or `{ error }` with the reason
   shown in the element when the file is not a valid `.coaster` file.
 - `ride.mjs`: `mountCoasterRide(element, { file, size, colors, speed, autoplay })`, the ride view with its Play/Pause
   and Restart buttons over the canvas. Returns `{ canvas, camera, scene, controls, play, pause, restart, state,
-  stats, pose, render, setSize, renders, looping, dispose }`; `state()` gives `{ playing, ended, distance, length, progress }`,
+  stats, pose, render, setSize, dispose }`; `state()` gives `{ playing, ended, distance, length, progress }`,
   `stats()` the frames per second since Play. `createRide(line, options)` is the ride without a renderer (the
   camera's path and the buttons' logic), for tests.
 - `react.mjs`: `createCoasterViewer(React)`, the same as a React component with the props `file` and `size`. The
@@ -30,8 +30,7 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
   are hidden). `pairMarks(before, after)` gives the elements to mark on each side from the coaster diff's pairing of
   the two element lists: a changed element on both sides, a removed one on the left, an added one on the right.
   `createRidePair(React)` in `react.mjs` is the same as a component, props `left`, `right` and `speed`.
-- `display.mjs`: what both views share for the projector: `capPixelRatio(requested, window)` (the pixel ratio,
-  at most `MAX_PIXEL_RATIO` 1.5) and `watchVisible(element, onChange)` (the page is shown and the element on screen).
+- `display.mjs`: the pixel ratio cap and visibility watch for the projector; see [PROJECTOR.md](PROJECTOR.md).
 - `scene.mjs`: `buildCoasterScene(design, { colors, marks })`, the three.js scene (rails, spine, ties, supports, station, ground)
   without a renderer; it also builds in Node, for tests.
 - `demo.html`: the orbit view on its own page; `ride.html` the ride view; `pair.html` two rides side by side
@@ -63,18 +62,6 @@ const CoasterViewer = createCoasterViewer(React);
 export const Preview = ({ text }) => <CoasterViewer file={text} size={{ width: 800, height: 500 }} />;
 ```
 
-## On the projector
-
-Both views draw on demand. The orbit view's animation loop runs only while the camera moves (a drag, a zoom and the
-damping after them) and stops on the first still frame; the ride's only while the train moves. A hidden view (the
-page in another tab, the element `display: none` or scrolled out of sight) stops its loop at once: a playing train
-waits where it is and rides on when shown again. The drawing buffer is at most 1.5x the CSS size, whatever the
-screen's `devicePixelRatio` or the `pixelRatio` option asks (a 2x screen would shade four times the pixels for a
-picture the room can't tell apart). `dispose()` stops the loop, frees the geometry and gives the WebGL context back
-at once (a browser keeps only about 16, so a review opened and closed again and again would otherwise lose them).
-`renders()` counts the frames drawn and `looping()` says whether the loop runs, for tests and a quick look in the
-console. The frame time itself is measured on the presentation laptop, not in the tests.
-
 ## Install and try
 
 three.js is this folder's own dependency: install it once, then serve the `enterprise` folder over HTTP (ES modules
@@ -103,10 +90,6 @@ shows the track, a drag orbits the camera, and the screenshot is kept in `COASTE
 `enterprise/tests/coaster-ride.test.mjs` rides the sample circuit in Node (station to station, through the loops,
 pause and restart) and in headless Chromium: the buttons work with real clicks, the camera comes back to the
 station.
-
-`enterprise/tests/coaster-projector.test.mjs` checks the above in headless Chromium: no redraw while idle, hidden
-views stop their loops, the buffer stays at 1.5x on a 2x screen, and the side-by-side review opened and closed 10
-times leaves no canvas and no live WebGL context.
 
 `enterprise/tests/coaster-ride.perf.mjs` measures the ride's frame rate, which is printed and must be 30 fps or more
 (`coaster ride frame rate: ...`). Software WebGL tracks the machine's load, so this measurement is not part of the
