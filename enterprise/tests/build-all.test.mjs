@@ -137,3 +137,19 @@ test('AC3: a plugin entry chunk over 150 KB gzip exits non-zero', (t) => {
   assert.ok(plugin.entryChunk.gzipBytes > 0 && plugin.entryChunk.gzipBytes <= 153600, 'a small entry chunk passes');
   assert.equal(plugin.entryChunkLimitGzipBytes, 153600);
 });
+
+test('F88 AC4: a run reports the plugin\'s start-up chunk size against the limit and that the manifest was written', (t) => {
+  const fx = fixture();
+  t.after(() => rmSync(fx.dir, { recursive: true, force: true }));
+  const r = run(fx);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stderr, /^build-all: portal-plugin: start-up chunk \d+ bytes gzip \(limit 153600\): static\/js\/remoteEntry\.js/m);
+  assert.match(r.stderr, new RegExp(`^build-all: manifest written: ${join(fx.out, 'manifest.json').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\(build-abc123\\.zip, portal-plugin\\.zip, portal-engine-frontend\\.zip\\)$`, 'm'));
+  // over the limit: the size is reported, the manifest is not
+  const big = fixture();
+  t.after(() => rmSync(big.dir, { recursive: true, force: true }));
+  const over = run(big, { plugin: PLUGIN_BIG });
+  assert.notEqual(over.status, 0);
+  assert.match(over.stderr, /start-up chunk \d+ bytes gzip \(limit 153600\)/);
+  assert.doesNotMatch(over.stderr, /manifest written/);
+});
