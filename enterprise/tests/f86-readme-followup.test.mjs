@@ -26,7 +26,7 @@ test('AC1: the two READMEs that were missing exist and the index links them', ()
   }
 });
 
-test('AC2: the index has nine rows, seven extension points and two "None:" rows, each with a docs cell', () => {
+test('AC2: the index has nine rows, seven extension points and two None rows, each with a docs cell', () => {
   const all = rows();
   assert.equal(all.length, 9);
   assert.equal(all.filter((r) => r.point.startsWith('None:')).length, 2);
@@ -34,7 +34,7 @@ test('AC2: the index has nine rows, seven extension points and two "None:" rows,
   assert.doesNotMatch(read('README.md'), /^## Examples$/m, 'the old "Examples" list is gone');
 });
 
-test("AC3: each of the nine READMEs has the exact lines '## What it shows', '## How to run', '## Extension point'", () => {
+test('AC3: each of the nine READMEs has the exact lines What it shows, How to run and Extension point', () => {
   for (const r of rows()) {
     const lines = read(r.readme).split('\n');
     for (const h of ['## What it shows', '## How to run', '## Extension point']) {
@@ -51,12 +51,12 @@ test('AC4: every row links an existing README inside its own example folder', ()
   }
 });
 
-test('AC5: readme-index.test.mjs names a test for each of F74\'s criteria AC1, AC2 and AC3', () => {
+test('AC5: readme-index.test.mjs names a test for each of the F74 criteria AC1, AC2 and AC3', () => {
   const source = read('tests/readme-index.test.mjs');
   for (const ac of ['AC1', 'AC2', 'AC3']) assert.match(source, new RegExp(`test\\(['"\`]${ac}: `));
 });
 
-test('AC6: the side-by-side README is a row of the index with its three sections, next to F85\'s viewer', () => {
+test('AC6: the side-by-side README is a row of the index with its three sections, next to the viewer F85 changed', () => {
   const row = rows().find((r) => r.folder === 'assets/studio/js/src/coaster-review/side-by-side');
   assert.ok(row, 'the side-by-side folder is a row');
   const lines = read(row.readme).split('\n');
