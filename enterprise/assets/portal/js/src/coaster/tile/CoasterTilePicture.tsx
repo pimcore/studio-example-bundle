@@ -9,6 +9,7 @@ import {
   type OutlineSize,
   type TrackOutline
 } from './coaster-tile-model'
+import { TileThumbnail, hasThumbnail } from './TileThumbnail'
 
 /** The picture's own coordinate size; the SVG scales it into the tile's media region, letterboxed. */
 const OUTLINE_SIZE: OutlineSize = { width: 240, height: 150 }
@@ -19,9 +20,7 @@ const OUTLINE_SIZE: OutlineSize = { width: 240, height: 150 }
  * The region replaces the picture of every tile, so every other tile is drawn with this.
  */
 export function DefaultTileMedia ({ name, thumbnail }: TileRegionProps): React.JSX.Element {
-  if (thumbnail !== null && thumbnail !== '') {
-    return <span aria-label={ name } className="p-tile-img" role="img" style={ { backgroundImage: `url('${thumbnail}')` } } />
-  }
+  if (hasThumbnail(thumbnail)) return <TileThumbnail name={ name } thumbnail={ thumbnail } />
   return (
     <span style={ { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--p-space-xs)', maxWidth: '100%' } }>
       <span style={ { color: 'var(--p-text-quaternary)', display: 'inline-flex' } }>
@@ -98,10 +97,13 @@ function CoasterTrackPicture (props: TileRegionProps): React.JSX.Element {
 }
 
 /**
- * The picture of every grid and rail tile the portal draws. Registered under the portal's `tileRegions.media` name
- * in plugin.tsx: a .coaster tile gets its track outline, every other tile the kit's default picture.
+ * The picture of a tile once its chunk is loaded (CoasterTileMedia.tsx, the component plugin.tsx registers, loads
+ * this module on demand): a .coaster tile gets its track outline, every other tile the kit's default picture.
  */
-export const CoasterTileMedia = (props: TileRegionProps): React.JSX.Element => {
+export const CoasterTilePicture = (props: TileRegionProps): React.JSX.Element => {
   if (!isCoasterTile(props)) return <DefaultTileMedia { ...props } />
   return <CoasterTrackPicture { ...props } />
 }
+
+// the module React.lazy loads
+export default CoasterTilePicture

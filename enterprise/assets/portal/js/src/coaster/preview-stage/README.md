@@ -47,6 +47,25 @@ Portal Engine documentation:
 (the detail page's replaceable parts, "Detail cards: replace or suppress one"). The preview stage name itself is the
 portal change on our integration branch of portal-engine (`plugin-sdk/preview-stage.ts`); 2026.3 does not ship it yet.
 
+## Loaded on demand
+
+`plugin.tsx` and what it imports run at the portal's start-up, and that code has a budget of 150 KB gzip. The stage's
+body needs three.js (about 140 KB gzip) and the kit (about 730 KB gzip), so the registered `CoasterPreviewStage.tsx`
+holds only `accepts` and a `React.lazy` import of `CoasterStageView.tsx`:
+
+```tsx
+const CoasterStageView = lazy(async () => await import('./CoasterStageView'))
+
+export const CoasterPreviewStage: PreviewStageComponent = (props: PreviewStageProps) => (
+  <Suspense fallback={ <StageLoading height={ props.height } /> }><CoasterStageView { ...props } /></Suspense>
+)
+```
+
+The build puts three.js in a chunk of its own and the viewer, the ride and the stage in another; the portal fetches
+them the first time a `.coaster` asset is opened. `accepts` declines every other asset before the portal renders the
+stage, so images, videos and documents never load them. `enterprise/assets/portal/tests/unit/plugin-size.test.mjs`
+checks the import graph and, given a build, the size.
+
 ## How to run
 
 1. Install the sub-bundle as described in [the enterprise README](../../../../../../README.md), and build the portal
@@ -66,7 +85,9 @@ route and this README.
 
 ## Files
 
-- `CoasterPreviewStage.tsx`: the stage (Orbit/Ride buttons over the viewer), with its `accepts`
+- `CoasterPreviewStage.tsx`: the stage `plugin.tsx` registers, with its `accepts`; loads `CoasterStageView.tsx` on
+  demand
+- `CoasterStageView.tsx`: the stage's body (Orbit/Ride buttons over the viewer)
 - `coaster-stage-model.ts`: which assets it takes, the file's URL and the answer's reading, without React (tested in
   Node)
 - `../../plugin.tsx`: the registration under `previewStage`

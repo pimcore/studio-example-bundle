@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import type { PreviewStageComponent, PreviewStageProps } from '@pimcore/portal-plugin-sdk'
+import type { PreviewStageProps } from '@pimcore/portal-plugin-sdk'
 import { Alert, Button, Content } from '@pimcore/portal-ui-kit/components'
 import { createCoasterRide, createCoasterViewer } from '../../../../../shared/coaster/viewer/react.mjs'
 import {
   DEFAULT_VIEW,
   STAGE_VIEWS,
   coasterFileUrl,
-  isCoasterAsset,
   readCoasterResponse,
   type CoasterFileResult,
   type StageView
@@ -35,11 +34,11 @@ function useCoasterFile (id: number, dataPoolId: number, shareHash?: string): Co
 }
 
 /**
- * The asset detail's preview stage for a .coaster file: the track in 3D, to orbit around or to ride from the front
- * seat. Registered under the portal's `previewStage` name in plugin.tsx; `accepts` declines every other asset, so the
- * portal keeps its own stage for images, videos and documents.
+ * The stage itself: the track in 3D, to orbit around or to ride from the front seat. CoasterPreviewStage.tsx loads
+ * this module (with the kit and the viewer's three.js) on demand, the first time a .coaster asset is opened, so the
+ * plugin's start-up code stays small.
  */
-export const CoasterPreviewStage: PreviewStageComponent = ({ data, dataPoolId, shareHash, height }: PreviewStageProps) => {
+export function CoasterStageView ({ data, dataPoolId, shareHash, height }: PreviewStageProps): React.JSX.Element {
   const [view, setView] = useState<StageView>(DEFAULT_VIEW)
   const result = useCoasterFile(data.id, dataPoolId, shareHash)
   const trackHeight = Math.max(height - BAR_HEIGHT, 120)
@@ -73,5 +72,5 @@ export const CoasterPreviewStage: PreviewStageComponent = ({ data, dataPoolId, s
   )
 }
 
-// The portal asks this before it renders the stage; false hands the asset back to the portal's own stage.
-CoasterPreviewStage.accepts = isCoasterAsset
+// the module React.lazy loads
+export default CoasterStageView

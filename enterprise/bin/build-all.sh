@@ -211,10 +211,12 @@ for (const z of zips) console.error(`build-all: ${z.part}: ${z.zip} (${z.bytes} 
 
 // no manifest for a build that fails a check: the laptop installs only what passed
 const plugin = zips.find((z) => z.part === 'portal-plugin')
+console.error(`build-all: portal-plugin: start-up chunk ${plugin.entryChunk.gzipBytes} bytes gzip (limit ${limit}): ${plugin.entryChunk.files.join(', ')}`)
 if (plugin.entryChunk.gzipBytes > limit) {
   fail('portal-plugin', `entry chunk is ${plugin.entryChunk.gzipBytes} bytes gzip, over the ${limit} limit (${plugin.entryChunk.files.join(', ')})`)
 }
 writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+console.error(`build-all: manifest written: ${join(out, 'manifest.json')} (${zips.map((z) => z.zip).join(', ')})`)
 JS
 [ "$rc" -eq 0 ] || exit 1
 say "done: $OUT/manifest.json"

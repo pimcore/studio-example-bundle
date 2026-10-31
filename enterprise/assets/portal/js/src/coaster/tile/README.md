@@ -24,8 +24,8 @@ handling and the action row.
 // plugin.tsx, in the module's onInit
 componentRegistry.register({ name: tileRegions.media, component: CoasterTileMedia })
 
-// CoasterTileMedia.tsx
-export const CoasterTileMedia = (props: TileRegionProps) => {
+// CoasterTilePicture.tsx (loaded on demand by CoasterTileMedia.tsx, see "Loaded on demand")
+export const CoasterTilePicture = (props: TileRegionProps) => {
   if (!isCoasterTile(props)) return <DefaultTileMedia { ...props } />
   return <CoasterTrackPicture { ...props } />
 }
@@ -55,6 +55,27 @@ Portal Engine documentation:
 [Portal Frontend Plugin Surfaces](https://github.com/pimcore/portal-engine/blob/2026.3/doc/15_Development_Documentation/15_Customize_and_Extend_Behavior/17_Portal_Frontend_Plugin_Surfaces.md)
 (the replaceable parts of the portal's own screens). The names are in the SDK's `plugin-sdk/tile-regions.ts`.
 
+## Loaded on demand
+
+`plugin.tsx` and what it imports run at the portal's start-up, and that code has a budget of 150 KB gzip. The kit's
+`Icon` (for the "No preview" fallback) comes from the kit's components barrel, about 730 KB gzip, so the registered
+`CoasterTileMedia.tsx` holds only the decision and a `React.lazy` import of `CoasterTilePicture.tsx`:
+
+```tsx
+const CoasterTilePicture = lazy(async () => await import('./CoasterTilePicture'))
+
+export const CoasterTileMedia = (props: TileRegionProps) => {
+  const thumbnail = hasThumbnail(props.thumbnail) ? <TileThumbnail ... /> : null
+  if (!isCoasterTile(props) && thumbnail !== null) return thumbnail
+  return <Suspense fallback={ thumbnail ?? <span aria-busy="true" /> }><CoasterTilePicture { ...props } /></Suspense>
+}
+```
+
+An ordinary tile with a thumbnail is drawn at once, without the chunk. The chunk is fetched once per page, the first
+time a `.coaster` tile or a tile without a thumbnail is drawn; until then such a tile is empty for a moment. The
+picture never loads three.js: the outline is the shared track geometry only.
+`enterprise/assets/portal/tests/unit/plugin-size.test.mjs` checks the import graph and, given a build, the size.
+
 ## How to run
 
 1. Install the sub-bundle as described in [the enterprise README](../../../../../../README.md), and build the portal
@@ -73,8 +94,11 @@ this README; `enterprise/tests/f87-coaster-tile-followup.test.mjs` renders the c
 
 ## Files
 
-- `CoasterTileMedia.tsx`: the region component (the outline for `.coaster` tiles, the kit's default for every other),
-  with `TrackOutlinePicture` (the outline as SVG) and `DefaultTileMedia` (the kit's picture) as its parts
+- `CoasterTileMedia.tsx`: the region component `plugin.tsx` registers: a thumbnail at once, everything else through
+  the lazy `CoasterTilePicture.tsx`
+- `CoasterTilePicture.tsx`: the picture (the outline for `.coaster` tiles, the kit's default for every other), with
+  `TrackOutlinePicture` (the outline as SVG) and `DefaultTileMedia` (the kit's picture) as its parts
+- `TileThumbnail.tsx`: the thumbnail as the kit draws it, without the kit
 - `coaster-tile-model.ts`: which tiles get the outline, the page's data pool, the file's URL and the side view of the
   centre line, without React (tested in Node)
 - `../../plugin.tsx`: the registration under `tileRegions.media`
