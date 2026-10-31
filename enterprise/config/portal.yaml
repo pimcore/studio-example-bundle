@@ -8,3 +8,8 @@ services:
     # The portal plugin built from assets/portal (see assets/portal/README.md).
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterprisePortalPlugin:
         tags: ['portal_engine.plugin_provider']
+
+    # The .coaster file of the portal's coaster preview stage, routed by config/pimcore/routing.yaml. The tag is needed:
+    # without autoconfigure the action would fail with "has no container set".
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Coaster\CoasterFileController:
+        tags: ['controller.service_arguments']

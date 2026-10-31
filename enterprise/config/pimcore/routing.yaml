@@ -13,3 +13,14 @@ pimcore_studio_example_enterprise_talk:
     # the same requirement Portal Engine's own routes carry
     requirements:
         _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+
+# The text of a .coaster asset for the portal's coaster preview stage, see
+# assets/portal/js/src/coaster/preview-stage/README.md. No language prefix: like the portal's own API, it is fetched by
+# the plugin, never opened as a page.
+pimcore_studio_example_enterprise_coaster_file:
+    path: /studio-example-enterprise/coaster-file/{id}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Coaster\CoasterFileController
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    requirements:
+        id: '\d+'

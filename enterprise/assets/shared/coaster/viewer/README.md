@@ -19,7 +19,8 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 None of its own: the viewer is a shared component that the extension points host. Plain DOM (`orbit.mjs`,
 `ride.mjs`, `pair.mjs`) mounts it in any element; React hosts take the component from `react.mjs` and pass their own
 React in, as the Studio Review tab's side-by-side view does
-([`studio/js/src/coaster-review/side-by-side/`](../../../studio/js/src/coaster-review/side-by-side/README.md)).
+([`studio/js/src/coaster-review/side-by-side/`](../../../studio/js/src/coaster-review/side-by-side/README.md)) and the portal's coaster preview stage
+([`portal/js/src/coaster/preview-stage/`](../../../portal/js/src/coaster/preview-stage/README.md)).
 
 ## Files
 
@@ -34,6 +35,7 @@ React in, as the Studio Review tab's side-by-side view does
 - `react.mjs`: `createCoasterViewer(React)`, the same as a React component with the props `file` and `size`. The
   host passes its own React in, so no second copy of React is loaded. `createCoasterRide(React)` is the ride view,
   with the extra props `speed` and `autoplay`.
+- `react.d.mts`: the types of `react.mjs`, for TypeScript hosts in strict mode (the portal plugin).
 - `pair.mjs`: `mountRidePair(element, { left, right, speed })`, two rides side by side for a review, each side
   `{ file, title, marks }`, under one Play/Pause and Restart that drive both trains at once (each ride's own buttons
   are hidden). `pairMarks(before, after)` gives the elements to mark on each side from the coaster diff's pairing of
