@@ -38,7 +38,9 @@ HEAVY=${HEAVY:-${ORCH_ROOT:+$ORCH_ROOT/bin/heavy.sh}}
 
 NPM_FLAGS='--no-audit --no-fund'
 STUDIO_CMD=${BUILD_ALL_STUDIO_CMD:-"(cd ../shared/coaster/viewer && npm ci $NPM_FLAGS) && npm install $NPM_FLAGS && npm run build && npm run package-build"}
-PLUGIN_CMD=${BUILD_ALL_PLUGIN_CMD:-"npm install $NPM_FLAGS && npm run build"}
+# --install-links copies the kit into node_modules (instead of a symlink to the monorepo), so npm installs its peers
+# (antd, dayjs, ...) next to it and the bundler resolves the kit's imports from the plugin's own node_modules
+PLUGIN_CMD=${BUILD_ALL_PLUGIN_CMD:-"npm install --install-links $NPM_FLAGS && npm run build"}
 ENGINE_CMD=${BUILD_ALL_ENGINE_CMD:-"npm ci $NPM_FLAGS && npm run build"}
 
 say() { printf 'build-all: %s\n' "$*" >&2; }
@@ -205,13 +207,14 @@ const manifest = {
   },
   zips
 }
-writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
 for (const z of zips) console.error(`build-all: ${z.part}: ${z.zip} (${z.bytes} bytes, ${z.gzipBytes} gzip)`)
 
+// no manifest for a build that fails a check: the laptop installs only what passed
 const plugin = zips.find((z) => z.part === 'portal-plugin')
 if (plugin.entryChunk.gzipBytes > limit) {
   fail('portal-plugin', `entry chunk is ${plugin.entryChunk.gzipBytes} bytes gzip, over the ${limit} limit (${plugin.entryChunk.files.join(', ')})`)
 }
+writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
 JS
 [ "$rc" -eq 0 ] || exit 1
 say "done: $OUT/manifest.json"

@@ -129,6 +129,7 @@ test('AC3: a plugin entry chunk over 150 KB gzip exits non-zero', (t) => {
   const r = run(fx, { plugin: PLUGIN_BIG });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /FAILED: portal-plugin: entry chunk is \d+ bytes gzip, over the 153600 limit/);
+  assert.ok(!existsSync(join(fx.out, 'manifest.json')), 'no manifest for a plugin over the limit');
 
   const ok = run(fx);
   assert.equal(ok.status, 0, ok.stderr);
