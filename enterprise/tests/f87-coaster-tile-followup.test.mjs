@@ -41,10 +41,19 @@ function loadTsx (path, modules) {
   return module.exports;
 }
 
-const tileModule = () => loadTsx(join(tileDir, 'CoasterTileMedia.tsx'), {
+const thumbnailModule = () => loadTsx(join(tileDir, 'TileThumbnail.tsx'), {});
+// F88: the picture's body is its own module, loaded on demand by the registered CoasterTileMedia.tsx
+const tileModule = () => loadTsx(join(tileDir, 'CoasterTilePicture.tsx'), {
   '@pimcore/portal-plugin-sdk': sdkNames,
   '@pimcore/portal-ui-kit/components': { Icon },
-  './coaster-tile-model': model
+  './coaster-tile-model': model,
+  './TileThumbnail': thumbnailModule()
+});
+const mediaModule = () => loadTsx(join(tileDir, 'CoasterTileMedia.tsx'), {
+  '@pimcore/portal-plugin-sdk': sdkNames,
+  './coaster-tile-model': model,
+  './TileThumbnail': thumbnailModule(),
+  './CoasterTilePicture': tileModule()
 });
 
 /** What plugin.tsx registers, run through the SDK's startup and module init as the portal does. */
@@ -62,15 +71,23 @@ function registrations () {
     '@pimcore/portal-plugin-sdk': sdk,
     '../../talk/TalkNavEntry': { TalkNavEntry: () => null },
     './coaster/preview-stage/CoasterPreviewStage': { CoasterPreviewStage: () => null },
-    './coaster/tile/CoasterTileMedia': tileModule()
+    './coaster/tile/CoasterTileMedia': mediaModule()
   });
   studioExampleEnterprisePlugin.onStartup({ moduleSystem: { registerModule: (module) => module.onInit() } });
   return registered;
 }
 
-const registeredTileMedia = () => registrations().find((entry) => entry.name === sdkNames.tileRegions.media)?.component;
+const registeredComponent = () => registrations().find((entry) => entry.name === sdkNames.tileRegions.media)?.component;
 const tile = (name, fileExtension, thumbnail = null) => ({ id: 7, name, thumbnail, fileExtension });
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
+/** The registered component once its lazy chunk is there, as the portal draws it after the first tile loaded it. */
+async function loadedTileMedia () {
+  const TileMedia = registeredComponent();
+  render(TileMedia, tile('manual.pdf', 'pdf')); // the first draw starts the import()
+  await new Promise((done) => setImmediate(done));
+  return TileMedia;
+}
+const registeredTileMedia = await loadedTileMedia();
 const SIZE = { width: 240, height: 150 };
 const rev1 = model.outlineFromFile(read(join(enterpriseDir, 'demo-data/thunder-loop-rev1.coaster')), SIZE);
 const rev3 = model.outlineFromFile(read(join(enterpriseDir, 'demo-data/thunder-loop-rev3.coaster')), SIZE);
@@ -88,7 +105,7 @@ test('AC1: the track outline renders as an SVG path in the portal brand colour',
 });
 
 test('AC2: rendered, every other tile keeps the kit default picture', () => {
-  const TileMedia = registeredTileMedia();
+  const TileMedia = registeredTileMedia;
   const photo = render(TileMedia, tile('photo.jpg', 'jpg', '/thumb/photo.jpg'));
   assert.match(photo, /class="p-tile-img"/);
   assert.match(photo, /background-image:url\(&#x27;\/thumb\/photo.jpg&#x27;\)/);
@@ -128,7 +145,7 @@ test('AC7: the extension-point index count stays exact and matches the index', (
 });
 
 test('AC8: a grid row renders in order, then the next tiles: each keeps its own picture', () => {
-  const TileMedia = registeredTileMedia();
+  const TileMedia = registeredTileMedia;
   const row = [tile('thunder-loop-rev1.coaster', 'coaster'), tile('photo.jpg', 'jpg', '/thumb/photo.jpg'), tile('manual.pdf', 'pdf')];
   const html = row.map((props) => render(TileMedia, props));
   // server side the coaster file is not fetched yet: it shows the default until its outline is there
@@ -143,14 +160,15 @@ test('AC9: the type declarations outside owns declare what the tile model import
 });
 
 test('AC10: the default picture is its own exported component, rendered for a coaster tile while it loads', () => {
-  const { DefaultTileMedia, CoasterTileMedia } = tileModule();
+  const { DefaultTileMedia, CoasterTilePicture } = tileModule();
   assert.equal(typeof DefaultTileMedia, 'function');
   const coaster = tile('thunder-loop-rev1.coaster', 'coaster');
-  assert.equal(render(CoasterTileMedia, coaster), render(DefaultTileMedia, coaster));
+  assert.equal(render(CoasterTilePicture, coaster), render(DefaultTileMedia, coaster));
+  assert.equal(render(registeredTileMedia, coaster), render(DefaultTileMedia, coaster), 'the registered component draws the same');
 });
 
 test('AC11: the fallback icon is the kit Icon, not a text glyph', () => {
-  const html = render(registeredTileMedia(), tile('manual.pdf', 'pdf'));
+  const html = render(registeredTileMedia, tile('manual.pdf', 'pdf'));
   assert.match(html, /<i data-kit-icon="asset" data-width="26"><\/i>/);
   const text = html.replace(/<[^>]+>/g, '');
   assert.equal(text, 'No preview', 'no glyph character besides the label');
@@ -164,4 +182,13 @@ test('AC12: plugin.tsx run through startup registers the tile media component un
   assert.equal(media[0].component.name, 'CoasterTileMedia');
   assert.ok(registered.some((entry) => entry.name === sdkNames.previewStage), 'the preview stage stays registered');
   assert.ok(readdirSync(tileDir).includes('CoasterTileMedia.tsx'));
+});
+
+test('F88 AC2: before the picture chunk is there, a photo tile draws its thumbnail at once and the others wait empty', () => {
+  const TileMedia = registeredComponent(); // fresh modules: the lazy chunk is not loaded yet
+  const photo = render(TileMedia, tile('photo.jpg', 'jpg', '/thumb/photo.jpg'));
+  assert.match(photo, /class="p-tile-img"/);
+  assert.match(photo, /background-image:url\(&#x27;\/thumb\/photo.jpg&#x27;\)/);
+  assert.equal(render(TileMedia, tile('manual.pdf', 'pdf')), '<span aria-busy="true"></span>');
+  assert.equal(render(TileMedia, tile('thunder-loop-rev1.coaster', 'coaster')), '<span aria-busy="true"></span>');
 });

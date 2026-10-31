@@ -19,7 +19,8 @@ const model = await import(join(stageDir, 'coaster-stage-model.ts'));
 const { buildCoasterScene } = await import(join(viewerDir, 'scene.mjs'));
 const { readCoasterFile } = await import(join(viewerDir, 'orbit.mjs'));
 
-const stageSource = () => read(join(stageDir, 'CoasterPreviewStage.tsx'));
+// the registered stage (CoasterPreviewStage.tsx) and its body, loaded on demand (F88, CoasterStageView.tsx)
+const stageSource = () => ['CoasterPreviewStage.tsx', 'CoasterStageView.tsx'].map((f) => read(join(stageDir, f))).join('\n');
 const pluginSource = () => read(join(portalSrc, 'plugin.tsx'));
 const rev3Text = read(join(enterpriseDir, 'demo-data/thunder-loop-rev3.coaster'));
 

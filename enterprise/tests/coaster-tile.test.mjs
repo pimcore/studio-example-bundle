@@ -15,7 +15,8 @@ const read = (path) => readFileSync(path, 'utf8');
 const model = await import(join(tileDir, 'coaster-tile-model.ts'));
 const stageModel = await import(join(portalSrc, 'coaster/preview-stage/coaster-stage-model.ts'));
 
-const tileSource = () => read(join(tileDir, 'CoasterTileMedia.tsx'));
+// the registered component (CoasterTileMedia.tsx) and what it loads on demand (F88): the picture and the thumbnail
+const tileSource = () => ['CoasterTileMedia.tsx', 'CoasterTilePicture.tsx', 'TileThumbnail.tsx'].map((f) => read(join(tileDir, f))).join('\n');
 const pluginSource = () => read(join(portalSrc, 'plugin.tsx'));
 const rev1Text = read(join(enterpriseDir, 'demo-data/thunder-loop-rev1.coaster'));
 const rev3Text = read(join(enterpriseDir, 'demo-data/thunder-loop-rev3.coaster'));
