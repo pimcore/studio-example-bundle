@@ -65,3 +65,16 @@ test('AC1, AC2: a ContainerBuilder with the dashboards extension present prepend
   // The config written under `pimcore_studio_example_bundle` reaches the bundle's parameters.
   assert.deepEqual(result.widgets, ['talk']);
 });
+
+// Found by the same boot (bin/console cache:clear on local): the enterprise sub-bundle blocked it next.
+test('the enterprise extension imports its config/*.yaml as a glob (load() takes the pattern as a file name)', () => {
+  const extension = read('enterprise/src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php');
+  assert.match(extension, /\$loader->import\(\$configDir \. '\/\*\.yaml'\)/);
+  assert.doesNotMatch(extension, /->load\('\*\.yaml'/);
+});
+
+test('the coaster file controller is a service subscriber, so its autowired setContainer() resolves', () => {
+  const portal = read('enterprise/config/portal.yaml');
+  const block = portal.slice(portal.indexOf('Portal\\Coaster\\CoasterFileController:'));
+  assert.match(block.split('\n')[1], /tags: \[.*'controller\.service_arguments'.*'container\.service_subscriber'.*\]/);
+});

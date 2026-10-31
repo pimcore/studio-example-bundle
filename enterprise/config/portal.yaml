@@ -9,7 +9,8 @@ services:
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterprisePortalPlugin:
         tags: ['portal_engine.plugin_provider']
 
-    # The .coaster file of the portal's coaster preview stage, routed by config/pimcore/routing.yaml. The tag is needed:
-    # without autoconfigure the action would fail with "has no container set".
+    # The .coaster file of the portal's coaster preview stage, routed by config/pimcore/routing.yaml. The tags are
+    # needed without autoconfigure: the action would fail with "has no container set", and the container would not
+    # build (AbstractController::setContainer() is autowired with the controller's service locator only when tagged).
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Coaster\CoasterFileController:
-        tags: ['controller.service_arguments']
+        tags: ['controller.service_arguments', 'container.service_subscriber']

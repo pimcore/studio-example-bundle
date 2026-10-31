@@ -16,6 +16,7 @@ class PimcoreStudioExampleEnterpriseExtension extends Extension
     {
         $configDir = __DIR__ . '/../../config';
         $loader = new Loader\YamlFileLoader($container, new FileLocator($configDir));
-        $loader->load('*.yaml', 'glob');
+        // import() expands the glob; load() would take '*.yaml' as a file name and fail to boot (F91).
+        $loader->import($configDir . '/*.yaml');
     }
 }
