@@ -23,6 +23,7 @@ one line per change and ends with the demo login.
 | What | Where |
 | --- | --- |
 | The portal "Theme Park of Tomorrow" with the asset data pool "Ride designs", English only | a new site on `--domain`, made by the Portal Engine's own portal wizard |
+| The example portal plugin `studio-example-enterprise` in the portal's **Enabled plugins** (the coaster tile and preview need it); other plugins there stay | the portal's configuration document; setup saves it and clears the cache |
 | The park's brief ([`demo-data/brief.md`](../../demo-data/brief.md)) as a content page "Brief: Thunder Loop" | next to the data pool in the portal's navigation |
 | The supplier Loopwerk Engineering, a portal user with access to the portal and the data pool, and all rights in the asset folder `/Theme Park of Tomorrow` | data object `/Portal Users/Coaster demo/loopwerk-supplier` |
 | Revision 1 of Thunder Loop, with the five metadata values the coaster listener (`src/Coaster/`) fills on upload | asset `/Theme Park of Tomorrow/Thunder Loop/thunder-loop.coaster` |
@@ -30,6 +31,9 @@ one line per change and ends with the demo login.
 **Demo login** (public, shown on stage): `supplier@loopwerk.example`, password `thunder-loop`.
 
 Setup never overwrites a design the demo uploaded; it only adds what is missing and repairs the supplier and the brief.
+On a new portal the plugin is part of the "Created the portal" line; on an existing portal without it setup prints
+"Enabled the plugin ...". So the demo portal needs no manual step in Studio; for other portals, enable the plugin by
+hand as [the portal README](../../assets/portal/README.md) says. A save that fails stops setup with an error.
 
 ### What reset does
 
@@ -55,7 +59,7 @@ own: **the event `CoasterDemoResetEvent`**, for other examples to drop their dem
 above).
 
 Test, from the repository root: `enterprise/tests/coaster-setup.test.mjs` runs setup and reset against an in-memory
-environment.
+environment; `enterprise/tests/coaster-setup-plugin.test.mjs` covers enabling the plugin.
 
 ## Code
 
@@ -64,4 +68,5 @@ environment.
   `CoasterDemo/DemoEnvironment.php`
 - `CoasterDemo/PimcoreDemoEnvironment.php`: that interface on Pimcore and the Portal Engine
 - `CoasterDemo/BriefHtml.php`: the brief's Markdown as the WYSIWYG brick's HTML
-- Test: `tests/coaster-setup.test.mjs` runs setup and reset against an in-memory environment
+- Test: `tests/coaster-setup.test.mjs` runs setup and reset against an in-memory environment;
+  `tests/coaster-setup-plugin.test.mjs` the plugin step

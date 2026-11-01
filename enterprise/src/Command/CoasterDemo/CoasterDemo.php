@@ -2,8 +2,11 @@
 
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterprisePortalPlugin;
+
 /**
- * Demo 1's state: the Theme Park of Tomorrow portal with a "Ride designs" asset data pool, the park's brief as a page
+ * Demo 1's state: the Theme Park of Tomorrow portal with a "Ride designs" asset data pool and the example portal
+ * plugin enabled, the park's brief as a page
  * in it, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
  * metadata. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
@@ -65,9 +68,19 @@ class CoasterDemo
         $env = $this->environment;
 
         $portalId = $env->portalId();
-        if ($portalId === null) {
+        $created = $portalId === null;
+        if ($created) {
             $portalId = $env->createPortal(self::PORTAL_NAME, $domain, self::LANGUAGE, self::DATA_POOL_NAME);
             $changes[] = sprintf('Created the portal "%s" on %s with the data pool "%s"', self::PORTAL_NAME, $domain, self::DATA_POOL_NAME);
+        }
+
+        // Without it in "Enabled plugins" the portal loads none of the example's portal code (coaster tile, preview).
+        // On a new portal it is part of creating it; on an existing one it is a change of its own.
+        if (!in_array(StudioExampleEnterprisePortalPlugin::ID, $env->enabledPlugins($portalId), true)) {
+            $env->enablePlugin($portalId, StudioExampleEnterprisePortalPlugin::ID);
+            if (!$created) {
+                $changes[] = sprintf('Enabled the plugin "%s" on the portal "%s"', StudioExampleEnterprisePortalPlugin::ID, self::PORTAL_NAME);
+            }
         }
         $dataPoolId = $env->dataPoolId($portalId, self::DATA_POOL_NAME)
             ?? throw new \RuntimeException(sprintf('The portal "%s" has no asset data pool "%s". Run coaster-demo:reset --all, then setup again.', self::PORTAL_NAME, self::DATA_POOL_NAME));

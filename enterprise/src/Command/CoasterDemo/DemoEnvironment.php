@@ -21,6 +21,12 @@ interface DemoEnvironment
     /** Deletes the portal with all its pages and its site. */
     public function deletePortal(int $portalId): void;
 
+    /** The ids of the portal plugins in the portal's "Enabled plugins", in their order. */
+    public function enabledPlugins(int $portalId): array;
+
+    /** Appends the plugin to the portal's "Enabled plugins" (the others stay) and saves the portal. */
+    public function enablePlugin(int $portalId, string $pluginId): void;
+
     /** The HTML of the portal's brief page, or null if it has none. */
     public function briefHtml(int $portalId): ?string;
 

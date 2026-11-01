@@ -3,8 +3,10 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\ControllerReference;
+use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\PortalConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Wizard;
 use Pimcore\Bundle\PortalEngineBundle\Service\Wizard\WizardService;
+use Pimcore\Cache;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\Data\ElementMetadata;
@@ -89,6 +91,29 @@ class PimcoreDemoEnvironment implements DemoEnvironment
     {
         Site::getByRootId($portalId)?->delete();
         Document::getById($portalId)?->delete();
+    }
+
+    public function enabledPlugins(int $portalId): array
+    {
+        $portal = Document\Page::getById($portalId, ['force' => true]);
+        $data = $portal?->getEditable(PortalConfig::ENABLED_PLUGINS)?->getData();
+
+        return array_values(array_filter((array) ($data ?? [])));
+    }
+
+    /** As Studio's "Enabled plugins" multiselect saves it; the cache holds the portal's config, so it is cleared. */
+    public function enablePlugin(int $portalId, string $pluginId): void
+    {
+        $portal = Document\Page::getById($portalId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
+        $enabled = $this->enabledPlugins($portalId);
+        if (!in_array($pluginId, $enabled, true)) {
+            $enabled[] = $pluginId;
+        }
+        $portal->setRawEditable(PortalConfig::ENABLED_PLUGINS, 'multiselect', $enabled);
+        // A failed save throws, so setup stops and the command exits non-zero.
+        $portal->save();
+        Cache::clearAll();
     }
 
     public function briefHtml(int $portalId): ?string

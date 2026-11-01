@@ -8,18 +8,21 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkPage;
 
 /**
  * Registers the portal plugin built from assets/portal with Portal Engine. An editor enables it per portal in the
- * portal's "Enabled plugins" field; until assets/portal has been built there is no entrypoints.json, and the portal
+ * portal's "Enabled plugins" field (coaster-demo:setup does it for the demo portal); until assets/portal has been built there is no entrypoints.json, and the portal
  * loads nothing for it.
  */
 class StudioExampleEnterprisePortalPlugin implements PortalPluginProviderInterface, PortalPluginConfigProviderInterface
 {
+    // The plugin's id in a portal's "Enabled plugins"; coaster-demo:setup enables it on the demo portal by this id.
+    public const ID = 'studio-example-enterprise';
+
     public function __construct(private readonly TalkPage $talkPage)
     {
     }
 
     public function getId(): string
     {
-        return 'studio-example-enterprise';
+        return self::ID;
     }
 
     public function getLabel(): string
