@@ -378,3 +378,27 @@ test('AC2: on Pimcore, the portal rename sets the portal name editable and the d
   assert.match(folder, /setFilename\(\$name\)/, 'renames the folder itself, so the supplier workspace and the assets follow');
   assert.match(folder, /->save\(\);/);
 });
+
+test('AC2: on Pimcore, renaming the portal or enabling the plugin loads the page\'s editables first, so its other settings survive the save', () => {
+  // PageSnippet::save() deletes all editables and writes back only the loaded ones; a page whose editables were never
+  // loaded keeps only the one set by setRawEditable (the try portal lost its "Portal name" that way).
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  for (const name of ['renamePortal', 'enablePlugin']) {
+    const start = pimcore.indexOf(`public function ${name}(`);
+    const method = pimcore.slice(start, pimcore.indexOf('\n    }\n', start));
+    const load = method.indexOf('$portal->getEditables();');
+    assert.ok(load > 0, `${name} loads the editables`);
+    assert.ok(load < method.indexOf('$portal->setRawEditable('), `${name}: before setting one`);
+  }
+});
+
+test('AC2: a demo portal without a portal name gets the name, with one change line', () => {
+  const { changes, again } = php(`
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $env->state['portals'][$env->portalId()]['name'] = null;
+    echo json_encode(['changes' => demo($env)->setup(), 'again' => demo($env)->setup()]);
+  `);
+  assert.deepEqual(changes, ['Renamed the portal "(no portal name)" to "Pimcore Kingdom"']);
+  assert.deepEqual(again, []);
+});

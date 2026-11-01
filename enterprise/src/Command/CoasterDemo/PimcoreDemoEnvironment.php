@@ -100,6 +100,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment
     {
         $portal = Document\Page::getById($portalId, ['force' => true])
             ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
+        $portal->getEditables(); // keeps the other settings, as in enablePlugin()
         $portal->setRawEditable(PortalConfig::PORTAL_NAME, 'input', $name);
         $portal->setKey(Element\Service::getValidKey($name, 'document'));
         $portal->setKey(Element\Service::getUniqueKey($portal));
@@ -130,6 +131,9 @@ class PimcoreDemoEnvironment implements DemoEnvironment
         if (!in_array($pluginId, $enabled, true)) {
             $enabled[] = $pluginId;
         }
+        // Loaded first: save() deletes the page's editables and writes back only the loaded ones, so without this the
+        // portal would lose its name, logo and the rest of its settings.
+        $portal->getEditables();
         $portal->setRawEditable(PortalConfig::ENABLED_PLUGINS, 'multiselect', $enabled);
         // A failed save throws, so setup stops and the command exits non-zero.
         $portal->save();

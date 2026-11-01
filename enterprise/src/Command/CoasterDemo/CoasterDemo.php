@@ -81,7 +81,7 @@ class CoasterDemo
             $name = $env->portalName($portalId);
             if ($name !== self::PORTAL_NAME) {
                 $env->renamePortal($portalId, self::PORTAL_NAME);
-                $changes[] = sprintf('Renamed the portal "%s" to "%s"', $name, self::PORTAL_NAME);
+                $changes[] = sprintf('Renamed the portal "%s" to "%s"', $name ?? '(no portal name)', self::PORTAL_NAME);
             }
         }
         // Before the supplier step, so its workspace (which points at the folder) is already right.
