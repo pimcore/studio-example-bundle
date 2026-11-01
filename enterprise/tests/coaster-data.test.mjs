@@ -34,7 +34,7 @@ test('AC1: revisions 1, 2 and 3 of Thunder Loop are accepted by the schema', () 
     assert.equal(file.meta.revision, n);
     assert.equal(file.meta.name, 'Thunder Loop');
     assert.equal(file.meta.designer, 'Loopwerk Engineering');
-    assert.equal(file.meta.park, 'Theme Park of Tomorrow');
+    assert.equal(file.meta.park, 'Pimcore Kingdom');
   }
 });
 
@@ -59,7 +59,7 @@ test('AC2: revision 2 to 3 changes exactly the loop diameter 24 to 30 and the li
 test('AC3: the brief states the 45 m height limit and names no real brand, character or customer', () => {
   const brief = read(join(dataDir, 'brief.md'));
   assert.match(brief, /Thunder Loop/);
-  assert.match(brief, /Theme Park of Tomorrow/);
+  assert.match(brief, /Pimcore Kingdom/);
   assert.match(brief, /Loopwerk Engineering/);
   assert.match(brief, /45\s?m\b/);
   assert.match(brief, /target audience/i);
@@ -70,5 +70,21 @@ test('AC3: the brief states the 45 m height limit and names no real brand, chara
     'Gerstlauer', 'Schwarzkopf', 'Rocky Mountain', 'Mickey', 'Marvel', 'Pokémon', 'Pokemon', 'Harry Potter',
     'Star Wars', 'Batman', 'Superman', 'Coca-Cola', 'Pimcore',
   ];
-  for (const name of realNames) assert.ok(!brief.toLowerCase().includes(name.toLowerCase()), `brief names ${name}`);
+  // "Pimcore Kingdom" is the park's name (Marvin, DR-P22): that exact string may stand, "Pimcore" anywhere else not.
+  const checked = brief.replaceAll('Pimcore Kingdom', '').toLowerCase();
+  for (const name of realNames) assert.ok(!checked.includes(name.toLowerCase()), `brief names ${name}`);
+});
+
+test('AC5: brief and docs name the park "Pimcore Kingdom", never the old name (the brand check is AC3 above)', () => {
+  const docs = {
+    'demo-data/brief.md': read(join(dataDir, 'brief.md')),
+    'assets/shared/coaster/FORMAT.md': read(join(enterpriseDir, 'assets/shared/coaster/FORMAT.md')),
+    'src/Command/README.md': read(join(enterpriseDir, 'src/Command/README.md')),
+  };
+  for (const [path, text] of Object.entries(docs)) {
+    assert.match(text, /Pimcore Kingdom/, path);
+    assert.doesNotMatch(text, /Theme Park of Tomorrow/, path);
+  }
+  for (const n of [1, 2, 3]) assert.equal(revision(n).meta.park, 'Pimcore Kingdom', `revision ${n}`);
+  assert.match(docs['demo-data/brief.md'], /\*\*Maximum height: 45 m\.\*\*/);
 });

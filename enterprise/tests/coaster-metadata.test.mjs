@@ -17,7 +17,7 @@ const { validateCoaster } = await import(join(enterpriseDir, 'assets/shared/coas
 const thunderLoop = () => ({
   format: 'coaster-design',
   version: '1.0',
-  meta: { name: 'Thunder Loop', designer: 'Loopwerk Engineering', park: 'Theme Park of Tomorrow', revision: 3 },
+  meta: { name: 'Thunder Loop', designer: 'Loopwerk Engineering', park: 'Pimcore Kingdom', revision: 3 },
   train: { cars: 6, seatsPerCar: 4 },
   track: [
     { type: 'station', length: 30 },

@@ -54,6 +54,20 @@ namespace {
         }
         public function dataPoolId(int $portalId, string $dataPoolName): ?int { return $this->state['portals'][$portalId]['dataPools'][$dataPoolName] ?? null; }
         public function deletePortal(int $portalId): void { $this->writes++; unset($this->state['portals'][$portalId]); }
+        public function portalName(int $portalId): ?string { return $this->state['portals'][$portalId]['name'] ?? null; }
+        public function renamePortal(int $portalId, string $name): void { $this->writes++; $this->state['portals'][$portalId]['name'] = $name; }
+        // As in Pimcore, a workspace points at the folder itself, so it follows the rename.
+        public function renameFolder(string $folder, string $name): void {
+            $this->writes++;
+            $to = dirname($folder) === '/' ? '/' . $name : dirname($folder) . '/' . $name;
+            $move = fn (string $path) => $path === $folder || str_starts_with($path, $folder . '/') ? $to . substr($path, strlen($folder)) : $path;
+            foreach (['folders', 'assets'] as $kind) {
+                $this->state[$kind] = array_combine(array_map($move, array_keys($this->state[$kind])), $this->state[$kind]);
+            }
+            foreach ($this->state['users'] as $email => $user) {
+                $this->state['users'][$email]['assetWorkspaces'] = array_combine(array_map($move, array_keys($user['assetWorkspaces'])), $user['assetWorkspaces']);
+            }
+        }
         public function enabledPlugins(int $portalId): array { return $this->state['portals'][$portalId]['plugins'] ?? []; }
         public function enablePlugin(int $portalId, string $pluginId): void {
             $this->writes++;
@@ -118,7 +132,7 @@ namespace {
     }
     // The demo in its middle: revision 2 uploaded over revision 1, and a second design next to it.
     function playDemo(MemoryEnvironment $env): void {
-        $folder = '/Theme Park of Tomorrow/Thunder Loop';
+        $folder = '/Pimcore Kingdom/Thunder Loop';
         $env->deleteAsset($folder, 'thunder-loop.coaster');
         $env->createAsset($folder, 'thunder-loop.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev2.coaster'));
         $env->createAsset($folder, 'thunder-loop-rev3.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev3.coaster'));
@@ -147,7 +161,7 @@ test('AC2: setup adds the plugin after the other enabled plugins with one change
     echo json_encode(['changes' => $changes, 'plugins' => $plugins, 'again' => $again, 'writes' => $env->writes - $writes,
         'other' => $env->enabledPlugins(7)]);
   `);
-  assert.deepEqual(changes, [`Enabled the plugin "${PLUGIN}" on the portal "Theme Park of Tomorrow"`]);
+  assert.deepEqual(changes, [`Enabled the plugin "${PLUGIN}" on the portal "Pimcore Kingdom"`]);
   assert.deepEqual(plugins, ['portal-a', 'portal-b', PLUGIN], 'the others stay, in their order, the plugin after them');
   assert.deepEqual(other, ['portal-a'], 'the other portal is untouched');
   assert.deepEqual(again, [], 'a second setup changes nothing');
