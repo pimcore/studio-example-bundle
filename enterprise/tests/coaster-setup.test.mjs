@@ -17,9 +17,14 @@ const read = (path) => readFileSync(path, 'utf8');
 // The in-memory environment: the whole state is one array, so a test can compare states before and after. Elements
 // carry 'demo' => true when the demo created them, as PimcoreDemoEnvironment marks them with a property.
 const bootstrap = `
+namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
+    // Stubs of the Portal Engine interfaces the plugin class implements: setup reads its id constant.
+    interface PortalPluginProviderInterface {}
+    interface PortalPluginConfigProviderInterface {}
+}
 namespace {
     foreach (['Coaster/CoasterValidator', 'Coaster/CoasterMetadataExtractor', 'Command/CoasterDemo/DemoEnvironment',
-              'Command/CoasterDemo/BriefHtml', 'Command/CoasterDemo/CoasterDemo'] as $file) {
+              'Command/CoasterDemo/BriefHtml', 'Command/CoasterDemo/CoasterDemo', 'Portal/StudioExampleEnterprisePortalPlugin'] as $file) {
         require ${JSON.stringify(src)} . '/' . $file . '.php';
     }
 
@@ -49,6 +54,11 @@ namespace {
         }
         public function dataPoolId(int $portalId, string $dataPoolName): ?int { return $this->state['portals'][$portalId]['dataPools'][$dataPoolName] ?? null; }
         public function deletePortal(int $portalId): void { $this->writes++; unset($this->state['portals'][$portalId]); }
+        public function enabledPlugins(int $portalId): array { return $this->state['portals'][$portalId]['plugins'] ?? []; }
+        public function enablePlugin(int $portalId, string $pluginId): void {
+            $this->writes++;
+            $this->state['portals'][$portalId]['plugins'] = [...$this->enabledPlugins($portalId), $pluginId];
+        }
         public function briefHtml(int $portalId): ?string { return $this->state['portals'][$portalId]['brief']['html'] ?? null; }
         public function saveBrief(int $portalId, string $title, string $html): void {
             $this->writes++;
@@ -136,6 +146,10 @@ test('AC1: setup creates the portal, the supplier with a demo login, the brief a
   assert.equal(portal.name, 'Theme Park of Tomorrow');
   assert.equal(portal.domain, 'portal.localhost');
   assert.equal(portal.language, 'en');
+  assert.deepEqual(portal.plugins, ['studio-example-enterprise'], 'the example portal plugin is enabled');
+  assert.match(changes[0], /^Created the portal "Theme Park of Tomorrow" on portal\.localhost with the data pool "Ride designs"$/);
+  assert.equal(state.portals[7].plugins, undefined, 'the other portal is untouched');
+  assert.equal(state.portals[7].name, 'Existing portal');
   const dataPoolId = portal.dataPools['Ride designs'];
   assert.ok(dataPoolId, 'has the asset data pool "Ride designs"');
 
