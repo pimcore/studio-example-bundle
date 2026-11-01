@@ -81,8 +81,12 @@ test('AC1: the review tab puts both rides above Change Control\'s diff table, re
   assert.match(tab, /import \{ CoasterSideBySide \} from '..\/side-by-side\/coaster-side-by-side'/);
   assert.ok(tab.indexOf('<CoasterSideBySide') < tab.indexOf('<SlotDiffTable'), 'the rides come first');
   const component = read('side-by-side/coaster-side-by-side.tsx');
-  assert.match(component, /useAssetGetTextDataByIdQuery\(\{ id: assetId \}\)/);
-  assert.match(component, /previewPair\(text\.data, slot\)/);
+  // the live file comes by the download endpoint: the text endpoint answers 422 for a .coaster (Asset\\Unknown)
+  assert.match(component, /`\/pimcore-studio\/api\/assets\/\$\{assetId\}\/download`/);
+  assert.match(component, /fetch\(liveFileUrl\(assetId\), \{ credentials: 'include' \}\)/);
+  assert.match(component, /if \(!response\.ok\) throw/);
+  assert.doesNotMatch(component, /useAssetGetTextDataByIdQuery/);
+  assert.match(component, /previewPair\(text, slot\)/);
   assert.match(component, /createRidePair\(React\)/);
 
   // the React wrapper mounts the pair into its element and takes it down again
