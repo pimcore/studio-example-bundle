@@ -24,6 +24,12 @@ export default defineConfig({
   tools: {
     htmlPlugin: false
   },
+  source: {
+    // The portal UI kit's dist/*.mjs keeps studio-ui's webpack HMR guards (`void 0 !== module.hot`) as bare free
+    // variables; ESM has no `module`, so the chunk throws `ReferenceError: module is not defined` and the plugin never
+    // renders. Defining it folds the guards away, as portal_engine's assets/portal/rsbuild.config.ts does (DR-F65-11).
+    define: { 'module.hot': 'undefined' }
+  },
   plugins: [
     pluginReact(),
     pluginPortalEntrypoints({ remoteName: REMOTE_NAME, assetPrefix: ASSET_PREFIX, distPath: DIST }),
