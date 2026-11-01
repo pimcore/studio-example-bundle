@@ -5,7 +5,7 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterprisePortalPlugin;
 
 /**
- * Demo 1's state: the Theme Park of Tomorrow portal with a "Ride designs" asset data pool and the example portal
+ * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
  * plugin enabled, the park's brief as a page
  * in it, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
  * metadata. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
@@ -13,7 +13,11 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
  */
 class CoasterDemo
 {
-    public const PORTAL_NAME = 'Theme Park of Tomorrow';
+    public const PORTAL_NAME = 'Pimcore Kingdom';
+
+    // The park's earlier names (DR-P22): setup renames a marked portal and asset folder under them in place, and
+    // reset --all removes a folder under them too.
+    public const LEGACY_PARK_NAMES = ['Theme Park of Tomorrow'];
 
     public const DEFAULT_DOMAIN = 'portal.localhost';
 
@@ -33,7 +37,7 @@ class CoasterDemo
     public const SUPPLIER_LASTNAME = 'Engineering';
 
     // The supplier's asset workspace; everything the demo uploads lives below it.
-    public const ASSET_ROOT = '/Theme Park of Tomorrow';
+    public const ASSET_ROOT = '/' . self::PORTAL_NAME;
 
     public const COASTER_FOLDER = self::ASSET_ROOT . '/Thunder Loop';
 
@@ -72,6 +76,23 @@ class CoasterDemo
         if ($created) {
             $portalId = $env->createPortal(self::PORTAL_NAME, $domain, self::LANGUAGE, self::DATA_POOL_NAME);
             $changes[] = sprintf('Created the portal "%s" on %s with the data pool "%s"', self::PORTAL_NAME, $domain, self::DATA_POOL_NAME);
+        } else {
+            // The portal is found by its mark, not its name: one set up under an earlier name is renamed, not doubled.
+            $name = $env->portalName($portalId);
+            if ($name !== self::PORTAL_NAME) {
+                $env->renamePortal($portalId, self::PORTAL_NAME);
+                $changes[] = sprintf('Renamed the portal "%s" to "%s"', $name, self::PORTAL_NAME);
+            }
+        }
+        // Before the supplier step, so its workspace (which points at the folder) is already right.
+        if (!$env->folderExists(self::ASSET_ROOT)) {
+            foreach (self::legacyAssetRoots() as $legacy) {
+                if ($env->folderExists($legacy)) {
+                    $env->renameFolder($legacy, self::PORTAL_NAME);
+                    $changes[] = sprintf('Renamed the folder %s to %s', $legacy, self::ASSET_ROOT);
+                    break;
+                }
+            }
         }
 
         // Without it in "Enabled plugins" the portal loads none of the example's portal code (coaster tile, preview).
@@ -127,9 +148,11 @@ class CoasterDemo
                 $env->deleteSupplier(self::SUPPLIER_EMAIL);
                 $changes[] = sprintf('Deleted the supplier %s', self::SUPPLIER_EMAIL);
             }
-            if ($env->folderExists(self::ASSET_ROOT)) {
-                $env->deleteFolder(self::ASSET_ROOT);
-                $changes[] = sprintf('Deleted the folder %s with the demo assets', self::ASSET_ROOT);
+            foreach ([self::ASSET_ROOT, ...self::legacyAssetRoots()] as $root) {
+                if ($env->folderExists($root)) {
+                    $env->deleteFolder($root);
+                    $changes[] = sprintf('Deleted the folder %s with the demo assets', $root);
+                }
             }
             $portalId = $env->portalId();
             if ($portalId !== null) {
@@ -175,6 +198,12 @@ class CoasterDemo
     public function revision1(): string
     {
         return $this->readDemoData(self::REVISION_1);
+    }
+
+    /** @return string[] the asset folders the demo used under the park's earlier names */
+    private static function legacyAssetRoots(): array
+    {
+        return array_map(static fn (string $name) => '/' . $name, self::LEGACY_PARK_NAMES);
     }
 
     private function supplierMatches(?array $actual, array $wanted): bool

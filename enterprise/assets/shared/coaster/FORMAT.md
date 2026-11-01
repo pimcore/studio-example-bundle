@@ -28,7 +28,7 @@ Any other JSON Schema 2020-12 validator (e.g. Ajv) accepts the same files.
   "meta": {
     "name": "Thunder Loop",
     "designer": "Loopwerk Engineering",
-    "park": "Theme Park of Tomorrow",
+    "park": "Pimcore Kingdom",
     "revision": 3
   },
   "train": { "cars": 6, "seatsPerCar": 4 },

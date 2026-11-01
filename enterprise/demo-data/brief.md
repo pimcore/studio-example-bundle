@@ -1,6 +1,6 @@
 # Design brief: Thunder Loop
 
-**Client:** Theme Park of Tomorrow
+**Client:** Pimcore Kingdom
 **Designer:** Loopwerk Engineering
 **Ride:** Thunder Loop, a family thrill coaster for the park's new "Storm Valley" area
 

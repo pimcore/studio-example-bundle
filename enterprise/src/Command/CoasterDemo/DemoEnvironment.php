@@ -18,6 +18,12 @@ interface DemoEnvironment
     /** The id of the portal's asset data pool document of this name, or null. */
     public function dataPoolId(int $portalId, string $dataPoolName): ?int;
 
+    /** The portal's name (its "Portal name" setting), or null if it has none. */
+    public function portalName(int $portalId): ?string;
+
+    /** Renames the portal in place: its "Portal name" setting and its document key; the site and pages stay. */
+    public function renamePortal(int $portalId, string $name): void;
+
     /** Deletes the portal with all its pages and its site. */
     public function deletePortal(int $portalId): void;
 
@@ -63,6 +69,9 @@ interface DemoEnvironment
 
     /** Whether the asset folder exists and the demo created it. */
     public function folderExists(string $folder): bool;
+
+    /** Renames the asset folder in place (same parent, new name): what is in it and what points at it follow. */
+    public function renameFolder(string $folder, string $name): void;
 
     /** Deletes the folder with everything in it if the demo created it. */
     public function deleteFolder(string $folder): void;

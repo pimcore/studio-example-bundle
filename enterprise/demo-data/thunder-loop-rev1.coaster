@@ -4,7 +4,7 @@
   "meta": {
     "name": "Thunder Loop",
     "designer": "Loopwerk Engineering",
-    "park": "Theme Park of Tomorrow",
+    "park": "Pimcore Kingdom",
     "revision": 1
   },
   "train": { "cars": 6, "seatsPerCar": 4 },

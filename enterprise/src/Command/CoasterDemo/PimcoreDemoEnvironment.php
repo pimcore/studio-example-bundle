@@ -13,6 +13,7 @@ use Pimcore\Model\DataObject\Data\ElementMetadata;
 use Pimcore\Model\DataObject\PortalUser;
 use Pimcore\Model\Document;
 use Pimcore\Model\Document\Editable;
+use Pimcore\Model\Element;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\Site;
 use Pimcore\Model\Tool\TmpStore;
@@ -85,6 +86,25 @@ class PimcoreDemoEnvironment implements DemoEnvironment
     public function dataPoolId(int $portalId, string $dataPoolName): ?int
     {
         return $this->dataPool($portalId, $dataPoolName)?->getId();
+    }
+
+    public function portalName(int $portalId): ?string
+    {
+        $data = Document\Page::getById($portalId, ['force' => true])?->getEditable(PortalConfig::PORTAL_NAME)?->getData();
+
+        return $data === null ? null : (string) $data;
+    }
+
+    /** As the wizard names it: the "Portal name" input and a valid, unique document key; the cache holds the config. */
+    public function renamePortal(int $portalId, string $name): void
+    {
+        $portal = Document\Page::getById($portalId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
+        $portal->setRawEditable(PortalConfig::PORTAL_NAME, 'input', $name);
+        $portal->setKey(Element\Service::getValidKey($name, 'document'));
+        $portal->setKey(Element\Service::getUniqueKey($portal));
+        $portal->save();
+        Cache::clearAll();
     }
 
     public function deletePortal(int $portalId): void
@@ -281,6 +301,17 @@ class PimcoreDemoEnvironment implements DemoEnvironment
         $asset = Asset::getByPath($folder);
 
         return $asset instanceof Asset\Folder && (bool) $asset->getProperty(self::MARK);
+    }
+
+    public function renameFolder(string $folder, string $name): void
+    {
+        $asset = Asset::getByPath($folder);
+        if (!$asset instanceof Asset\Folder) {
+            throw new \RuntimeException(sprintf('The asset folder %s is gone.', $folder));
+        }
+        // The same element under a new name: workspaces reference it by id, and Pimcore moves the children's paths.
+        $asset->setFilename($name);
+        $asset->save();
     }
 
     public function deleteFolder(string $folder): void
