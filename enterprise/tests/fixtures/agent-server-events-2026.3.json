@@ -1,0 +1,33 @@
+{
+  "about": "PimcoreAgentBundle's AgentEvent union on 2026.3, pinned for enterprise/tests/agent-replay.test.mjs: every event type with its fields (a trailing ? marks an optional one). 'ts' is the time stamp writeSse() adds to every event (agent-server/src/routes/sse-helpers.ts).",
+  "source": {
+    "repo": "pimcore/enterprise-monorepo",
+    "branch": "2026.3",
+    "path": "bundles/PimcoreAgentBundle/agent-server/src/types/events.ts",
+    "commit": "d2627bf7966fb3dcece3d09aba431b8a2f7891db"
+  },
+  "addedBySse": { "ts": "number" },
+  "types": {
+    "session-created": { "sessionId": "string", "agentName": "string" },
+    "turn-started": { "messageId": "string", "agentName": "string" },
+    "turn-ended": { "status": ["completed", "failed", "cancelled"] },
+    "user-message": { "messageId": "string", "parts": "array" },
+    "text-delta": { "text": "string" },
+    "thinking": { "content": "string" },
+    "widget": { "widgetType": "string", "data": "object" },
+    "debug": { "message": "string" },
+    "error": { "message": "string" },
+    "system-notice": { "messageKey": "string", "params?": "object" },
+    "agent-started": { "agentName": "string", "agentDisplayName": "string" },
+    "agent-completed": { "agentName": "string", "agentDisplayName": "string" },
+    "agent-failed": { "agentName": "string", "error": "string" },
+    "agent-switched": { "agentName": "string", "agentDisplayName": "string", "messageId?": "string" },
+    "task-status": { "status": ["running", "completed", "failed", "cancelled"], "taskId": "string" },
+    "title-updated": { "sessionId": "string", "title": "string" },
+    "ask-user": { "requestId": "string", "question": "string", "choices?": "array", "allowFreeform": "boolean" },
+    "usage-update": { "inputTokens": "number", "outputTokens": "number", "cacheReadTokens": "number", "cacheWriteTokens": "number", "requests": "number", "cost?": "number", "credits?": "number" },
+    "quota-update": { "isUnlimited?": "boolean", "usedRequests": "number", "entitlementRequests": "number", "resetDate?": "string" },
+    "turn-timing": { "modelMs": "number", "toolMs": "number", "toolCalls": "number" },
+    "complete": {}
+  }
+}
