@@ -64,7 +64,7 @@ test('AC3: a second setup reports no brief change, with Pimcore storing the brie
   // A minimal environment: it stores the brief as Pimcore's wysiwyg does (other entities, no trailing newline).
   const out = php(`
     class StatementEnvironment implements \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\DemoEnvironment {
-      private ?string $brief = null; private ?array $supplier = null; private array $assets = [];
+      private ?string $brief = null; private ?array $supplier = null; private array $assets = []; private array $branding = ['logo' => null, 'brand_primary' => null, 'brand_accent' => null];
       public function portalId(): ?int { return $this->brief === null && $this->supplier === null ? null : 1; }
       public function createPortal(string $name, string $domain, string $language, string $dataPoolName): int { return 1; }
       public function dataPoolId(int $portalId, string $dataPoolName): ?int { return 2; }
@@ -75,12 +75,16 @@ test('AC3: a second setup reports no brief change, with Pimcore storing the brie
       public function enablePlugin(int $portalId, string $pluginId): void {}
       public function briefHtml(int $portalId): ?string { return $this->brief; }
       public function saveBrief(int $portalId, string $title, string $html): void { $this->brief = rtrim(str_replace(['&apos;', '&quot;'], ['&#039;', '&#34;'], $html)); }
+      public function portalBranding(int $portalId): array { return $this->branding; }
+      public function setPortalBranding(int $portalId, string $logo, string $brandPrimary, string $brandAccent): void {
+        $this->branding = ['logo' => $logo, 'brand_primary' => $brandPrimary, 'brand_accent' => $brandAccent];
+      }
       public function supplier(string $email, string $password): ?array { return $this->supplier === null ? null : [...$this->supplier, 'passwordValid' => true]; }
       public function saveSupplier(array $supplier): void { $this->supplier = $supplier; }
       public function deleteSupplier(string $email): void {}
-      public function assets(string $folder): array { return $this->assets; }
-      public function createAsset(string $folder, string $filename, string $content): void { $this->assets[$filename] = $content; }
-      public function deleteAsset(string $folder, string $filename): void {}
+      public function assets(string $folder): array { return $this->assets[$folder] ?? []; }
+      public function createAsset(string $folder, string $filename, string $content): void { $this->assets[$folder][$filename] = $content; }
+      public function deleteAsset(string $folder, string $filename): void { unset($this->assets[$folder][$filename]); }
       public function assetMetadata(string $folder, string $filename): array { return array_fill_keys(\\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo::METADATA, '1'); }
       public function folderExists(string $folder): bool { return true; }
       public function renameFolder(string $folder, string $name): void {}
