@@ -17,7 +17,7 @@ const overlayStyle: React.CSSProperties = {
 }
 const sheetStyle: React.CSSProperties = {
   width: 'min(440px, 100vw)', height: '100%', boxSizing: 'border-box', padding: 'var(--p-space-sm)',
-  background: 'var(--p-bg-layout)', boxShadow: 'var(--p-elevation-tile)', display: 'flex', flexDirection: 'column'
+  background: 'var(--p-bg-container)', boxShadow: 'var(--p-elevation-tile)', display: 'flex', flexDirection: 'column'
 }
 const logStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 'var(--p-space-sm)', minHeight: '40vh', maxHeight: 'calc(100dvh - 180px)', overflowY: 'auto'
@@ -29,6 +29,7 @@ const bubbleStyle: React.CSSProperties = {
 const questionStyle: React.CSSProperties = { ...bubbleStyle, alignSelf: 'flex-end', maxWidth: '85%', background: 'var(--p-primary-bg)' }
 const answerStyle: React.CSSProperties = { ...bubbleStyle, alignSelf: 'flex-start', maxWidth: '95%', background: 'var(--p-bg-layout)' }
 const quietStyle: React.CSSProperties = { color: 'var(--p-text-secondary)', fontSize: 'var(--p-font-size-sm)' }
+const badgeRowStyle: React.CSSProperties = { marginBottom: 'var(--p-space-xxs)' }
 const askRowStyle: React.CSSProperties = { display: 'flex', gap: 'var(--p-space-xs)', marginTop: 'var(--p-space-sm)' }
 
 /**
@@ -105,7 +106,7 @@ export default function AskBriefPanel ({ agent, onClose }: AskBriefPanelProps): 
                 <div style={ questionStyle }>{ turn.question }</div>
                 <div style={ answerStyle } aria-live="polite" aria-busy={ isRunning(turn) } data-agent-turn={ turn.status }>
                   { turn.recorded && (
-                    <span data-agent-badge="recorded"><Tag color="default">recorded</Tag></span>
+                    <div data-agent-badge="recorded" style={ badgeRowStyle }><Tag color="default">recorded</Tag></div>
                   ) }
                   { turn.status === 'waiting' && <span style={ quietStyle } aria-label="The assistant is typing">…</span> }
                   <span data-agent-text>{ turn.text }</span>
