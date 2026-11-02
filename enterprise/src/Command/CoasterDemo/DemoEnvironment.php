@@ -40,6 +40,15 @@ interface DemoEnvironment
     public function saveBrief(int $portalId, string $title, string $html): void;
 
     /**
+     * The portal's branding settings: ['logo' => path of the logo asset or null, 'brand_primary' => ?string,
+     * 'brand_accent' => ?string].
+     */
+    public function portalBranding(int $portalId): array;
+
+    /** Sets the portal's logo to the asset at $logo and its brand colours (the others stay) and saves the portal. */
+    public function setPortalBranding(int $portalId, string $logo, string $brandPrimary, string $brandAccent): void;
+
+    /**
      * The portal user with this email, or null:
      * ['email', 'firstname', 'lastname', 'passwordValid' => whether $password is theirs,
      *  'permissions' => [permission => 'allow'|'deny'|...], 'assetWorkspaces' => [folder path => [permission, ...]]].

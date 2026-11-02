@@ -168,6 +168,40 @@ class PimcoreDemoEnvironment implements DemoEnvironment
         $brief->save();
     }
 
+    public function portalBranding(int $portalId): array
+    {
+        $portal = Document\Page::getById($portalId, ['force' => true]);
+        $logo = $portal?->getEditable(PortalConfig::LOGO);
+        $text = static function (?Editable $editable): ?string {
+            $data = $editable?->getData();
+
+            return $data === null || $data === '' ? null : (string) $data;
+        };
+
+        return [
+            'logo' => $logo instanceof Editable\Image ? $logo->getImage()?->getRealFullPath() : null,
+            'brand_primary' => $text($portal?->getEditable(PortalConfig::BRAND_PRIMARY)),
+            'brand_accent' => $text($portal?->getEditable(PortalConfig::BRAND_ACCENT)),
+        ];
+    }
+
+    /** As the portal settings (Style Settings) save them; the cache holds the portal's config, so it is cleared. */
+    public function setPortalBranding(int $portalId, string $logo, string $brandPrimary, string $brandAccent): void
+    {
+        $portal = Document\Page::getById($portalId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
+        $image = Asset::getByPath($logo);
+        if (!$image instanceof Asset\Image) {
+            throw new \RuntimeException(sprintf('The logo %s is not an image asset.', $logo));
+        }
+        $portal->getEditables(); // keeps the other settings, as in enablePlugin()
+        $portal->setRawEditable(PortalConfig::LOGO, 'image', ['id' => $image->getId()]);
+        $portal->setRawEditable(PortalConfig::BRAND_PRIMARY, 'input', $brandPrimary);
+        $portal->setRawEditable(PortalConfig::BRAND_ACCENT, 'input', $brandAccent);
+        $portal->save();
+        Cache::clearAll();
+    }
+
     public function supplier(string $email, string $password): ?array
     {
         $user = $this->portalUser($email);

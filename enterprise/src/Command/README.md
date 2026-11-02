@@ -25,6 +25,7 @@ one line per change and ends with the demo login.
 | The portal "Pimcore Kingdom" with the asset data pool "Ride designs", English only | a new site on `--domain`, made by the Portal Engine's own portal wizard |
 | The example portal plugin `studio-example-enterprise` in the portal's **Enabled plugins** (the coaster tile and preview need it); other plugins there stay | the portal's configuration document; setup saves it and clears the cache |
 | The park's brief ([`demo-data/brief.md`](../../demo-data/brief.md)) as a content page "Brief: Thunder Loop" | next to the data pool in the portal's navigation |
+| The park's own-made logo ([`demo-data/branding/`](../../demo-data/branding/README.md), SVG and PNG) in `/Pimcore Kingdom/Branding`, set as the portal's **Logo**, with **brand_primary** `#1e3a8a` and **brand_accent** `#b91c1c` | the portal's configuration document (Style Settings); setup saves it and clears the cache. A changed colour or a missing logo file is put back |
 | The supplier Loopwerk Engineering, a portal user with access to the portal and the data pool, and all rights in the asset folder `/Pimcore Kingdom` | data object `/Portal Users/Coaster demo/loopwerk-supplier` |
 | Revision 1 of Thunder Loop, with the five metadata values the coaster listener (`src/Coaster/`) fills on upload | asset `/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster` |
 
@@ -65,7 +66,8 @@ own: **the event `CoasterDemoResetEvent`**, for other examples to drop their dem
 above).
 
 Test, from the repository root: `enterprise/tests/coaster-setup.test.mjs` runs setup and reset against an in-memory
-environment; `enterprise/tests/coaster-setup-plugin.test.mjs` covers enabling the plugin.
+environment; `enterprise/tests/coaster-setup-plugin.test.mjs` covers enabling the plugin;
+`enterprise/tests/coaster-branding.test.mjs` the logo, its safety and the brand colours' contrast.
 
 ## Code
 

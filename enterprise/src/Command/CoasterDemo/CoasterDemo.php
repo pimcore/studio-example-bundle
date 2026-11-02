@@ -8,7 +8,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
  * plugin enabled, the park's brief as a page
  * in it, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
- * metadata. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
+ * metadata, and the park's own logo and brand colours on the portal. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
  */
 class CoasterDemo
@@ -44,6 +44,20 @@ class CoasterDemo
     public const COASTER_FILENAME = 'thunder-loop.coaster';
 
     public const REVISION_1 = 'thunder-loop-rev1.coaster';
+
+    // The park's branding (DR-P22): an own-made logo in demo-data/branding, uploaded here and set as the portal's
+    // logo (the SVG: the header inlines it in brand_primary; the PNG is for thumbnails and e-mails).
+    public const BRANDING_FOLDER = self::ASSET_ROOT . '/Branding';
+
+    public const LOGO_SVG = 'pimcore-kingdom-logo.svg';
+
+    public const LOGO_PNG = 'pimcore-kingdom-logo.png';
+
+    // Royal blue and crimson: white text on either, and either as text on the light header, is at least 4.5:1
+    // (tests/coaster-branding.test.mjs), so both still read on a projector.
+    public const BRAND_PRIMARY = '#1e3a8a';
+
+    public const BRAND_ACCENT = '#b91c1c';
 
     // Portal Engine permission keys (Pimcore\Bundle\PortalEngineBundle\Enum\Permission): <permission>___<document id>.
     public const PORTAL_ACCESS = 'portal-access___';
@@ -118,6 +132,8 @@ class CoasterDemo
             $changes[] = sprintf('Set up the supplier %s %s (%s)', self::SUPPLIER_FIRSTNAME, self::SUPPLIER_LASTNAME, self::SUPPLIER_EMAIL);
         }
 
+        $changes = [...$changes, ...$this->brand($portalId)];
+
         // Only a missing coaster is uploaded: setup never overwrites what the demo uploaded; reset does.
         if (!array_key_exists(self::COASTER_FILENAME, $env->assets(self::COASTER_FOLDER))) {
             $env->createAsset(self::COASTER_FOLDER, self::COASTER_FILENAME, $this->revision1());
@@ -188,6 +204,44 @@ class CoasterDemo
             ],
             'assetWorkspaces' => [self::ASSET_ROOT => self::WORKSPACE_PERMISSIONS],
         ];
+    }
+
+    /**
+     * Uploads a missing or changed logo file and sets the portal's logo and brand colours where they differ.
+     *
+     * @return string[] what was changed
+     */
+    private function brand(int $portalId): array
+    {
+        $env = $this->environment;
+        $changes = [];
+
+        $uploaded = [];
+        $there = $env->assets(self::BRANDING_FOLDER);
+        foreach ([self::LOGO_SVG, self::LOGO_PNG] as $file) {
+            $content = $this->readDemoData('branding/' . $file);
+            if (($there[$file] ?? null) === $content) {
+                continue;
+            }
+            if (array_key_exists($file, $there)) {
+                $env->deleteAsset(self::BRANDING_FOLDER, $file);
+            }
+            $env->createAsset(self::BRANDING_FOLDER, $file, $content);
+            $uploaded[] = $file;
+        }
+        if ($uploaded !== []) {
+            $changes[] = sprintf('Uploaded the logo files %s to %s', implode(', ', $uploaded), self::BRANDING_FOLDER);
+        }
+
+        $wanted = ['logo' => self::BRANDING_FOLDER . '/' . self::LOGO_SVG, 'brand_primary' => self::BRAND_PRIMARY, 'brand_accent' => self::BRAND_ACCENT];
+        $actual = $env->portalBranding($portalId);
+        // A re-uploaded SVG is a new asset, so the logo is set again even when its path is the same.
+        if (in_array(self::LOGO_SVG, $uploaded, true) || array_intersect_key($actual, $wanted) != $wanted) {
+            $env->setPortalBranding($portalId, $wanted['logo'], self::BRAND_PRIMARY, self::BRAND_ACCENT);
+            $changes[] = sprintf('Set the logo and the brand colours %s and %s on the portal "%s"', self::BRAND_PRIMARY, self::BRAND_ACCENT, self::PORTAL_NAME);
+        }
+
+        return $changes;
     }
 
     public function briefHtml(): string

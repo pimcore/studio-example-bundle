@@ -97,7 +97,7 @@ namespace {
         public function assets(string $folder): array {
             $assets = [];
             foreach ($this->state['assets'] as $path => $asset) {
-                if (dirname($path) === $folder) { $assets[basename($path)] = $asset['content']; }
+                if (dirname($path) === $folder) { $assets[basename($path)] = self::load($asset['content']); }
             }
             return $assets;
         }
@@ -111,7 +111,18 @@ namespace {
             if (str_ends_with($filename, '.coaster')) {
                 foreach ((new CoasterMetadataExtractor())->extract(json_decode($content)) as $name => $value) { $metadata[$name] = (string) $value; }
             }
-            $this->state['assets'][$folder . '/' . $filename] = ['content' => $content, 'metadata' => $metadata, 'demo' => true];
+            $this->state['assets'][$folder . '/' . $filename] = ['content' => self::store($content), 'metadata' => $metadata, 'demo' => true];
+        }
+        // Binary content (the PNG logo, F101) is kept base64-tagged, so the state stays JSON.
+        public static function store(string $content): string { return mb_check_encoding($content, 'UTF-8') ? $content : 'base64:' . base64_encode($content); }
+        public static function load(string $content): string { return str_starts_with($content, 'base64:') ? base64_decode(substr($content, 7)) : $content; }
+        // The portal's logo and brand colours (F101).
+        public function portalBranding(int $portalId): array {
+            return $this->state['portals'][$portalId]['branding'] ?? ['logo' => null, 'brand_primary' => null, 'brand_accent' => null];
+        }
+        public function setPortalBranding(int $portalId, string $logo, string $brandPrimary, string $brandAccent): void {
+            $this->writes++;
+            $this->state['portals'][$portalId]['branding'] = ['logo' => $logo, 'brand_primary' => $brandPrimary, 'brand_accent' => $brandAccent];
         }
         public function deleteAsset(string $folder, string $filename): void { $this->writes++; unset($this->state['assets'][$folder . '/' . $filename]); }
         public function assetMetadata(string $folder, string $filename): array { return $this->state['assets'][$folder . '/' . $filename]['metadata'] ?? []; }
@@ -201,7 +212,7 @@ test('AC3: reset --all and then setup enable the plugin again; reset at revision
         'enables' => $env->enables - $enables, 'plugins' => $env->enabledPlugins($id)]);
   `);
   assert.ok(removed.some((line) => /Deleted the portal/.test(line)), 'reset --all removed the portal');
-  assert.equal(setupChanges.length, 4, setupChanges.join('\n'));
+  assert.equal(setupChanges.length, 6, setupChanges.join('\n'));
   assert.deepEqual(demoPortal(state).plugins, [PLUGIN], 'the new portal has the plugin again');
   assert.deepEqual(resetChanges, [], 'reset at revision 1 changes nothing');
   assert.equal(enables, 0, 'reset at revision 1 does not write the setting');
