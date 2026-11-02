@@ -127,6 +127,10 @@ namespace {
         public function deleteAsset(string $folder, string $filename): void { $this->writes++; unset($this->state['assets'][$folder . '/' . $filename]); }
         public function assetMetadata(string $folder, string $filename): array { return $this->state['assets'][$folder . '/' . $filename]['metadata'] ?? []; }
         public function folderExists(string $folder): bool { return $this->state['folders'][$folder] ?? false; }
+        // Pimcore translations (F135): kept beside the state, as reset --all leaves the text setup added.
+        public array $translations = [];
+        public function translation(string $domain, string $key, string $language): ?string { return $this->translations[$domain][$key][$language] ?? null; }
+        public function saveTranslation(string $domain, string $key, string $language, string $text): void { $this->writes++; $this->translations[$domain][$key][$language] = $text; }
         public function deleteFolder(string $folder): void {
             if (!$this->folderExists($folder)) { return; }
             $this->writes++;

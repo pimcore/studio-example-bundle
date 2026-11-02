@@ -88,6 +88,10 @@ namespace {
         public function assetMetadata(string $folder, string $filename): array { return $this->state['assets'][$folder . '/' . $filename]['metadata'] ?? []; }
         public function folderExists(string $folder): bool { return $this->state['folders'][$folder] ?? false; }
         public function renameFolder(string $folder, string $name): void { $this->writes++; }
+        // Pimcore translations (F135): kept beside the state, as reset --all leaves the text setup added.
+        public array $translations = [];
+        public function translation(string $domain, string $key, string $language): ?string { return $this->translations[$domain][$key][$language] ?? null; }
+        public function saveTranslation(string $domain, string $key, string $language, string $text): void { $this->writes++; $this->translations[$domain][$key][$language] = $text; }
         public function deleteFolder(string $folder): void {
             $this->writes++;
             foreach (['folders', 'assets'] as $kind) {

@@ -127,6 +127,10 @@ namespace {
         public function deleteAsset(string $folder, string $filename): void { $this->writes++; unset($this->state['assets'][$folder . '/' . $filename]); }
         public function assetMetadata(string $folder, string $filename): array { return $this->state['assets'][$folder . '/' . $filename]['metadata'] ?? []; }
         public function folderExists(string $folder): bool { return $this->state['folders'][$folder] ?? false; }
+        // Pimcore translations (F135): kept beside the state, as reset --all leaves the text setup added.
+        public array $translations = [];
+        public function translation(string $domain, string $key, string $language): ?string { return $this->translations[$domain][$key][$language] ?? null; }
+        public function saveTranslation(string $domain, string $key, string $language, string $text): void { $this->writes++; $this->translations[$domain][$key][$language] = $text; }
         public function deleteFolder(string $folder): void {
             if (!$this->folderExists($folder)) { return; }
             $this->writes++;
@@ -165,7 +169,7 @@ test('AC1: setup creates the portal, the supplier with a demo login, the brief a
     $changes = demo($env)->setup();
     echo json_encode(['changes' => $changes, 'state' => $env->state, 'html' => demo($env)->briefHtml()]);
   `);
-  assert.equal(changes.length, 6, changes.join('\n'));
+  assert.equal(changes.length, 7, changes.join('\n'));
   // F101: the two branding lines come after the supplier and before the coaster upload.
   assert.match(changes[3], /^Uploaded the logo files pimcore-kingdom-logo.svg, pimcore-kingdom-logo.png to \/Pimcore Kingdom\/Branding$/);
   assert.match(changes[4], /^Set the logo and the brand colours /);
