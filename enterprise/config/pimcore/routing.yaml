@@ -34,3 +34,13 @@ pimcore_studio_example_enterprise_agent_chat:
     controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent\AgentChatController::__invoke
     condition: "request.attributes.get('isPortalEngineSite')"
     methods: [POST]
+
+# The agent demo's confirmed write: the portal user confirms a stored Supplier-note proposal by its id, see
+# src/Agent/Note/README.md. JSON 401/403/404/409 like the chat route; the id is F126's random 32-hex proposal id.
+pimcore_studio_example_enterprise_agent_proposal_confirm:
+    path: /studio-example-enterprise/agent/proposal/{id}/confirm
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\ConfirmController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [POST]
+    requirements:
+        id: '[0-9a-f]{32}'

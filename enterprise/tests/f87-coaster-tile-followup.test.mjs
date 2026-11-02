@@ -146,7 +146,7 @@ test('AC6: F49 tests still name each of its criteria', () => {
 
 test('AC7: the extension-point index count stays exact and matches the index', () => {
   const f86 = read(join(enterpriseDir, 'tests/f86-readme-followup.test.mjs'));
-  assert.match(f86, /assert\.equal\(all\.length, 13\)/, 'still an exact count');
+  assert.match(f86, /assert\.equal\(all\.length, 14\)/, 'still an exact count');
 });
 
 test('AC8: a grid row renders in order, then the next tiles: each keeps its own picture', () => {

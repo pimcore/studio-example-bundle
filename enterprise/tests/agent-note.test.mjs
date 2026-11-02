@@ -397,7 +397,8 @@ test('AC2: the route is POST-only on portal sites at /studio-example-enterprise/
   const services = read(join(enterpriseDir, 'config/agent-note.yaml'));
   assert.doesNotMatch(services, /^pimcore_agent:/m);
   for (const file of readdirSync(noteSrc).filter((f) => f.endsWith('.php'))) {
-    const src = read(join(noteSrc, file));
+    // the code, not its comments (they name what it does not use)
+    const src = read(join(noteSrc, file)).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     assert.doesNotMatch(src, /PimcoreAgentBundle|ChangeControl|getContent\(\)|->request->|toArray\(\)/, `${file}: no agent bundle, no Change Control, no request body`);
   }
 });
