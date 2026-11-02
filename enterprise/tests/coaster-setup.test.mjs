@@ -402,3 +402,20 @@ test('AC2: a demo portal without a portal name gets the name, with one change li
   assert.deepEqual(changes, ['Renamed the portal "(no portal name)" to "Pimcore Kingdom"']);
   assert.deepEqual(again, []);
 });
+
+test('AC2: a second setup on Pimcore reports no change, though Pimcore stores the brief with other entities and no trailing newline', () => {
+  // Seen on the try (2026-11-02): Pimcore's wysiwyg save turns &apos; into &#039; and &quot; into &#34; and drops the
+  // trailing newline, so an exact compare rewrote the brief on every run.
+  const { first, second } = php(`
+    $env = new class extends MemoryEnvironment {
+      public function saveBrief(int $portalId, string $title, string $html): void {
+        parent::saveBrief($portalId, $title, rtrim(str_replace(['&apos;', '&quot;'], ['&#039;', '&#34;'], $html)));
+      }
+    };
+    $first = demo($env)->setup();
+    $second = demo($env)->setup();
+    echo json_encode(['first' => $first, 'second' => $second]);
+  `);
+  assert.ok(first.some((line) => line.includes('brief')), first.join('\n'));
+  assert.deepEqual(second, [], 'the second run changes nothing');
+});
