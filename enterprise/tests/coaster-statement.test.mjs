@@ -99,3 +99,16 @@ test('AC3: a second setup reports no brief change, with Pimcore storing the brie
   assert.deepEqual(second.filter((line) => line.includes('brief')), [], 'the second run writes no brief');
   assert.deepEqual(second, [], 'the second run changes nothing');
 });
+
+test('AC4: as How to try says, the statement sits under the client lines, before Target audience, its four expectations led in bold', () => {
+  const client = brief.indexOf('**Client:**');
+  const start = brief.indexOf('## Company statement');
+  assert.ok(client >= 0 && client < start, 'the client lines come first');
+  assert.ok(start < brief.indexOf('## Target audience'), 'the statement comes before Target audience');
+  const items = expectations();
+  assert.equal(items.length, 4);
+  for (const item of items) assert.match(item, /^\*\*[^*]+\*\* /, `led in bold: ${item}`);
+  const html = php(`echo \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\BriefHtml::fromMarkdown(${JSON.stringify(brief)});`);
+  assert.equal((html.slice(html.indexOf('Company statement'), html.indexOf('Target audience')).match(/<li><strong>/g) ?? []).length, 4,
+    'the page shows the four expectations bold');
+});
