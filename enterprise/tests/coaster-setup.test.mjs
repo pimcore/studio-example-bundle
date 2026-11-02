@@ -419,3 +419,31 @@ test('AC2: a second setup on Pimcore reports no change, though Pimcore stores th
   assert.ok(first.some((line) => line.includes('brief')), first.join('\n'));
   assert.deepEqual(second, [], 'the second run changes nothing');
 });
+
+const pimcoreMethod = (name) => {
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  const start = pimcore.indexOf(`function ${name}(`);
+  assert.ok(start > 0, `PimcoreDemoEnvironment has ${name}`);
+  return pimcore.slice(start, pimcore.indexOf('\n    }\n', start));
+};
+
+test('AC1 AC3: on Pimcore, every asset folder setup creates is marked, the supplier\'s workspace folder too', () => {
+  // Seen on the try (2026-11-02): the supplier step made the park folder first (createFolderByPath, unmarked), so the
+  // upload found it there and marked only Thunder Loop; reset --all then never deleted the park folder.
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  const bare = pimcore.split('Asset\\Service::createFolderByPath(').length - 1;
+  assert.equal(bare, 1, 'Asset folders are made in one place only');
+  assert.match(pimcoreMethod('markedFolder'), /Asset\\Service::createFolderByPath\(/);
+  assert.match(pimcoreMethod('markedFolder'), /setProperty\(self::MARK/);
+  assert.match(pimcoreMethod('saveSupplier'), /\$this->markedFolder\(\$path\)/);
+  assert.match(pimcoreMethod('createAsset'), /\$this->markedFolder\(\$folder\)/);
+});
+
+test('AC2 AC3: on Pimcore, a park folder made unmarked by an earlier setup counts as the demo\'s through its marked Thunder Loop folder', () => {
+  const exists = pimcoreMethod('folderExists');
+  assert.match(exists, /self::MARK/);
+  assert.match(exists, /getChildren\(\)|getChildAmount|Thunder Loop|ownedChild/, 'looks at the folder\'s demo children when it is unmarked');
+  const remove = pimcoreMethod('deleteFolder');
+  assert.match(remove, /getChildren\(\)/, 'an unmarked park folder: deletes its marked children');
+  assert.match(remove, /hasChildren\(\)/, 'and the park folder itself only once nothing else is left in it');
+});
