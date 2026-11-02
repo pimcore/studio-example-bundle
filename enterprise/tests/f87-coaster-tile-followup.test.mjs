@@ -24,7 +24,7 @@ const model = await import(join(tileDir, 'coaster-tile-model.ts'));
 
 // The stand-ins: the kit's Icon, and the SDK names plugin.tsx registers under.
 const Icon = (props) => React.createElement('i', { 'data-kit-icon': props.value, 'data-width': props.options?.width });
-const sdkNames = { tileRegions: { media: 'tileRegions.media', meta: 'tileRegions.meta' }, previewStage: 'previewStage', slots: { navEntries: 'navEntries' } };
+const sdkNames = { tileRegions: { media: 'tileRegions.media', meta: 'tileRegions.meta' }, previewStage: 'previewStage', slots: { navEntries: 'navEntries', headerActions: 'headerActions' } };
 
 /** A .tsx file transpiled to CommonJS and run with the given modules for its imports. */
 function loadTsx (path, modules) {
@@ -75,6 +75,8 @@ function registrations () {
   const { studioExampleEnterprisePlugin } = loadTsx(join(portalSrc, 'plugin.tsx'), {
     '@pimcore/portal-plugin-sdk': sdk,
     '../../talk/TalkNavEntry': { TalkNavEntry: () => null },
+    // F128: the header's "Ask the brief" button (agent/README.md)
+    './agent/AskBriefButton': { AskBriefButton: () => null },
     './coaster/preview-stage/CoasterPreviewStage': { CoasterPreviewStage: () => null },
     './coaster/tile/CoasterTileMedia': mediaModule()
   });
