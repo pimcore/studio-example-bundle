@@ -111,6 +111,29 @@ export async function launchChromium({ unlimited = false } = {}) {
       await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
     }
   };
+  // F136: where the progress label and Restart sit, and how high a line of the label's text is.
+  session.progressLayout = () =>
+    evaluate(`(() => {
+      const bar = document.querySelector('.coaster-ride-controls');
+      const label = bar.querySelector('.coaster-ride-progress');
+      const box = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, height: r.height }; };
+      const style = getComputedStyle(label);
+      return {
+        text: label.textContent, label: box(label), restart: box(bar.querySelector('button[name=restart]')),
+        lines: label.getClientRects().length, lineHeight: parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2,
+        paddingY: parseFloat(style.paddingTop) + parseFloat(style.paddingBottom),
+        whiteSpace: style.whiteSpace, background: style.backgroundColor, viewport: innerWidth,
+      };
+    })()`);
+  // F136 AC2: the label is one line high and does not overlap Restart (it sits right of it).
+  session.assertProgressOneLine = async () => {
+    const layout = await session.progressLayout();
+    assert.ok(layout.label.height - layout.paddingY <= layout.lineHeight * 1.5,
+      `"${layout.text}" is one line high at ${layout.viewport} px: ${JSON.stringify(layout)}`);
+    assert.ok(layout.label.left >= layout.restart.right,
+      `"${layout.text}" sits right of Restart, not over it: ${JSON.stringify(layout)}`);
+    return layout;
+  };
   entry.session = session;
   return session;
 }
