@@ -13,9 +13,13 @@ services:
     # The page's controller, routed by config/pimcore/routing.yaml. The tag is needed: autoconfigure alone does not
     # set it for a bundle, and the action would fail with "has no container set".
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkController:
+        tags: ['controller.service_arguments']
+
+    # The viewer URL, and whether the default one is installed (F106: the page says so instead of framing a 404).
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkViewer:
         arguments:
             $viewerUrl: '%pimcore_studio_example_enterprise.talk.viewer_url%'
-        tags: ['controller.service_arguments']
+            $defaultViewerUrl: '%pimcore_studio_example_enterprise.talk.default_viewer_url%'
 
     # The page's URL for the "Talk" navigation entry, handed to the frontend by the portal plugin provider.
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkPage: ~

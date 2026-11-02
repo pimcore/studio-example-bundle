@@ -33,9 +33,11 @@ Three: a route, the layout's blocks and a navigation slot.
 1. Install the sub-bundle as described in [the enterprise README](../../../README.md), and build the portal plugin
    as described in [the portal plugin README](../README.md) (needs vendor access).
 2. Put the viewer where the page loads it from. By default that is
-   `/bundles/pimcorestudioexampleenterprise/talk/talk.html`: copy the built `talk.html` to `public/talk/talk.html` of
-   this sub-bundle and run `bin/console assets:install`. To load it from elsewhere, set the URL in your application's
-   `.env.local`:
+   `/bundles/pimcorestudioexampleenterprise/talk/talk.html`, so the install step is:
+   Copy the built `talk.html` to `public/talk/talk.html` of the enterprise bundle and run `bin/console assets:install`.
+   Without it the page shows "The slide viewer is not installed" with that step and a link back to the portal, and
+   logs a warning. To load the viewer from elsewhere, set the URL in your application's `.env.local` (such a URL is
+   not checked):
 
    ```dotenv
    PORTAL_TALK_VIEWER_URL=/talk/talk.html
