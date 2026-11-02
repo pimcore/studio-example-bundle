@@ -189,8 +189,8 @@ test('AC1: on Pimcore, setPortalBranding sets the logo image editable and the br
 const svgs = readdirSync(branding).filter((f) => f.endsWith('.svg'));
 
 test('AC2: the branding carries a license note that says the logo is own-made', () => {
-  assert.match(read(join(branding, 'README.md')), /own-made/i);
-  assert.match(read(join(branding, 'README.md')), /not the Pimcore mark/);
+  assert.match(read(join(branding, 'LICENSE.md')), /own-made/i);
+  assert.match(read(join(branding, 'LICENSE.md')), /not the Pimcore mark/);
   for (const file of svgs) {
     assert.match(read(join(branding, file)), /own-made/i, `${file} names its origin too`);
   }

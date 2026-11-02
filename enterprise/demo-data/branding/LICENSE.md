@@ -1,4 +1,4 @@
-# Pimcore Kingdom branding
+# Pimcore Kingdom branding: what it is and its license
 
 The logo and brand colours `coaster-demo:setup` gives the demo portal (DR-P22 items 2 and 5).
 
