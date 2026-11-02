@@ -444,6 +444,6 @@ test('AC2 AC3: on Pimcore, a park folder made unmarked by an earlier setup count
   assert.match(exists, /self::MARK/);
   assert.match(exists, /getChildren\(\)|getChildAmount|Thunder Loop|ownedChild/, 'looks at the folder\'s demo children when it is unmarked');
   const remove = pimcoreMethod('deleteFolder');
-  assert.match(remove, /getChildren\(\)/, 'an unmarked park folder: deletes its marked children');
+  assert.match(remove, /ownedChildren\(|getChildren\(\)/, 'an unmarked park folder: deletes its marked children');
   assert.match(remove, /hasChildren\(\)/, 'and the park folder itself only once nothing else is left in it');
 });

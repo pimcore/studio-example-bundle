@@ -220,7 +220,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment
 
         $workspaces = [];
         foreach ($supplier['assetWorkspaces'] as $path => $permissions) {
-            $folder = Asset\Service::createFolderByPath($path);
+            $folder = $this->markedFolder($path);
             $workspace = new ElementMetadata('assetWorkspaceDefinition', array_map(static fn (string $column) => 'permission_' . $column, self::WORKSPACE_COLUMNS), $folder);
             $workspace->setData(array_combine(
                 array_map(static fn (string $column) => 'permission_' . $column, self::WORKSPACE_COLUMNS),
@@ -259,21 +259,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment
 
     public function createAsset(string $folder, string $filename, string $content): void
     {
-        // Mark the folders this creates, so a full reset may delete them; folders that were there stay unmarked.
-        $missing = [];
-        $path = '';
-        foreach (explode('/', trim($folder, '/')) as $segment) {
-            $path .= '/' . $segment;
-            if (!Asset::getByPath($path)) {
-                $missing[] = $path;
-            }
-        }
-        $parent = Asset\Service::createFolderByPath($folder);
-        foreach ($missing as $created) {
-            $created = Asset::getByPath($created);
-            $created?->setProperty(self::MARK, 'bool', true, false, false);
-            $created?->save();
-        }
+        $parent = $this->markedFolder($folder);
 
         $asset = Asset::create($parent->getId(), ['filename' => $filename, 'data' => $content], false);
         $asset->setProperty(self::MARK, 'bool', true, false, false);
@@ -304,7 +290,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment
     {
         $asset = Asset::getByPath($folder);
 
-        return $asset instanceof Asset\Folder && (bool) $asset->getProperty(self::MARK);
+        return $asset instanceof Asset\Folder && ($asset->getProperty(self::MARK) || [] !== self::ownedChildren($asset));
     }
 
     public function renameFolder(string $folder, string $name): void
@@ -320,9 +306,54 @@ class PimcoreDemoEnvironment implements DemoEnvironment
 
     public function deleteFolder(string $folder): void
     {
-        if ($this->folderExists($folder)) {
-            Asset::getByPath($folder)->delete();
+        $asset = Asset::getByPath($folder);
+        if (!$asset instanceof Asset\Folder) {
+            return;
         }
+        if ($asset->getProperty(self::MARK)) {
+            $asset->delete();
+
+            return;
+        }
+        // A park folder an earlier setup made unmarked: its demo children go, the folder only when nothing else is left.
+        foreach (self::ownedChildren($asset) as $child) {
+            $child->delete();
+        }
+        $asset = Asset::getById($asset->getId(), ['force' => true]);
+        if ($asset instanceof Asset\Folder && !$asset->hasChildren()) {
+            $asset->delete();
+        }
+    }
+
+    /**
+     * The asset folder at $folder, made with every missing folder on the way marked, so a full reset may delete them;
+     * folders that were there stay unmarked. Setup makes folders only here (the supplier's workspace made the park
+     * folder unmarked before, F99).
+     */
+    private function markedFolder(string $folder): Asset\Folder
+    {
+        $missing = [];
+        $path = '';
+        foreach (explode('/', trim($folder, '/')) as $segment) {
+            $path .= '/' . $segment;
+            if (!Asset::getByPath($path)) {
+                $missing[] = $path;
+            }
+        }
+        $made = Asset\Service::createFolderByPath($folder);
+        foreach ($missing as $created) {
+            $created = Asset::getByPath($created);
+            $created?->setProperty(self::MARK, 'bool', true, false, false);
+            $created?->save();
+        }
+
+        return $made;
+    }
+
+    /** @return list<Asset> the marked children of $folder (the demo's, e.g. Thunder Loop) */
+    private static function ownedChildren(Asset\Folder $folder): array
+    {
+        return array_values(array_filter($folder->getChildren()->load(), static fn (Asset $child): bool => (bool) $child->getProperty(self::MARK)));
     }
 
     private static function wysiwygName(): string
