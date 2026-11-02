@@ -17,6 +17,7 @@ use Pimcore\Model\Element;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\Site;
 use Pimcore\Model\Tool\TmpStore;
+use Pimcore\Model\Translation;
 
 /**
  * The demo on Pimcore and the Portal Engine. The portal is made by the Portal Engine's own wizard (the same code the
@@ -364,6 +365,26 @@ class PimcoreDemoEnvironment implements DemoEnvironment
      * folders that were there stay unmarked. Setup makes folders only here (the supplier's workspace made the park
      * folder unmarked before, F99).
      */
+    public function translation(string $domain, string $key, string $language): ?string
+    {
+        return Translation::getByKey($key, $domain)?->getTranslation($language);
+    }
+
+    // Translation::save() clears the translator cache, so the portal reads the new text on its next request.
+    public function saveTranslation(string $domain, string $key, string $language, string $text): void
+    {
+        $translation = Translation::getByKey($key, $domain);
+        if ($translation === null) {
+            $translation = new Translation();
+            $translation->setDomain($domain);
+            $translation->setKey($key);
+            $translation->setCreationDate(time());
+        }
+        $translation->addTranslation($language, $text);
+        $translation->setModificationDate(time());
+        $translation->save();
+    }
+
     private function markedFolder(string $folder): Asset\Folder
     {
         $missing = [];

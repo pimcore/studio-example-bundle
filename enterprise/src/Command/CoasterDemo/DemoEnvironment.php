@@ -84,4 +84,10 @@ interface DemoEnvironment
 
     /** Deletes the folder with everything in it if the demo created it. */
     public function deleteFolder(string $folder): void;
+
+    /** The text of the translation key in this domain and language, or null if there is none. */
+    public function translation(string $domain, string $key, string $language): ?string;
+
+    /** Sets the text of the translation key in this domain and language (other languages stay) and saves it. */
+    public function saveTranslation(string $domain, string $key, string $language, string $text): void;
 }

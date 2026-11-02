@@ -156,6 +156,9 @@ namespace {
 }
 `;
 
+// Runs the PHP snippet after the bootstrap and returns what it echoes, parsed as JSON.
+const php = (body) =>
+  JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-r', `${bootstrap}\nnamespace {\n${body}\n}\n`], { encoding: 'utf8' }));
 
 const DOMAIN = 'portal_engine_frontend';
 const KEY = 'portal-engine.listing.root-folder';

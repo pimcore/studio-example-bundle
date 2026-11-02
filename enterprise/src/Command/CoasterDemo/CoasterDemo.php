@@ -8,7 +8,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
  * plugin enabled, the park's brief as a page
  * in it, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
- * metadata, and the park's own logo and brand colours on the portal. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
+ * metadata, and the park's own logo and brand colours on the portal, and an English text for the asset tree's first line. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
  */
 class CoasterDemo
@@ -59,6 +59,15 @@ class CoasterDemo
     public const BRAND_PRIMARY = '#1e3a8a';
 
     public const BRAND_ACCENT = '#b91c1c';
+
+    // The asset tree's first line in the portal (F135, spike F105 P2): the frontend reads this key in this domain. A
+    // 2026.3 ships "/ (root)" for it; an older 2026.x install has no text and shows the raw key. Setup adds the text
+    // only where it is missing or empty, so an edited text stays.
+    public const TRANSLATION_DOMAIN = 'portal_engine_frontend';
+
+    public const ROOT_FOLDER_KEY = 'portal-engine.listing.root-folder';
+
+    public const ROOT_FOLDER_TEXT = 'All ride designs';
 
     // Portal Engine permission keys (Pimcore\Bundle\PortalEngineBundle\Enum\Permission): <permission>___<document id>.
     public const PORTAL_ACCESS = 'portal-access___';
@@ -134,6 +143,11 @@ class CoasterDemo
         }
 
         $changes = [...$changes, ...$this->brand($portalId)];
+
+        if (($env->translation(self::TRANSLATION_DOMAIN, self::ROOT_FOLDER_KEY, self::LANGUAGE) ?? '') === '') {
+            $env->saveTranslation(self::TRANSLATION_DOMAIN, self::ROOT_FOLDER_KEY, self::LANGUAGE, self::ROOT_FOLDER_TEXT);
+            $changes[] = sprintf('Added the English text "%s" for %s', self::ROOT_FOLDER_TEXT, self::ROOT_FOLDER_KEY);
+        }
 
         // Only a missing coaster is uploaded: setup never overwrites what the demo uploaded; reset does.
         if (!array_key_exists(self::COASTER_FILENAME, $env->assets(self::COASTER_FOLDER))) {
