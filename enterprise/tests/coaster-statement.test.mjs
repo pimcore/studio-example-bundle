@@ -89,6 +89,9 @@ test('AC3: a second setup reports no brief change, with Pimcore storing the brie
       public function folderExists(string $folder): bool { return true; }
       public function renameFolder(string $folder, string $name): void {}
       public function deleteFolder(string $folder): void {}
+      private array $translations = [];
+      public function translation(string $domain, string $key, string $language): ?string { return $this->translations[$domain][$key][$language] ?? null; }
+      public function saveTranslation(string $domain, string $key, string $language, string $text): void { $this->translations[$domain][$key][$language] = $text; }
     }
     $env = new StatementEnvironment();
     $demo = new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo($env);
