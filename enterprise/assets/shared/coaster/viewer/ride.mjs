@@ -181,6 +181,9 @@ export function mountCoasterRide(container, { file, size, colors, marks, autopla
   const progress = doc.createElement('span');
   progress.className = 'coaster-ride-progress';
   progress.setAttribute('aria-live', 'off');
+  // On one line, on a dark translucent pill shaped like the buttons, so it stays readable over the bright track.
+  progress.style.cssText =
+    'white-space: nowrap; background: rgba(13, 17, 23, 0.72); padding: 0.4em 0.8em; border-radius: 6px';
   bar.append(progress);
   frame.append(canvas, bar);
   container.append(frame);
