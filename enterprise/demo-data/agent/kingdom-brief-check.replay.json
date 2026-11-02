@@ -1,0 +1,33 @@
+{
+  "format": "studio-example-enterprise/agent-replay@1",
+  "about": "A turn of the agent preset kingdom-brief-check, recorded for the portal chat route (src/Portal/Agent/README.md). Only the text is recorded: every {placeholder} is filled from the live tool results, so the answer shows what the signed-in portal user may view.",
+  "agentName": "kingdom-brief-check",
+  "briefLimitM": 45,
+  "chunkWords": 3,
+  "chunkDelayMs": 45,
+  "toolDelayMs": 400,
+  "unknownQuestion": {
+    "text": "This demo answers its recorded questions only. Try: {questions}"
+  },
+  "turns": [
+    {
+      "id": "brief-check",
+      "questions": [
+        "Does my latest Thunder Loop revision meet the brief?",
+        "Does the latest revision meet the brief?",
+        "Check my latest revision against the brief"
+      ],
+      "steps": [
+        { "tool": "kingdom_read_brief" },
+        { "text": "I read the Thunder Loop brief: no point of the track may be higher than {briefLimitM} m above the station. " },
+        { "tool": "kingdom_list_revisions" },
+        { "if": "noRevisions", "text": "I can't see any revision of the design that you may view, so there is nothing to check yet." },
+        { "if": "hasRevisions", "text": "You may view {revisionCount} revisions of the design: {revisionList}. " },
+        { "if": "latestAboveLimit", "text": "Revision {latest.revision} reaches {latest.maxHeightM} m, {overLimitM} m above the brief's limit, and the Storm Valley building permit allows no more. I have prepared a Supplier note on it for you:" },
+        { "if": "latestAboveLimit", "propose": "Revision {latest.revision} is {latest.maxHeightM} m high; the brief allows at most {briefLimitM} m (Storm Valley building permit). Please bring the lift hill back down before the park reviews this revision." },
+        { "if": "latestAboveLimit", "text": " Confirm it to add the note to revision {latest.revision}; nothing is written before you do." },
+        { "if": "latestWithinLimit", "text": "Revision {latest.revision} stays within the limit at {latest.maxHeightM} m, so there is nothing to note." }
+      ]
+    }
+  ]
+}

@@ -96,4 +96,5 @@ draft, not published yet) that the example backs; "none yet" means that part is 
 | Portal grid tile picture (the `tileRegions.media` registry name: the track outline for `.coaster` tiles) | `assets/portal/js/src/coaster/tile/` | [README](assets/portal/js/src/coaster/tile/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugin Surfaces") |
 | None: the shared coaster viewer the side-by-side view and the portal preview stage host | `assets/shared/coaster/viewer/` | [README](assets/shared/coaster/viewer/README.md) | none |
 | PimcoreAgentBundle MCP tools and agent preset (`#[McpTool]`, tag `pimcore.mcp_tool`, group `kingdom-portal`; registered only when the bundle is installed) | `src/Agent/` | [README](src/Agent/README.md) | none yet |
+| Portal route streaming an agent turn in PimcoreAgentBundle's event format (a recorded turn, `text/event-stream`, JSON 401/403 instead of the login redirect) | `src/Portal/Agent/` | [README](src/Portal/Agent/README.md) | none yet |
 | None: the demo data the examples work on | `demo-data/` | [README](demo-data/README.md) | none |

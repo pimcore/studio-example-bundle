@@ -154,10 +154,11 @@ const runPhp = (script) => {
   try {
     return JSON.parse(execFileSync('php', ['-d', 'display_errors=1', '-d', 'html_errors=0', '-r', script], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
   } catch (e) {
-    throw new Error(`php failed: ${e.stderr || ''} ${e.stdout || ''}`.slice(-1500));
+    // a PHP error is in its output; a JSON error (or a crash without output) in the message
+    throw new Error(`php failed: ${e.stderr || ''} ${e.stdout || ''} ${e.stderr || e.stdout ? '' : e.message}`.slice(-1500));
   }
 };
-const useLines = 'use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent as A;\nuse Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\Agent as R;';
+const useLines = 'use Pimcore\\Bundle\\PortalEngineBundle\\Model\\DataObject\\PortalUserInterface;\nuse Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent as A;\nuse Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\Agent as R;';
 // Logic tests: stubs only.
 const php = (body) => runPhp(`${stubs}${nonVendorStubs}${classes}\nnamespace {\n${useLines}\n${body}\n}\n`);
 // HTTP tests: the stubs first (so the vendor's own Portal Engine classes are never loaded), then the vendor autoloader
@@ -195,6 +196,7 @@ function send(Request $request, ?PortalUserInterface $user, bool $portalAccess =
         'headers' => array_map(static fn ($v) => $v[0], $response->headers->all()),
         'chunks' => $chunks,
         'body' => implode('', $chunks),
+        'asked' => $authorization->asked,
         'proposals' => array_map(static fn ($i) => $i->value, array_values($pool->items)),
     ];
 }
@@ -439,13 +441,13 @@ test('AC4: the streamed events hold none of them either, nor the supplier\'s e-m
 test('AC5: the replay needs only F126\'s service: no PimcoreAgentBundle or MCP class in src/Portal/Agent, and its services load on every boot', () => {
   for (const file of readdirSync(routeSrc).filter((f) => f.endsWith('.php'))) {
     const code = read(join(routeSrc, file));
-    assert.doesNotMatch(code, /PimcoreAgentBundle|\\Mcp\\|Agent\\Tools\\/, `${file} uses no PimcoreAgentBundle class`);
+    assert.doesNotMatch(code, /Bundle\\PimcoreAgentBundle|\\Mcp\\|Agent\\Tools\\/, `${file} uses no PimcoreAgentBundle class`);
   }
   const config = read(join(enterpriseDir, 'config/portal-agent.yaml'));
   assert.doesNotMatch(config, /^\s*pimcore_agent:/m, 'no pimcore_agent key (an unknown extension stops the boot)');
   assert.match(config, /Portal\\Agent\\AgentChatController:/);
   assert.match(config, /Portal\\Agent\\ReplayPlayer:/);
-  assert.match(config, /demo-data\/agent\/kingdom-brief-check\.replay\.json/);
+  assert.match(read(join(routeSrc, 'ReplayPlayer.php')), /DEFAULT_REPLAY = 'demo-data\/agent\/kingdom-brief-check\.replay\.json'/);
   // the logic tests above ran with no PimcoreAgentBundle class defined at all
   const result = php(`echo json_encode(['agentBundle' => class_exists('Pimcore\\\\Bundle\\\\PimcoreAgentBundle\\\\PimcoreAgentBundle', false), 'played' => count(replay('${QUESTION}')['events']) > 0]);`);
   assert.deepEqual(result, { agentBundle: false, played: true });

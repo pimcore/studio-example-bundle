@@ -32,7 +32,8 @@ may see: the user is the signed-in portal user, and every revision passes the Po
 2. With PimcoreAgentBundle (`composer.json` only suggests it) and `bin/console cache:clear`, the group
    `kingdom-portal` is at `/pimcore-mcp/agent/kingdom-portal`, and the preset "Kingdom brief check" is in Studio's
    agent configuration, tagged Bundle. A Studio user who is not linked to exactly one portal user gets no data from
-   it: the portal user's agent runs through the portal (the replay route), not through Studio.
+   it: the portal user's agent runs through the portal (the replay route,
+   [`src/Portal/Agent/README.md`](../Portal/Agent/README.md)), not through Studio.
 
 Tests: `enterprise/tests/agent-tools.test.mjs` (needs `php`), run with the other enterprise tests. Its container
 tests also need a Pimcore `vendor/` with PimcoreAgentBundle (`PIMCORE_VENDOR_AUTOLOAD`, else

@@ -26,3 +26,11 @@ pimcore_studio_example_enterprise_coaster_file:
     methods: [GET]
     requirements:
         id: '\d+'
+
+# The portal's agent chat: a recorded turn as an event stream, see src/Portal/Agent/README.md. No language prefix:
+# the portal's chat calls it like its own API. JSON 401/403 instead of a login redirect (the controller checks access).
+pimcore_studio_example_enterprise_agent_chat:
+    path: /studio-example-enterprise/agent/chat
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent\AgentChatController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [POST]
