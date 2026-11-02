@@ -13,6 +13,9 @@
     "pimcore/portal-engine": "^2026.1",
     "pimcore/studio-example-bundle": "*"
   },
+  "suggest": {
+    "pimcore/pimcore-agent-bundle": "Adds the agent tool group kingdom-portal and the agent preset kingdom-brief-check (src/Agent/README.md)"
+  },
   "autoload": {
     "psr-4": {
       "Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\": "src/"

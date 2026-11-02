@@ -1,0 +1,24 @@
+# The agent demo's tool service (src/Agent/README.md). These services need only the Portal Engine, so the portal's
+# replay route (F127) uses them with or without PimcoreAgentBundle. The bundle's MCP group `kingdom-portal` and the
+# preset `kingdom-brief-check` are added by PimcoreStudioExampleEnterpriseExtension only when the bundle is installed:
+# this file is loaded on every boot, so it must never hold a `pimcore_agent:` key (an unknown extension stops the boot).
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\PortalUserContext: ~
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\PimcoreKingdomSource: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\KingdomSource:
+        alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\PimcoreKingdomSource
+
+    # Pending Supplier-note proposals: in the app cache, 15 minutes each.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\ProposalStore:
+        arguments:
+            $cache: '@cache.app'
+            $ttl: 900
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\KingdomBriefTools:
+        public: true
