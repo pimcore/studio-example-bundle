@@ -6,6 +6,17 @@
 
 All names in this brief are fictional.
 
+## Company statement
+
+We at Pimcore Kingdom stand for safety first, honest craft, guests of every age and rides that last for decades.
+
+What we expect of a supplier:
+
+- **Safety limits are hard limits.** Every design stays within the brief's limits, the 45 m height first.
+- **Every change is reviewed.** No change to the track goes ahead before the park has reviewed and approved it.
+- **Be open about revisions.** Each revision says what changed and why, the moves away from the approved one too.
+- **One shared record.** Designs and their revisions are shared in this portal, not by mail.
+
 ## Target audience
 
 Families and teenagers from 10 years up, first-time looping riders included. Minimum rider height 1.20 m. The ride
