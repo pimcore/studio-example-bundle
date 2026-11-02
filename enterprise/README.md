@@ -98,4 +98,5 @@ draft, not published yet) that the example backs; "none yet" means that part is 
 | PimcoreAgentBundle MCP tools and agent preset (`#[McpTool]`, tag `pimcore.mcp_tool`, group `kingdom-portal`; registered only when the bundle is installed) | `src/Agent/` | [README](src/Agent/README.md) | none yet |
 | Portal route streaming an agent turn in PimcoreAgentBundle's event format (a recorded turn, `text/event-stream`, JSON 401/403 instead of the login redirect) | `src/Portal/Agent/` | [README](src/Portal/Agent/README.md) | none yet |
 | Portal route writing a confirmed Pimcore note (`Element\Note` of type "Supplier note", `edit` re-checked through the data-pool voter) and its reset console command | `src/Agent/Note/` | [README](src/Agent/Note/README.md) | none yet |
+| Portal header action (the `slots.headerActions` slot: the "Ask the brief" button and its agent panel, loaded on click, reading the chat stream as plain text) | `assets/portal/js/src/agent/` | [README](assets/portal/js/src/agent/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugins") |
 | None: the demo data the examples work on | `demo-data/` | [README](demo-data/README.md) | none |

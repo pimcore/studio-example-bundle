@@ -1,5 +1,6 @@
 import { componentRegistry, pluginSystem, previewStage, slots, tileRegions, type IAbstractPlugin } from '@pimcore/portal-plugin-sdk'
 import { TalkNavEntry } from '../../talk/TalkNavEntry'
+import { AskBriefButton } from './agent/AskBriefButton'
 import { CoasterPreviewStage } from './coaster/preview-stage/CoasterPreviewStage'
 import { CoasterTileMedia } from './coaster/tile/CoasterTileMedia'
 
@@ -19,6 +20,9 @@ export const studioExampleEnterprisePlugin: IAbstractPlugin = pluginSystem.defin
         // the picture of the grid and rail tiles (coaster/tile/README.md): the track outline for .coaster files; the
         // region takes every tile's picture, so CoasterTileMedia draws the kit's default for all others
         componentRegistry.register({ name: tileRegions.media, component: CoasterTileMedia })
+        // the "Ask the brief" button in the header of every signed-in page (agent/README.md); it renders nothing
+        // without config().agent, and its panel loads on the first click
+        componentRegistry.registerToSlot(slots.headerActions, { name: 'studio-example-enterprise/ask-brief', component: AskBriefButton })
       }
     })
   }

@@ -1,3 +1,8 @@
+# studio_example_enterprise.agent.enabled: false hides the portal's "Ask the brief" button
+# (assets/portal/js/src/agent/README.md); set it in the app's own config to turn the panel off.
+parameters:
+    studio_example_enterprise.agent.enabled: true
+
 services:
     _defaults:
         autowire: true
@@ -8,6 +13,8 @@ services:
     # The portal plugin built from assets/portal (see assets/portal/README.md).
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterprisePortalPlugin:
         tags: ['portal_engine.plugin_provider']
+        arguments:
+            $agentEnabled: '%studio_example_enterprise.agent.enabled%'
 
     # The .coaster file of the portal's coaster preview stage, routed by config/pimcore/routing.yaml. The tags are
     # needed without autoconfigure: the action would fail with "has no container set", and the container would not
