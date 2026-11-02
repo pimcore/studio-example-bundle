@@ -207,6 +207,8 @@ namespace {
         public function folderExists(string $folder): bool { return false; }
         public function renameFolder(string $folder, string $name): void {}
         public function deleteFolder(string $folder): void {}
+        public function translation(string $domain, string $key, string $language): ?string { return null; }
+        public function saveTranslation(string $domain, string $key, string $language, string $text): void {}
     }
     class TestAuthorization implements \Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface {
         public array $asked = [];
@@ -227,7 +229,8 @@ const runPhp = (script) => {
   try {
     return JSON.parse(execFileSync('php', ['-d', 'display_errors=1', '-d', 'html_errors=0', '-r', script], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
   } catch (e) {
-    throw new Error(`php failed: ${e.stderr || ''} ${e.stdout || ''} ${e.stderr || e.stdout ? '' : e.message}`.slice(-1500));
+    // the exit status and the PHP output first: a long script would push them out of the message
+    throw new Error(`php failed (status ${e.status}, signal ${e.signal}, ${e.code || ''}): ${(e.stderr || '').slice(-1200)} ${(e.stdout || '').slice(-1200)} ${e.stderr || e.stdout ? '' : String(e.message).slice(0, 300)}`);
   }
 };
 const useLines = String.raw`use Pimcore\Bundle\PortalEngineBundle\Model\DataObject\PortalUserInterface;
