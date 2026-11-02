@@ -107,7 +107,7 @@ class CoasterDemo
             ?? throw new \RuntimeException(sprintf('The portal "%s" has no asset data pool "%s". Run coaster-demo:reset --all, then setup again.', self::PORTAL_NAME, self::DATA_POOL_NAME));
 
         $brief = $this->briefHtml();
-        if ($env->briefHtml($portalId) !== $brief) {
+        if (!self::sameHtml($env->briefHtml($portalId), $brief)) {
             $env->saveBrief($portalId, self::BRIEF_TITLE, $brief);
             $changes[] = sprintf('Wrote the brief page "%s"', self::BRIEF_TITLE);
         }
@@ -201,6 +201,20 @@ class CoasterDemo
     }
 
     /** @return string[] the asset folders the demo used under the park's earlier names */
+    /**
+     * Pimcore's wysiwyg save writes entities its own way (&apos; as &#039;, &quot; as &#34;) and drops the trailing
+     * newline, so the stored brief counts as the same when it only differs in that.
+     */
+    private static function sameHtml(?string $stored, string $wanted): bool
+    {
+        if (null === $stored) {
+            return false;
+        }
+        $normal = static fn (string $html): string => trim(html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        return $normal($stored) === $normal($wanted);
+    }
+
     private static function legacyAssetRoots(): array
     {
         return array_map(static fn (string $name) => '/' . $name, self::LEGACY_PARK_NAMES);
