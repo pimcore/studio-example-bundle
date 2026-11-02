@@ -1,4 +1,5 @@
 import { config } from '@pimcore/portal-plugin-sdk'
+import { TalkIcon } from '../js/src/icons/TalkIcon'
 
 // The plugin id of src/Portal/StudioExampleEnterprisePortalPlugin.php, whose getFrontendConfig() hands over the URL.
 const PLUGIN_ID = 'studio-example-enterprise'
@@ -17,14 +18,8 @@ export function TalkNavEntry () {
 
   return (
     <a className="p-rail-it" href={ talk.url } aria-label={ label }>
-      <span className="pe-rail-ico">
-        { /* a presentation screen on its stand */ }
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
-          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="12" rx="1.5" />
-          <path d="M12 16v4M8 20h8" />
-        </svg>
-      </span>
+      { /* the plugin's own Talk icon (js/src/icons/), decorative: the label beside it names the entry */ }
+      <span className="pe-rail-ico"><TalkIcon /></span>
       <span className="p-rail-lbl">{ label }</span>
       { /* the collapsed rail's tooltip */ }
       <span className="p-rail-fly">{ label }</span>

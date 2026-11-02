@@ -42,10 +42,15 @@ function loadTsx (path, modules) {
 }
 
 const thumbnailModule = () => loadTsx(join(tileDir, 'TileThumbnail.tsx'), {});
+// F103: the coaster tile's "Ride design" label, the kit's Tag (a stand-in) with the plugin's own Ride icon
+const Tag = ({ icon, children }) => React.createElement('span', { 'data-kit': 'Tag' }, icon, children);
+const iconDir = join(portalSrc, 'icons');
+const rideIconModule = () => loadTsx(join(iconDir, 'RideIcon.tsx'), { './CoasterIcon': loadTsx(join(iconDir, 'CoasterIcon.tsx'), {}) });
 // F88: the picture's body is its own module, loaded on demand by the registered CoasterTileMedia.tsx
 const tileModule = () => loadTsx(join(tileDir, 'CoasterTilePicture.tsx'), {
   '@pimcore/portal-plugin-sdk': sdkNames,
-  '@pimcore/portal-ui-kit/components': { Icon },
+  '@pimcore/portal-ui-kit/components': { Icon, Tag },
+  '../../icons/RideIcon': rideIconModule(),
   './coaster-tile-model': model,
   './TileThumbnail': thumbnailModule()
 });

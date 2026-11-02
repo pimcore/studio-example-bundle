@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import type { PreviewStageProps } from '@pimcore/portal-plugin-sdk'
 import { Alert, Button, Content } from '@pimcore/portal-ui-kit/components'
+import { ReviewIcon } from '../../icons/ReviewIcon'
+import { RideIcon } from '../../icons/RideIcon'
 import { createCoasterRide, createCoasterViewer } from '../../../../../shared/coaster/viewer/react.mjs'
 import {
   DEFAULT_VIEW,
@@ -14,6 +16,9 @@ import {
 // The viewer takes the host's React, so the portal's own copy draws it (shared/coaster/viewer/README.md).
 const CoasterViewer = createCoasterViewer(React)
 const CoasterRide = createCoasterRide(React)
+
+/** The icon before each view's text: Review (look around the design) for Orbit, Ride for the front seat. */
+const VIEW_ICONS: Record<StageView, typeof RideIcon> = { orbit: ReviewIcon, ride: RideIcon }
 
 /** Height of the Orbit/Ride bar above the track, taken from the stage height the portal hands over. */
 const BAR_HEIGHT = 40
@@ -50,16 +55,20 @@ export function CoasterStageView ({ data, dataPoolId, shareHash, height }: Previ
         aria-label="Coaster view"
         style={ { display: 'flex', gap: 'var(--p-space-xs)', height: BAR_HEIGHT, alignItems: 'center' } }
       >
-        { STAGE_VIEWS.map(({ key, label }) => (
-          <Button
-            key={ key }
-            aria-pressed={ view === key }
-            onClick={ () => { setView(key) } }
-            type={ view === key ? 'primary' : 'default' }
-          >
-            { label }
-          </Button>
-        )) }
+        { STAGE_VIEWS.map(({ key, label }) => {
+          const ViewIcon = VIEW_ICONS[key]
+          return (
+            <Button
+              key={ key }
+              aria-pressed={ view === key }
+              icon={ <ViewIcon /> }
+              onClick={ () => { setView(key) } }
+              type={ view === key ? 'primary' : 'default' }
+            >
+              { label }
+            </Button>
+          )
+        }) }
       </div>
       <div style={ { height: trackHeight, borderRadius: 'var(--p-radius)', overflow: 'hidden' } }>
         { result === undefined && <Content loading /> }

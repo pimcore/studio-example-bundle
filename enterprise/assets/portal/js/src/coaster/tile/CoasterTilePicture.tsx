@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import type { TileRegionProps } from '@pimcore/portal-plugin-sdk'
-import { Icon } from '@pimcore/portal-ui-kit/components'
+import { Icon, Tag } from '@pimcore/portal-ui-kit/components'
+import { RideIcon } from '../../icons/RideIcon'
 import {
   isCoasterTile,
   outlineFromFile,
@@ -89,11 +90,26 @@ export function TrackOutlinePicture ({ name, outline }: { name: string, outline:
   )
 }
 
+/**
+ * The track outline with the kit's Tag "Ride design" in its lower left corner: the plugin's Ride icon (decorative,
+ * js/src/icons/) and the text, so a viewer at the back of the room reads what the line is.
+ */
+export function RideDesignPicture ({ name, outline }: { name: string, outline: TrackOutline }): React.JSX.Element {
+  return (
+    <span style={ { position: 'relative', display: 'block', width: '100%', height: '100%' } }>
+      <TrackOutlinePicture name={ name } outline={ outline } />
+      <span style={ { position: 'absolute', left: 'var(--p-space-xs)', bottom: 'var(--p-space-xs)', display: 'inline-flex' } }>
+        <Tag icon={ <RideIcon size={ 14 } /> }>Ride design</Tag>
+      </span>
+    </span>
+  )
+}
+
 /** A .coaster tile: its track outline once the file is read, the default picture until then and when it cannot be. */
 function CoasterTrackPicture (props: TileRegionProps): React.JSX.Element {
   const outline = useTrackOutline(props.id)
   if (outline === undefined) return <DefaultTileMedia { ...props } />
-  return <TrackOutlinePicture name={ props.name } outline={ outline } />
+  return <RideDesignPicture name={ props.name } outline={ outline } />
 }
 
 /**

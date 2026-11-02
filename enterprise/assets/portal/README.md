@@ -21,6 +21,16 @@ what the examples register: today the **Talk** entry under the portal's navigati
 - the frontend, `js/src/plugin.tsx`: `pluginSystem.definePlugin()` from `@pimcore/portal-plugin-sdk`, whose module
   registers components to the portal's slots in `onInit`.
 
+### Own icons
+
+`js/src/icons/` holds the plugin's own icons, made for these examples (no third-party art, so no license review):
+Ride, Upload, Safety limit, Review, Approve, Reject and Talk. Each is a React component drawing an inline SVG on a
+24 x 24 grid in the surrounding text colour (`currentColor`), through the shared frame `CoasterIcon.tsx`. Without a
+`label` an icon is decorative (`aria-hidden="true"`) and needs visible text beside it; with one it is an image with
+that `aria-label`. Import each icon from its own file, never through a collection: the Talk entry's icon is in the
+start-up chunk, the tile's and the stage's load with their lazy chunks. Used by the Talk entry, the coaster tile's
+"Ride design" tag and the preview stage's Orbit and Ride buttons (`enterprise/tests/coaster-icons.test.mjs`).
+
 ## Only with vendor access
 
 **Only developers with vendor access can build this plugin.** Its dependency `@pimcore/portal-ui-kit` is on no npm
