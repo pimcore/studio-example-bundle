@@ -200,7 +200,6 @@ class CoasterDemo
         return $this->readDemoData(self::REVISION_1);
     }
 
-    /** @return string[] the asset folders the demo used under the park's earlier names */
     /**
      * Pimcore's wysiwyg save writes entities its own way (&apos; as &#039;, &quot; as &#34;) and drops the trailing
      * newline, so the stored brief counts as the same when it only differs in that.
@@ -215,6 +214,7 @@ class CoasterDemo
         return $normal($stored) === $normal($wanted);
     }
 
+    /** @return string[] the asset folders the demo used under the park's earlier names */
     private static function legacyAssetRoots(): array
     {
         return array_map(static fn (string $name) => '/' . $name, self::LEGACY_PARK_NAMES);
