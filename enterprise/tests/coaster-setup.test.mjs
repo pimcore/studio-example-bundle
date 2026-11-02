@@ -192,8 +192,8 @@ test('AC1: setup creates the portal, the supplier with a demo login, the brief a
   assert.equal(`${supplier.firstname} ${supplier.lastname}`, 'Loopwerk Engineering');
   assert.equal(supplier.password, 'thunder-loop');
   assert.deepEqual(supplier.permissions, { [`portal-access___${portalId}`]: 'allow', [`data-pool-access___${dataPoolId}`]: 'allow' });
-  assert.deepEqual(Object.keys(supplier.assetWorkspaces), ['/Pimcore Kingdom']);
-  assert.ok(supplier.assetWorkspaces['/Pimcore Kingdom'].includes('create'), 'may upload');
+  assert.deepEqual(Object.keys(supplier.assetWorkspaces), ['/Pimcore Kingdom/Thunder Loop']);
+  assert.ok(supplier.assetWorkspaces['/Pimcore Kingdom/Thunder Loop'].includes('create'), 'may upload');
 
   const coaster = state.assets[COASTER];
   assert.equal(coaster.content, rev1, 'revision 1 uploaded');
@@ -349,7 +349,7 @@ test('AC2 AC4: setup renames a legacy-named marked portal and folder in place, o
   assert.equal(Object.keys(state.folders).some((path) => path.includes(LEGACY)), false, 'no old folder');
   assert.equal(Object.keys(state.assets).some((path) => path.includes(LEGACY)), false, 'no asset under the old name');
   assert.ok(state.assets[COASTER], 'the coaster moved with the folder');
-  assert.deepEqual(Object.keys(state.users['supplier@loopwerk.example'].assetWorkspaces), ['/Pimcore Kingdom']);
+  assert.deepEqual(Object.keys(state.users['supplier@loopwerk.example'].assetWorkspaces), ['/Pimcore Kingdom/Thunder Loop']);
 
   assert.deepEqual(again, [], 'a second setup changes nothing');
   assert.equal(writes, 0);

@@ -36,9 +36,10 @@ class CoasterDemo
 
     public const SUPPLIER_LASTNAME = 'Engineering';
 
-    // The supplier's asset workspace; everything the demo uploads lives below it.
+    // The park's asset folder; everything the demo uploads lives below it.
     public const ASSET_ROOT = '/' . self::PORTAL_NAME;
 
+    // The supplier's asset workspace (F134): only the ride designs, not the park's Branding folder next to it.
     public const COASTER_FOLDER = self::ASSET_ROOT . '/Thunder Loop';
 
     public const COASTER_FILENAME = 'thunder-loop.coaster';
@@ -202,7 +203,8 @@ class CoasterDemo
                 self::PORTAL_ACCESS . $portalId => 'allow',
                 self::DATA_POOL_ACCESS . $dataPoolId => 'allow',
             ],
-            'assetWorkspaces' => [self::ASSET_ROOT => self::WORKSPACE_PERMISSIONS],
+            // A supplier saved with the park root (before F134) no longer matches, so setup narrows it once.
+            'assetWorkspaces' => [self::COASTER_FOLDER => self::WORKSPACE_PERMISSIONS],
         ];
     }
 
