@@ -54,11 +54,13 @@ class CoasterDemo
 
     public const LOGO_PNG = 'pimcore-kingdom-logo.png';
 
-    // Royal blue and crimson: white text on either, and either as text on the light header, is at least 4.5:1
-    // (tests/coaster-branding.test.mjs), so both still read on a projector.
-    public const BRAND_PRIMARY = '#1e3a8a';
+    // The slides' palette (DR-P39, F145): Pimcore Purple (purple-600 of the deck's brand tokens) for actions, and its
+    // purple-700 shade, the deck's hover/pressed purple, as the accent (the portal's hover ring). White text on either,
+    // and either as text on the light header, is at least 4.5:1 (tests/coaster-branding.test.mjs), so both read on a
+    // projector. Lato stays: the deck's Gilroy is licence-bound and this bundle is public.
+    public const BRAND_PRIMARY = '#6428b4';
 
-    public const BRAND_ACCENT = '#b91c1c';
+    public const BRAND_ACCENT = '#502090';
 
     // The asset tree's first line in the portal (F135, spike F105 P2): the frontend reads this key in this domain. A
     // 2026.3 ships "/ (root)" for it; an older 2026.x install has no text and shows the raw key. Setup adds the text
