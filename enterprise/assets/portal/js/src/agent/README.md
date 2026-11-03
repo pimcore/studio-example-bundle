@@ -60,7 +60,7 @@ and keeps only these types, each checked field by field:
 | `system-notice` with `messageKey` `recorded` (or `agent.recorded`) | the "recorded" badge on this answer; it comes from the stream, never from config, so a live answer cannot carry it |
 | `turn-started` | nothing to show; the typing indicator runs until the first `text-delta` |
 | `text-delta` | appends its text to the answer bubble (`aria-live="polite"`) |
-| `widget` | kept with the turn; its `text` or `summary` is shown as a plain line (the Supplier-note card is a later example) |
+| `widget` | `kingdom-supplier-note` with a valid note: the Supplier note card (below); any other widget: its `text` or `summary` as a plain line |
 | `error` | an inline error under the answer |
 | `turn-ended`, `complete` | `complete` ends the request |
 
@@ -73,11 +73,22 @@ markdown renderer, nothing under `agent/` that parses HTML (`enterprise/tests/po
 stream, or a stream ending without `complete`: "The assistant is not available". Both come with Retry. Escape, the
 Close button or a click beside the panel close it and abort the running request (AbortController).
 
+## The Supplier note card
+
+`proposal/` (F130): when the agent proposes a Supplier note (a `kingdom-supplier-note` widget whose `proposalId` is
+32 hex, `revision` a positive integer and `text` not empty), the answer shows a card "Add note to rev3" with the note's
+text, Confirm and Dismiss. Confirm POSTs once, with no body, to `/studio-example-enterprise/agent/proposal/{id}/confirm`
+(`src/Agent/Note/README.md`, F129), which writes the note from the server's own copy; the button is disabled while it
+runs. 200: "Note added"; 409: "Already added"; 404: "This proposal expired"; 401, 403 or a redirect: "Please sign in
+again" with Retry; 5xx or a network error: "The note could not be added" with Retry. Dismiss hides the card and
+writes nothing. The logic is `proposal/proposal.ts`, the component `proposal/SupplierNoteCard.tsx`.
+
 ## Hooks for checks
 
 `data-agent-button` (the header button), `data-agent-panel` (the dialog), `data-agent-text` (an answer's text),
 `data-agent-badge="recorded"`, `data-agent-turn="waiting|streaming|done|failed|cancelled"`, `data-agent-failure`,
-`data-agent-widget="<widgetType>"`.
+`data-agent-widget="<widgetType>"`, `data-agent-proposal-state="pending|confirming|confirmed|failed"` (the Supplier
+note card, with `data-agent-proposal="<id>"`).
 
 ## How to run
 
@@ -85,4 +96,4 @@ Close button or a click beside the panel close it and abort the running request 
 2. Sign in to the demo portal as the Loopwerk supplier: "Ask the brief" is in the header.
 3. Click it and ask "Does my latest Thunder Loop revision meet the brief?": the answer streams in, marked "recorded".
 
-Tests: `node --test enterprise/tests/portal-agent-panel.test.mjs`.
+Tests: `node --test enterprise/tests/portal-agent-panel.test.mjs enterprise/tests/portal-agent-proposal.test.mjs`.

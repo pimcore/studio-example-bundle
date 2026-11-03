@@ -5,6 +5,8 @@ import { Panel } from '@pimcore/portal-ui-kit/ui'
 import type { AgentConfig } from './agent-config'
 import { FAILURE_TEXT, finishTurn, isRunning, reduceTurn, startTurn, widgetText, type Turn } from './agent-events'
 import { streamChat } from './agent-stream'
+import { supplierNoteOf } from './proposal/proposal'
+import SupplierNoteCard from './proposal/SupplierNoteCard'
 
 interface AskBriefPanelProps {
   agent: AgentConfig
@@ -164,6 +166,9 @@ export default function AskBriefPanel ({ agent, onClose }: AskBriefPanelProps): 
                   { turn.status === 'waiting' && <span style={ quietStyle } aria-label="The assistant is typing">…</span> }
                   <span data-agent-text>{ turn.text }</span>
                   { turn.widgets.map((widget, w) => {
+                    // the agent's Supplier note proposal is a card with Confirm and Dismiss (proposal/README.md)
+                    const note = supplierNoteOf(widget)
+                    if (note !== null) return <SupplierNoteCard key={ w } note={ note } />
                     const line = widgetText(widget)
                     return line === null
                       ? null
