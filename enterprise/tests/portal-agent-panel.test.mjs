@@ -445,3 +445,18 @@ test('the agent README names the extension point, the contract and how to try it
   assert.match(readme, /layout\/studio\.html\.twig/, 'names the layout that renders headerActions');
   assert.match(readme, /data-agent-button/);
 });
+
+// --- layout (verifier FAIL 2026-11-02: the phone page scrolled sideways, the sheet lay over the header) ---
+
+test('AC2: the panel fits the window: below the header, never wider than the window, the page behind inert', () => {
+  const panel = panelSource();
+  assert.doesNotMatch(panel, /100vw/, 'the sheet is sized by its overlay, not the viewport (100vw counts the scrollbar)');
+  assert.match(panel, /width: 'min\(440px, 100%\)', maxWidth: '100%', minWidth: 0/);
+  assert.match(panel, /overflow: 'hidden'/, 'nothing in the overlay can widen the page');
+  assert.match(panel, /getElementById\(HEADER_ID\)/, 'the overlay starts at the header\'s bottom');
+  assert.match(panel, /position: 'fixed', top, left: 0, right: 0, bottom: 0/);
+  assert.match(panel, /setAttribute\('inert', ''\)/, 'the page behind takes no focus or clicks');
+  assert.match(panel, /removeAttribute\('inert'\)/, 'closing gives the page back');
+  assert.match(panel, /visibility = query\?\.matches === true \? 'hidden'/, 'on a phone the covered page is not drawn');
+  assert.match(panel, /askInputStyle: React\.CSSProperties = \{ flex: '1 1 auto', minWidth: 0 \}/, 'the question field may shrink');
+});

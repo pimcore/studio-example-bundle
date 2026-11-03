@@ -17,7 +17,7 @@ header of `@PimcorePortalEngine/layout/studio.html.twig`: a page on another layo
 | --- | --- |
 | `AskBriefButton.tsx` | The header button. Loaded at the portal's start-up, so it holds only the button and `React.lazy` for the panel. Renders nothing without `config().agent`. |
 | `agent-config.ts` | Checks `config('studio-example-enterprise').agent`: `{chatUrl, label, mode}` or nothing. |
-| `AskBriefPanel.tsx` | The panel: an own overlay (the portal SDK has no Drawer), a `role="dialog"` with the kit's `Panel`, `Input`, `Button`, `Tag` and `Alert`. |
+| `AskBriefPanel.tsx` | The panel: an own overlay (the portal SDK has no Drawer), a `role="dialog"` with the kit's `Panel`, `Input`, `Button`, `Tag` and `Alert`. The overlay starts below the portal header (`#pe-shell-header`) and is never wider than the window; while it is open the page under the header (`.pe-body`) is `inert`, and on a phone, where the sheet covers it, not drawn. |
 | `agent-stream.ts` | The chat client: `POST {chatUrl}` and the answer's body read as Server-Sent Events up to `complete`. |
 | `agent-events.ts` | A pure reducer: one question and its answer (text, badge, widgets, errors, failure) from the events. |
 
