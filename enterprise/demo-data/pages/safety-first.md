@@ -1,8 +1,12 @@
 # Safety first
 
+![A coaster train with every restraint closed, in front of a shield with a check mark](safety-hero.svg)
+
 A ride design for Pimcore Kingdom meets the park's standards before it is reviewed for anything else. The brief of each ride sets its own limits; these apply to all of them.
 
 **Hard limits are hard.** A design stays within its brief's maximum height, speed and forces. A revision that goes above a limit is not approved, however small the step.
+
+![A track whose highest point stays under the brief's dashed height limit](safety-limits.svg)
 
 **Every change is reviewed.** No change to a track, a train or a restraint goes ahead before the park has reviewed and approved it.
 

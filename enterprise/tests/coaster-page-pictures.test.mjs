@@ -73,7 +73,7 @@ test('AC1: setup on the demo data writes each page with its pictures as figures 
     assert.ok(html.indexOf('<figure>') < html.indexOf('<p>'), `${page}: the hero comes before the text`);
     named.push(...images.map(({ file }) => `/Pimcore Kingdom/Pages/${file}`));
   }
-  assert.deepEqual([...uploads].sort(), [...new Set(named)].sort(), 'each picture uploaded once');
+  assert.deepEqual(uploads.filter((path) => path.startsWith('/Pimcore Kingdom/Pages/')).sort(), [...new Set(named)].sort(), 'each picture uploaded once');
   assert.deepEqual(workspaces['/Pimcore Kingdom/Pages'], ['view'], 'the supplier may view the pictures');
 });
 
@@ -139,6 +139,7 @@ namespace {
         require ${JSON.stringify(src)} . '/' . $file . '.php';
     }
 
+    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Coaster\\CoasterMetadataExtractor;
     use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo;
     use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\ContentPages;
     use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\DemoEnvironment;
@@ -171,15 +172,19 @@ namespace {
         public function deleteSupplier(string $email): void { unset($this->state['users'][$email]); }
         public function assets(string $folder): array {
             $assets = [];
-            foreach ($this->state['assets'] as $path => $content) { if (dirname($path) === $folder) { $assets[basename($path)] = $content; } }
+            foreach ($this->state['assets'] as $path => $asset) { if (dirname($path) === $folder) { $assets[basename($path)] = $asset['content']; } }
             return $assets;
         }
         public function createAsset(string $folder, string $filename, string $content): void {
             $this->uploads[] = $folder . '/' . $filename;
-            $this->state['assets'][$folder . '/' . $filename] = $content;
+            $metadata = [];
+            if (str_ends_with($filename, '.coaster')) {
+                foreach ((new CoasterMetadataExtractor())->extract(json_decode($content)) as $name => $value) { $metadata[$name] = (string) $value; }
+            }
+            $this->state['assets'][$folder . '/' . $filename] = ['content' => $content, 'metadata' => $metadata];
         }
         public function deleteAsset(string $folder, string $filename): void { unset($this->state['assets'][$folder . '/' . $filename]); }
-        public function assetMetadata(string $folder, string $filename): array { return []; }
+        public function assetMetadata(string $folder, string $filename): array { return $this->state['assets'][$folder . '/' . $filename]['metadata'] ?? []; }
         public function folderExists(string $folder): bool {
             foreach (array_keys($this->state['assets']) as $path) { if (str_starts_with($path, $folder . '/')) { return true; } }
             return false;

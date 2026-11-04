@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 const read = (path) => readFileSync(path, 'utf8');
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -233,8 +233,9 @@ test('AC2: an image no page names any more is removed on the next setup; pages w
   `, dir);
   assert.ok(changes.includes(`Deleted ${PAGES}/ride-sketch.webp, which no page names any more`), changes.join('\n'));
   assert.deepEqual(Object.keys(images), ['park-entrance.svg']);
-  assert.deepEqual(Object.keys(plain.images), [], 'the demo\'s own pages name no images yet: nothing uploaded');
-  assert.deepEqual(Object.keys(plain.workspaces), ['/Pimcore Kingdom/Thunder Loop'], 'and the supplier\'s workspace stays the ride designs');
+  // F161: the demo's own pages name their pictures: setup uploads exactly those, and the supplier may view them.
+  assert.deepEqual(Object.keys(plain.images).sort(), readdirSync(join(enterpriseDir, 'demo-data', 'pages', 'img')).filter((name) => /\.(svg|webp)$/.test(name)).sort(), 'the demo\'s own pages: their pictures uploaded');
+  assert.deepEqual(Object.keys(plain.workspaces), ['/Pimcore Kingdom/Thunder Loop', PAGES], 'and the supplier\'s workspaces are the ride designs and the pictures');
 });
 
 test('AC3: setup gives the supplier view access to /Pimcore Kingdom/Pages, nothing more, and keeps the Thunder Loop workspace', () => {

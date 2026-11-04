@@ -408,11 +408,20 @@ class CoasterDemo
         return $html;
     }
 
-    /** @return string[] the image files the pages name, each once */
+    /**
+     * The image files of the pages setup writes, each once: the brief's always, the content pages' only on an
+     * environment with content pages (F161; on one without, setup writes only the brief).
+     *
+     * @return string[]
+     */
     private function pageImageFiles(): array
     {
         $files = [];
-        foreach ($this->pagesMarkdown() as $markdown) {
+        $pages = $this->pagesMarkdown();
+        if (!$this->environment instanceof ContentPages) {
+            $pages = [self::BRIEF_KEY => $pages[self::BRIEF_KEY]];
+        }
+        foreach ($pages as $markdown) {
             $files = [...$files, ...BriefHtml::images($markdown)];
         }
 
