@@ -3,7 +3,7 @@
    remembers it in its property "coaster-demo-footer-wraps" and shows it first, unchanged; the Talk link sits at its
    end. coaster-demo:reset --all gives the portal its footer back and deletes this snippet. #}
 {% set wrapped = document.getProperty('coaster-demo-footer-wraps') %}
-<div class="sx-footer-row" style="display: flex; align-items: center; gap: var(--p-space-md);">
+<div class="sx-footer-row" style="display: flex; align-items: center; gap: var(--p-space-md); padding-inline-end: var(--p-space-md);">
     <div style="flex: 1; min-width: 0;">
         {% if wrapped %}{{ portalEngine_localizedInc(wrapped, {}, true, editmode|default(false)) }}{% endif %}
     </div>
