@@ -189,7 +189,8 @@ test('AC3: the footer template has the inline icon with aria-label and title Tal
   assert.match(link[0], /aria-label="\{\{\s*talk\.label\s*\}\}"/);
   assert.match(link[0], /title="\{\{\s*talk\.label\s*\}\}"/);
   assert.match(read(join(enterpriseDir, 'src/Portal/Talk/TalkPage.php')), /public const LABEL = 'Talk';/, 'the label is "Talk"');
-  assertSafeMarkup(footer.replace(/\{\{[\s\S]*?\}\}/g, ''), 'footer link');
+  assert.doesNotMatch(footer, /<script|\son[a-z]+\s*=/i, 'footer link: no script, no on*= attribute');
+  assert.deepEqual([...footer.matchAll(/\shref="([^"]*)"/g)].map((m) => m[1].trim()), ['{{ talk.url }}'], 'footer link: its one href is the Talk URL');
   assert.doesNotMatch(footer, /<svg/, 'no own SVG in the footer link');
 });
 
