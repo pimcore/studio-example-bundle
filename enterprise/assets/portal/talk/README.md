@@ -2,8 +2,9 @@
 
 ## What it shows
 
-The slides of the talk as a page of the portal: **Talk** in the portal's navigation rail opens the slide viewer
-full-screen, without the portal's header, navigation rail and footer. The viewer itself is the standalone
+The slides of the talk as a page of the portal: a small **Talk** icon at the end of the portal footer opens the slide
+viewer full-screen, without the portal's header, navigation rail and footer. The talk is there when needed, not one
+of the portal's own pages in the navigation. The viewer itself is the standalone
 `talk.html` (built from the talk's Markdown deck); the page shows it in a frame that fills the window.
 
 The page is an example of a portal plugin owning a portal page. How that works is described in the Portal Engine
@@ -11,7 +12,7 @@ documentation, "Portal Frontend Plugins", section "Serving your own page".
 
 ## Extension point
 
-Three: a route, the layout's blocks and a navigation slot.
+Three: a route, the layout's blocks and the portal's footer snippet.
 
 1. **A bundle route**, in `config/pimcore/routing.yaml` of this sub-bundle. Pimcore's `BundleRoutingLoader` reads
    that file from every registered bundle, so the application's `config/routes.yaml` stays unchanged. The route
@@ -23,10 +24,18 @@ Three: a route, the layout's blocks and a navigation slot.
 2. **The blocks of the portal layout**: the page template, `templates/portal/talk.html.twig`, extends
    `@PimcorePortalEngine/layout/studio.html.twig` and overrides the blocks `shellHeader` and `shellNav` (and
    `shellFooter`) with nothing, which drops the portal's chrome. Its `studioContent` block holds the frame.
-3. **The navigation slot `slots.navEntries`** of the portal plugin: `js/src/plugin.tsx` registers
-   `talk/TalkNavEntry.tsx` there, so "Talk" appears under the navigation rail's own items. The entry's URL comes
-   from the server: `src/Portal/StudioExampleEnterprisePortalPlugin.php` generates it in `getFrontendConfig()` and
-   the entry reads it with `config('studio-example-enterprise')`.
+3. **The portal's footer snippet** (Portal Engine has no footer plugin slot): the footer is the snippet the portal
+   configuration names (`footerSnippet`). The link itself is `templates/portal/footer-talk.html.twig`: an icon from
+   Portal Engine's own set, `portalEngine_inline_icon('chalkboard-teacher')`, inside a link with `aria-label` and
+   `title` "Talk". Its URL comes from the server: `src/Portal/Talk/TalkTwigExtension.php` gives the template
+   `studioExampleEnterprise_talk()`, the URL `src/Portal/Talk/TalkPage.php` generates under the portal's prefix
+   (the same one `StudioExampleEnterprisePortalPlugin::getFrontendConfig()` hands the browser as `talk.url`).
+   `bin/console coaster-demo:setup` makes a marked snippet the portal's footer; its controller,
+   `src/Portal/Talk/TalkFooterController.php`, renders `templates/portal/footer-snippet.html.twig`, which includes the
+   link. When the portal already had a footer (an editor's, or the one the Portal Engine wizard makes), that footer
+   stays as it is: the demo's snippet shows it first and the link at its end, and `coaster-demo:reset --all` gives
+   the portal its footer back and deletes the demo's snippet. In your own portal, include
+   `@PimcoreStudioExampleEnterprise/portal/footer-talk.html.twig` wherever your footer template wants the link.
 
 ## How to run
 
@@ -56,7 +65,8 @@ talk's `viewer/README.md` lists the variables; its `theme.css` overrides them, i
 
 ## Try it
 
-Log into the portal. Below the navigation rail's own items there is **Talk**. Click it: the page `/<language>/talk`
+Log into the portal. At the end of the footer, bottom right, there is a small Talk icon (its tooltip says "Talk").
+Click it: the page `/<language>/talk`
 opens with the slides filling the window, no portal header or rail around them. The viewer's keys work as in the
 standalone file (arrows and Space to move, `B` for a black screen, `F` for full screen). The browser's back button
 returns to the portal.

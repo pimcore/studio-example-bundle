@@ -21,5 +21,12 @@ services:
             $viewerUrl: '%pimcore_studio_example_enterprise.talk.viewer_url%'
             $defaultViewerUrl: '%pimcore_studio_example_enterprise.talk.default_viewer_url%'
 
-    # The page's URL for the "Talk" navigation entry, handed to the frontend by the portal plugin provider.
+    # The page's URL, handed to the frontend by the portal plugin provider and to the footer link (TalkTwigExtension).
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkPage: ~
+
+    # studioExampleEnterprise_talk() for templates/portal/footer-talk.html.twig (autoconfigure tags it twig.extension).
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkTwigExtension: ~
+
+    # The controller of the demo's footer snippet (F157): the portal's other footer, then the Talk link.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkFooterController:
+        tags: ['controller.service_arguments']

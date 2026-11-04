@@ -101,7 +101,8 @@ namespace {
             $id = $this->state['portalFooter'];
             if ($id === null || !isset($this->state['footers'][$id])) { return null; }
             $f = $this->state['footers'][$id];
-            return ['id' => $id, 'path' => $f['path'], 'demo' => $f['demo'], 'wraps' => $f['wraps']];
+            $wrapsPath = $f['wraps'] === null ? null : ($this->state['footers'][$f['wraps']]['path'] ?? null);
+            return ['id' => $id, 'path' => $f['path'], 'demo' => $f['demo'], 'wraps' => $f['wraps'], 'wrapsPath' => $wrapsPath];
         }
         public function setDemoFooter(int $portalId, ?int $wraps): void {
             $this->writes++;

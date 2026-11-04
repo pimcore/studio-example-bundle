@@ -8,7 +8,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
  * plugin enabled, the park's brief and three pages for suppliers (About the park, Working with the Kingdom, Safety
  * first) as content pages in it, each with its navigation icon, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
- * metadata, and the park's own logo and brand colours on the portal, and an English text for the asset tree's first line. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
+ * metadata, and the park's own logo and brand colours on the portal, an English text for the asset tree's first line, and the small "Talk" link at the end of the portal footer (F157). setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
  */
 class CoasterDemo
@@ -172,6 +172,10 @@ class CoasterDemo
 
         $changes = [...$changes, ...$this->brand($portalId)];
 
+        if ($env instanceof PortalFooter) {
+            $changes = [...$changes, ...$this->footer($env, $portalId)];
+        }
+
         if (($env->translation(self::TRANSLATION_DOMAIN, self::ROOT_FOLDER_KEY, self::LANGUAGE) ?? '') === '') {
             $env->saveTranslation(self::TRANSLATION_DOMAIN, self::ROOT_FOLDER_KEY, self::LANGUAGE, self::ROOT_FOLDER_TEXT);
             $changes[] = sprintf('Added the English text "%s" for %s', self::ROOT_FOLDER_TEXT, self::ROOT_FOLDER_KEY);
@@ -214,6 +218,16 @@ class CoasterDemo
                 }
             }
             $portalId = $env->portalId();
+            // the Talk link's block goes first, so the portal's own footer is back as it was before setup
+            if ($portalId !== null && $env instanceof PortalFooter) {
+                $footer = $env->footer($portalId);
+                if ($footer !== null && $footer['demo']) {
+                    $env->removeDemoFooter($portalId);
+                    $changes[] = $footer['wrapsPath'] === null
+                        ? 'Removed the demo\'s portal footer with the Talk link'
+                        : sprintf('Removed the Talk link from the portal footer %s', $footer['wrapsPath']);
+                }
+            }
             if ($portalId !== null) {
                 $env->deletePortal($portalId);
                 $changes[] = sprintf('Deleted the portal "%s"', self::PORTAL_NAME);
@@ -322,6 +336,25 @@ class CoasterDemo
         }
 
         return $changes;
+    }
+
+    /**
+     * The small "Talk" link in the portal footer (F157): a portal without a footer gets the demo's; one with another
+     * footer keeps it and gets the link at its end, in the demo's marked footer that wraps it; the demo's own stays.
+     *
+     * @return string[] what was changed
+     */
+    private function footer(PortalFooter $env, int $portalId): array
+    {
+        $footer = $env->footer($portalId);
+        if ($footer !== null && $footer['demo']) {
+            return [];
+        }
+        $env->setDemoFooter($portalId, $footer['id'] ?? null);
+
+        return [$footer === null
+            ? 'Set the portal footer with the Talk link'
+            : sprintf('Kept the portal footer %s and added the Talk link at its end', $footer['path'])];
     }
 
     public function briefHtml(): string
