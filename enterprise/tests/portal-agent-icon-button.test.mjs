@@ -12,7 +12,7 @@ const enterpriseDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const portalSrc = join(enterpriseDir, 'assets/portal/js/src');
 const read = (path) => readFileSync(path, 'utf8');
 const buttonSource = () => read(join(portalSrc, 'agent/AskBriefButton.tsx'));
-const iconSource = () => read(join(portalSrc, 'icons/AskIcon.tsx'));
+const iconSource = () => read(join(portalSrc, 'agent/AskIcon.tsx'));
 
 /** The JSX of the header control: from `<button` to its `</button>`. */
 function buttonJsx (source) {
@@ -35,7 +35,7 @@ test('AC1: the button is an icon in the header icon shape, with no visible text 
   assert.doesNotMatch(source, /ui\.Button/, 'no text button any more');
   // the icon is decorative: the button carries the name
   assert.doesNotMatch(children, /label=/);
-  assert.match(source, /import \{ AskIcon \} from '\.\.\/icons\/AskIcon'/);
+  assert.match(source, /import \{ AskIcon \} from '\.\/AskIcon'/);
   const icon = iconSource();
   assert.match(icon, /export function AskIcon/);
   assert.match(icon, /<CoasterIcon/, 'drawn in the plugin\'s icon frame (currentColor, aria-hidden without a label)');

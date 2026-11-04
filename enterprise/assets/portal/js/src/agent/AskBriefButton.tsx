@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useCallback, useRef, useState } from 'react'
 import { config } from '@pimcore/portal-plugin-sdk'
-import { AskIcon } from '../icons/AskIcon'
+import { AskIcon } from './AskIcon'
 import { agentConfigOf } from './agent-config'
 
 // The plugin id of src/Portal/StudioExampleEnterprisePortalPlugin.php, whose getFrontendConfig() hands over `agent`.
