@@ -309,3 +309,16 @@ test('AC1: the bundle registers the pass, and the pass adds only figure, figcapt
   const allowed = pass.slice(pass.indexOf('ALLOWED = ['), pass.indexOf('];', pass.indexOf('ALLOWED = [')));
   assert.deepEqual([...allowed.matchAll(/'(\w+)' => \[([^\]]*)\]/g)].map((m) => [m[1], m[2]]), [['figure', "'class'"], ['figcaption', "'class'"], ['img', "'width', 'height', 'loading'"]]);
 });
+
+test('AC2: a page stored as Pimcore\'s sanitizer writes it back (<img … />, &#039;) counts as unchanged: the next setup writes nothing', () => {
+  const { again, writes } = php(`
+    $env = new ImagesEnvironment();
+    demo($env, $dir)->setup();
+    $env->state['pages']['about-the-park']['html'] = str_replace(['">', '&apos;'], ['" />', '&#039;'], $env->state['pages']['about-the-park']['html']);
+    $writes = $env->writes;
+    $again = demo($env, $dir)->setup();
+    echo json_encode(['again' => $again, 'writes' => $env->writes - $writes]);
+  `, demoData());
+  assert.deepEqual(again, []);
+  assert.equal(writes, 0);
+});

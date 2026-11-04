@@ -483,14 +483,15 @@ class CoasterDemo
 
     /**
      * Pimcore's wysiwyg save writes entities its own way (&apos; as &#039;, &quot; as &#34;) and drops the trailing
-     * newline, so the stored brief counts as the same when it only differs in that.
+     * newline, and its sanitizer closes a void element as <img … /> (F160), so the stored brief counts as the same when it
+     * only differs in that.
      */
     private static function sameHtml(?string $stored, string $wanted): bool
     {
         if (null === $stored) {
             return false;
         }
-        $normal = static fn (string $html): string => trim(html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $normal = static fn (string $html): string => trim(preg_replace('#\\s*/>#', '>', html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
 
         return $normal($stored) === $normal($wanted);
     }
