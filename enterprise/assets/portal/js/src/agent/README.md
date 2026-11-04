@@ -2,7 +2,8 @@
 
 ## What it shows
 
-A button in the portal header, on every signed-in page, opens a panel where the supplier asks the agent about the
+An icon button in the portal header (a speech bubble with a question mark, tooltip "Ask the brief"), on every
+signed-in page, opens a panel where the supplier asks the agent about the
 brief and its revisions. The answer streams in as plain text. When the answer was recorded (the demo's replay), its
 bubble carries a "recorded" badge.
 
@@ -15,7 +16,7 @@ header of `@PimcorePortalEngine/layout/studio.html.twig`: a page on another layo
 
 | File | What it does |
 | --- | --- |
-| `AskBriefButton.tsx` | The header button. Loaded at the portal's start-up, so it holds only the button and `React.lazy` for the panel. Renders nothing without `config().agent`. |
+| `AskBriefButton.tsx` | The header button: icon-only at every width, drawn as the portal draws Search and Collections (`class="p-hdr-ic"`, the tooltip from `data-tip`), its accessible name and tooltip `config().agent.label`. Its own `<button>` rather than the SDK's `components.HeaderAction` (same markup) because the panel needs `aria-haspopup`, `aria-expanded`, a ref for the focus and `data-agent-button`. The glyph is `../icons/AskIcon.tsx`. Loaded at the portal's start-up, so it holds only the button and `React.lazy` for the panel. Renders nothing without `config().agent`. |
 | `agent-config.ts` | Checks `config('studio-example-enterprise').agent`: `{chatUrl, label, mode}` or nothing. |
 | `AskBriefPanel.tsx` | The panel: an own overlay (the portal SDK has no Drawer), a `role="dialog"` with the kit's `Panel`, `Input`, `Button`, `Tag` and `Alert`. The overlay starts below the portal header (`#pe-shell-header`) and is never wider than the window; while it is open the page under the header (`.pe-body`) is `inert`, and on a phone, where the sheet covers it, not drawn. |
 | `agent-stream.ts` | The chat client: `POST {chatUrl}` and the answer's body read as Server-Sent Events up to `complete`. |
@@ -93,7 +94,7 @@ note card, with `data-agent-proposal="<id>"`).
 ## How to run
 
 1. `bin/console coaster-demo:setup`, build the portal plugin (`assets/portal/README.md`), `bin/console cache:clear`.
-2. Sign in to the demo portal as the Loopwerk supplier: "Ask the brief" is in the header.
+2. Sign in to the demo portal as the Loopwerk supplier: the speech-bubble icon "Ask the brief" is among the header icons.
 3. Click it and ask "Does my latest Thunder Loop revision meet the brief?": the answer streams in, marked "recorded".
 
 Tests: `node --test enterprise/tests/portal-agent-panel.test.mjs enterprise/tests/portal-agent-proposal.test.mjs`.

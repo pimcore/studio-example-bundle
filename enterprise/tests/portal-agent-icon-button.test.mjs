@@ -28,7 +28,8 @@ test('AC1: the button is an icon in the header icon shape, with no visible text 
   assert.match(jsx, /className="p-hdr-ic"/, 'the header icon shape of Search and Collections');
   assert.match(jsx, /type="button"/);
   // its only child is the icon: no label text, no short label for phones
-  const children = jsx.slice(jsx.indexOf('>', jsx.indexOf('onClick')) + 1, jsx.lastIndexOf('</button>')).trim();
+  // (the opening tag ends with a `>` on its own line; the attributes' `=>` are not it)
+  const children = (jsx.match(/\n\s*>\s*\n([\s\S]*)<\/button>$/) ?? [])[1]?.trim();
   assert.match(children, /^<AskIcon\b[^>]*\/>$/, 'the button holds the icon and nothing else');
   assert.doesNotMatch(source, /SHORT_LABEL|useNarrow|matchMedia/, 'no width-dependent text label');
   assert.doesNotMatch(source, /ui\.Button/, 'no text button any more');
