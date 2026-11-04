@@ -164,8 +164,12 @@ test('AC2: in the browser the Pause button stops the ride, Play goes on, Restart
   await page.click('play');
   await until(async () => (await state()).distance > paused.distance, 20, 'Play goes on from where it stood');
 
-  await page.click('restart');
-  const restarted = await state();
+  // Click Restart and read the state in the same page evaluate (DR-F159-1): a read one DevTools round trip after the
+  // click let more than one frame pass on a loaded machine (7 m, F159).
+  const restarted = await page.evaluate(`(() => {
+    document.querySelector('.coaster-ride-controls button[name=restart]').click();
+    return window.coasterRide.state();
+  })()`);
   // At most one frame (60 m/s for at most 0.1 s) can have passed since the click.
   assert.ok(restarted.distance <= 6 && restarted.distance < paused.distance, `Restart: back in the station, at ${restarted.distance} m`);
   assert.equal(restarted.playing, true, 'and riding again');
