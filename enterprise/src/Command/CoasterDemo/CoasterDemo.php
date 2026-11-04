@@ -6,8 +6,8 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
 
 /**
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
- * plugin enabled, the park's brief as a page
- * in it, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
+ * plugin enabled, the park's brief and three pages for suppliers (About the park, Working with the Kingdom, Safety
+ * first) as content pages in it, each with its navigation icon, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
  * metadata, and the park's own logo and brand colours on the portal, and an English text for the asset tree's first line. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
  */
@@ -26,6 +26,26 @@ class CoasterDemo
     public const DATA_POOL_NAME = 'Ride designs';
 
     public const BRIEF_TITLE = 'Brief: Thunder Loop';
+
+    public const BRIEF_KEY = 'brief';
+
+    // Navigation icons (F155): names from portal_engine's bundled icon set (its assets/icons, which the portal's rail
+    // reads; tests/coaster-content-pages.test.mjs checks each one there). Without one the rail shows its generic icon.
+    public const BRIEF_ICON = 'clipboard-list.svg';
+
+    public const ABOUT_ICON = 'landmark.svg';
+
+    public const WORKING_ICON = 'handshake.svg';
+
+    public const SAFETY_ICON = 'shield-alt.svg';
+
+    // The content pages for suppliers (DR-P48 part 4), after the brief in the navigation: [key => [title, icon]], the
+    // text of each in demo-data/pages/<key>.md. Fictional Pimcore Kingdom text; the list is Marvin's to change.
+    public const CONTENT_PAGES = [
+        'about-the-park' => ['About the park', self::ABOUT_ICON],
+        'working-with-the-kingdom' => ['Working with the Kingdom', self::WORKING_ICON],
+        'safety-first' => ['Safety first', self::SAFETY_ICON],
+    ];
 
     // The public demo login: shown on stage and in the runbook, so it is no secret.
     public const SUPPLIER_EMAIL = 'supplier@loopwerk.example';
@@ -132,10 +152,14 @@ class CoasterDemo
         $dataPoolId = $env->dataPoolId($portalId, self::DATA_POOL_NAME)
             ?? throw new \RuntimeException(sprintf('The portal "%s" has no asset data pool "%s". Run coaster-demo:reset --all, then setup again.', self::PORTAL_NAME, self::DATA_POOL_NAME));
 
-        $brief = $this->briefHtml();
-        if (!self::sameHtml($env->briefHtml($portalId), $brief)) {
-            $env->saveBrief($portalId, self::BRIEF_TITLE, $brief);
-            $changes[] = sprintf('Wrote the brief page "%s"', self::BRIEF_TITLE);
+        if ($env instanceof ContentPages) {
+            $changes = [...$changes, ...$this->contentPages($env, $portalId)];
+        } else {
+            $brief = $this->briefHtml();
+            if (!self::sameHtml($env->briefHtml($portalId), $brief)) {
+                $env->saveBrief($portalId, self::BRIEF_TITLE, $brief);
+                $changes[] = sprintf('Wrote the brief page "%s"', self::BRIEF_TITLE);
+            }
         }
 
         $supplier = $this->supplier($portalId, $dataPoolId);
@@ -257,6 +281,38 @@ class CoasterDemo
         if (in_array(self::LOGO_SVG, $uploaded, true) || array_intersect_key($actual, $wanted) != $wanted) {
             $env->setPortalBranding($portalId, $wanted['logo'], self::BRAND_PRIMARY, self::BRAND_ACCENT);
             $changes[] = sprintf('Set the logo and the brand colours %s and %s on the portal "%s"', self::BRAND_PRIMARY, self::BRAND_ACCENT, self::PORTAL_NAME);
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Writes the brief and the supplier pages where their text is missing or changed, and sets a missing or other
+     * navigation icon; only the demo's own pages are touched (ContentPages::contentPage()).
+     *
+     * @return string[] what was changed
+     */
+    private function contentPages(ContentPages $env, int $portalId): array
+    {
+        $changes = [];
+        $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, $this->briefHtml()]];
+        foreach (self::CONTENT_PAGES as $key => [$title, $icon]) {
+            $pages[$key] = [$title, $icon, BriefHtml::fromMarkdown($this->readDemoData('pages/' . $key . '.md'))];
+        }
+        foreach ($pages as $key => [$title, $icon, $html]) {
+            $page = $env->contentPage($portalId, (string) $key);
+            $sameText = $page !== null && $page['title'] === $title && self::sameHtml($page['html'], $html);
+            if ($sameText && $page['icon'] === $icon) {
+                continue;
+            }
+            $env->saveContentPage($portalId, (string) $key, $title, $icon, $html);
+            if (!$sameText) {
+                $changes[] = $key === self::BRIEF_KEY
+                    ? sprintf('Wrote the brief page "%s"', $title)
+                    : sprintf('Wrote the page "%s"', $title);
+            } else {
+                $changes[] = sprintf('Set the navigation icon %s on the page "%s"', $icon, $title);
+            }
         }
 
         return $changes;

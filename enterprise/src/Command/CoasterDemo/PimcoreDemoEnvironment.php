@@ -3,6 +3,7 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\ControllerReference;
+use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\ContentConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\PortalConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Wizard;
 use Pimcore\Bundle\PortalEngineBundle\Service\Wizard\WizardService;
@@ -25,7 +26,7 @@ use Pimcore\Model\Translation;
  * asset created like an upload, so the coaster listener fills its metadata. Every element the demo creates gets the
  * property "coaster-demo", and only elements with it are found as the demo's or deleted.
  */
-class PimcoreDemoEnvironment implements DemoEnvironment
+class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages
 {
     public const MARK = 'coaster-demo';
 
@@ -33,7 +34,10 @@ class PimcoreDemoEnvironment implements DemoEnvironment
 
     public const USER_KEY = 'loopwerk-supplier';
 
-    public const BRIEF_KEY = 'brief';
+    public const BRIEF_KEY = CoasterDemo::BRIEF_KEY;
+
+    // A demo content page whose key an editor's page already had (F155) gets the next free key and keeps its own here.
+    public const PAGE_KEY = 'coaster-demo-page';
 
     // The content areablock of a portal content page (PortalController::contentAction) and its WYSIWYG brick.
     private const AREABLOCK = 'content';
@@ -143,30 +147,54 @@ class PimcoreDemoEnvironment implements DemoEnvironment
 
     public function briefHtml(int $portalId): ?string
     {
-        $brief = $this->briefPage($portalId);
-        $editable = $brief?->getEditable(self::wysiwygName());
-
-        return $editable ? (string) $editable->getData() : null;
+        return $this->contentPage($portalId, self::BRIEF_KEY)['html'] ?? null;
     }
 
     public function saveBrief(int $portalId, string $title, string $html): void
     {
-        $brief = $this->briefPage($portalId);
-        if (!$brief) {
-            $languageRoot = $this->languageRoot($portalId)
-                ?? throw new \RuntimeException('The demo portal has no page for the brief to go under.');
-            $brief = new Document\Page();
-            $brief->setKey(self::BRIEF_KEY);
-            $brief->setParent($languageRoot);
-            $brief->setController(ControllerReference::PORTAL_CONTENT_PAGE);
-            $brief->setPublished(true);
-            $brief->setProperty(self::MARK, 'bool', true, false, false);
+        $this->saveContentPage($portalId, self::BRIEF_KEY, $title, CoasterDemo::BRIEF_ICON, $html);
+    }
+
+    public function contentPage(int $portalId, string $key): ?array
+    {
+        $page = $this->demoPage($portalId, $key);
+        if (!$page) {
+            return null;
         }
-        $brief->setTitle($title);
-        $brief->setProperty('navigation_name', 'text', $title);
-        $brief->setRawEditable(self::AREABLOCK, 'areablock', [['key' => '1', 'type' => self::BRICK, 'hidden' => false]]);
-        $brief->setRawEditable(self::wysiwygName(), 'wysiwyg', $html);
-        $brief->save();
+        $icon = $page->getEditable(ContentConfig::NAVIGATION_ICON)?->getData();
+        $html = $page->getEditable(self::wysiwygName())?->getData();
+
+        return ['title' => (string) $page->getTitle(), 'icon' => is_string($icon) ? $icon : '', 'html' => $html === null ? null : (string) $html];
+    }
+
+    public function saveContentPage(int $portalId, string $key, string $title, string $icon, string $html): void
+    {
+        $page = $this->demoPage($portalId, $key);
+        if (!$page) {
+            $languageRoot = $this->languageRoot($portalId)
+                ?? throw new \RuntimeException(sprintf('The demo portal has no page for "%s" to go under.', $title));
+            $page = new Document\Page();
+            $page->setKey($key);
+            $page->setParent($languageRoot);
+            // An editor's page under this key stays theirs: the demo's takes the next free key and remembers its own.
+            $free = Document\Service::getUniqueKey($page);
+            if ($free !== $key) {
+                $page->setKey($free);
+                $page->setProperty(self::PAGE_KEY, 'text', $key, false, false);
+            }
+            $page->setController(ControllerReference::PORTAL_CONTENT_PAGE);
+            $page->setPublished(true);
+            $page->setProperty(self::MARK, 'bool', true, false, false);
+        } else {
+            // PageSnippet::save() writes back only the loaded editables: load them, so the page keeps its others.
+            $page->getEditables();
+        }
+        $page->setTitle($title);
+        $page->setProperty('navigation_name', 'text', $title);
+        $page->setRawEditable(ContentConfig::NAVIGATION_ICON, 'select', $icon);
+        $page->setRawEditable(self::AREABLOCK, 'areablock', [['key' => '1', 'type' => self::BRICK, 'hidden' => false]]);
+        $page->setRawEditable(self::wysiwygName(), 'wysiwyg', $html);
+        $page->save();
     }
 
     public function portalBranding(int $portalId): array
@@ -454,11 +482,23 @@ class PimcoreDemoEnvironment implements DemoEnvironment
         return $dataPool?->getParent();
     }
 
-    private function briefPage(int $portalId): ?Document\Page
+    /** The demo's own content page for $key in the portal's language root: marked, under $key or remembering it. */
+    private function demoPage(int $portalId, string $key): ?Document\Page
     {
         $languageRoot = $this->languageRoot($portalId);
-        $brief = $languageRoot ? Document::getByPath($languageRoot->getRealFullPath() . '/' . self::BRIEF_KEY) : null;
+        if (!$languageRoot) {
+            return null;
+        }
+        foreach ($languageRoot->getChildren(true) as $child) {
+            if (!$child instanceof Document\Page || !$child->getProperty(self::MARK)) {
+                continue;
+            }
+            $own = $child->getProperty(self::PAGE_KEY);
+            if ($own === $key || (($own === null || $own === '') && $child->getKey() === $key)) {
+                return $child;
+            }
+        }
 
-        return $brief instanceof Document\Page && $brief->getProperty(self::MARK) ? $brief : null;
+        return null;
     }
 }

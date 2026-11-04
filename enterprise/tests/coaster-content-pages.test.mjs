@@ -269,6 +269,8 @@ test('AC2: on Pimcore, a content page is saved with its navigation_icon select, 
   const load = save.indexOf('->getEditables();');
   assert.ok(load > 0 && load < save.indexOf('->setRawEditable('), 'loads the page\'s editables before setting one, so a save keeps the others');
   assert.match(pimcoreMethod('saveBrief'), /saveContentPage\(/, 'the brief is saved the same way, with its icon');
-  assert.match(pimcoreMethod('contentPage'), /self::MARK/, 'only the demo\'s own pages are found as its pages');
+  assert.match(pimcoreMethod('contentPage'), /\$this->demoPage\(/);
+  assert.match(pimcoreMethod('saveContentPage'), /\$this->demoPage\(/);
+  assert.match(pimcoreMethod('demoPage'), /self::MARK/, 'only the demo\'s own pages are found as its pages');
   assert.match(pimcoreMethod('contentPage'), /NAVIGATION_ICON/);
 });
