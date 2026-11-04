@@ -81,7 +81,7 @@ const stageModel = await import(join(stageDir, 'coaster-stage-model.ts'));
 
 // --- AC1 ---
 
-test('AC1: the start-up code takes only the Talk entry\'s icon; the tile and stage icons load with their lazy chunks', () => {
+test('AC1: the start-up code takes no icon but the shared frame; the tile and stage icons load with their lazy chunks', () => {
   // the static import graph from plugin.tsx, as plugin-size.test.mjs walks it
   const seen = new Set();
   const walk = (path) => {
@@ -97,7 +97,7 @@ test('AC1: the start-up code takes only the Talk entry\'s icon; the tile and sta
   };
   walk(join(portalSrc, 'plugin.tsx'));
   const startupIcons = [...seen].filter((f) => f.startsWith(iconDir + '/')).map((f) => relative(iconDir, f)).sort();
-  assert.deepEqual(startupIcons, ['CoasterIcon.tsx', 'TalkIcon.tsx'], 'no other icon in the start-up chunk');
+  assert.deepEqual(startupIcons, ['CoasterIcon.tsx'], 'no other icon in the start-up chunk (F157: the Talk rail entry went)');
   // the icon folder is in the plugin's type check (tsconfig include)
   const tsconfig = JSON.parse(read(join(portalDir, 'tsconfig.json')));
   assert.ok((tsconfig.include ?? []).some((p) => p.startsWith('js/src')), 'js/src (with icons/) is type-checked');
@@ -155,10 +155,6 @@ test('AC2: an icon without a label is decorative (aria-hidden="true"); with one 
 
 // --- AC3: the three places, rendered ---
 
-const navEntry = () => loadTsx(join(portalDir, 'talk/TalkNavEntry.tsx'), {
-  '@pimcore/portal-plugin-sdk': { config: () => ({ talk: { url: '/portal/talk', label: 'Talk' } }) }
-}).TalkNavEntry;
-
 const tilePicture = () => loadTsx(join(tileDir, 'CoasterTilePicture.tsx'), {
   '@pimcore/portal-ui-kit/components': kit,
   './coaster-tile-model': tileModel,
@@ -184,13 +180,17 @@ function assertEveryIconReadable (html, where) {
   }
 }
 
-test('AC3: the Talk entry of the navigation rail shows the Talk icon next to its label', () => {
-  const html = render(navEntry());
-  const talk = render(icons.find((i) => i.name === 'TalkIcon').component);
-  assert.ok(html.includes(`<span class="pe-rail-ico">${talk}</span>`), 'the set\'s Talk icon in the rail\'s icon slot');
-  assert.match(html, /<span class="p-rail-lbl">Talk<\/span>/);
-  assertEveryIconReadable(html, 'nav entry');
-  assert.doesNotMatch(read(join(portalDir, 'talk/TalkNavEntry.tsx')), /<svg/, 'no own SVG left in the entry');
+test('AC3: the footer template has the inline icon with aria-label and title Talk', () => {
+  // F157: the Talk link moved to the portal footer (Twig), its icon from portal_engine's set
+  const footer = read(join(enterpriseDir, 'templates/portal/footer-talk.html.twig'));
+  const link = footer.match(/<a\b[^>]*>[\s\S]*?<\/a>/);
+  assert.ok(link, 'the footer template has the link');
+  assert.match(link[0], /portalEngine_inline_icon\('[\w-]+(?:\.svg)?'\)/, 'the icon inside the link');
+  assert.match(link[0], /aria-label="\{\{\s*talk\.label\s*\}\}"/);
+  assert.match(link[0], /title="\{\{\s*talk\.label\s*\}\}"/);
+  assert.match(read(join(enterpriseDir, 'src/Portal/Talk/TalkPage.php')), /public const LABEL = 'Talk';/, 'the label is "Talk"');
+  assertSafeMarkup(footer.replace(/\{\{[\s\S]*?\}\}/g, ''), 'footer link');
+  assert.doesNotMatch(footer, /<svg/, 'no own SVG in the footer link');
 });
 
 test('AC3: a coaster tile shows its track outline with the Ride icon and the label "Ride design"', () => {

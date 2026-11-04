@@ -94,7 +94,9 @@ test('AC1: the plugin registers the tile picture under the portal tileRegions.me
   assert.match(plugin, /componentRegistry\.register\(\{ name: tileRegions\.media, component: CoasterTileMedia \}\)/);
   // the earlier registrations stay
   assert.match(plugin, /componentRegistry\.register\(\{ name: previewStage, component: CoasterPreviewStage \}\)/);
-  assert.match(plugin, /registerToSlot\(slots\.navEntries/);
+  // headerActions still has the Ask button; the Talk rail entry left the rail (F157)
+  assert.match(plugin, /registerToSlot\(slots\.headerActions, \{ name: 'studio-example-enterprise\/ask-brief', component: AskBriefButton \}\)/);
+  assert.doesNotMatch(plugin, /slots\.navEntries/);
 
   const source = tileSource();
   assert.match(source, /export const CoasterTileMedia = \(props: TileRegionProps\)/);

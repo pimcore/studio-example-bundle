@@ -39,8 +39,8 @@ test('AC1: the plugin registers the stage under the portal previewStage name, wi
   assert.match(plugin, /import \{[^}]*\bpreviewStage\b[^}]*\} from '@pimcore\/portal-plugin-sdk'/);
   assert.match(plugin, /import \{ CoasterPreviewStage \} from '\.\/coaster\/preview-stage\/CoasterPreviewStage'/);
   assert.match(plugin, /componentRegistry\.register\(\{ name: previewStage, component: CoasterPreviewStage \}\)/);
-  // the Talk entry stays
-  assert.match(plugin, /registerToSlot\(slots\.navEntries/);
+  // the Talk entry left the rail (F157, DR-F157-1)
+  assert.doesNotMatch(plugin, /slots\.navEntries/);
 
   const stage = stageSource();
   assert.match(stage, /export const CoasterPreviewStage: PreviewStageComponent/);

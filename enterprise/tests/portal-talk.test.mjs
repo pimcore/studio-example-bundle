@@ -56,23 +56,26 @@ test('AC2: the page template extends the portal studio layout, overrides shellHe
   assert.match(php, /viewerUrl/);
 });
 
-test('AC3: the plugin source registers a Talk entry in slots.navEntries', () => {
+test('AC3: the footer template links the Talk URL with the kit icon, and plugin.tsx registers no nav entry', () => {
+  // F157 (DR-P48 part 5): the rail entry went; a small icon link in the portal footer took its place
   const plugin = read(join(portalDir, 'js/src/plugin.tsx'));
-  assert.match(plugin, /componentRegistry\.registerToSlot\(\s*slots\.navEntries\s*,\s*\{[^}]*component:\s*TalkNavEntry/);
-  const imported = plugin.match(/import \{[^}]*TalkNavEntry[^}]*\} from '([^']+)'/);
-  assert.ok(imported, 'imports TalkNavEntry');
-  const entry = read(join(portalDir, 'js/src', `${imported[1]}.tsx`));
-  assert.match(entry, /export function TalkNavEntry/);
-  assert.match(entry, /'Talk'/);
-  assert.match(entry, /className="p-rail-it"/, 'carries the rail item class');
-  // the URL comes from the server-side config, not from window.location
-  assert.match(entry, /config</);
-  assert.doesNotMatch(entry, /window\.location/);
+  assert.doesNotMatch(plugin, /slots\.navEntries/, 'no entry in the navigation rail');
+  assert.doesNotMatch(plugin, /TalkNavEntry/);
+  const footer = read(join(enterpriseDir, 'templates/portal/footer-talk.html.twig'));
+  assert.match(footer, /<a\b[^>]*href="\{\{\s*talk\.url\s*\}\}"/, 'links the Talk URL');
+  assert.match(footer, /aria-label="\{\{\s*talk\.label\s*\}\}"/);
+  assert.match(footer, /portalEngine_inline_icon\('[\w-]+(?:\.svg)?'\)/, 'with an icon of portal_engine\'s set');
+  // the URL comes from the server (TalkPage, through the bundle's Twig function), not from the browser's location
+  const extension = read(join(enterpriseDir, 'src/Portal/Talk/TalkTwigExtension.php'));
+  assert.match(extension, /TalkPage/);
+  assert.match(extension, /->getNavEntry\(\)/);
+  assert.doesNotMatch(footer, /window\.location|<script/);
 
-  // and the server side hands it over through the provider's frontend config
+  // and the server side still hands the URL over through the provider's frontend config (checks/live-demo uses it)
   const provider = read(join(enterpriseDir, 'src/Portal/StudioExampleEnterprisePortalPlugin.php'));
   assert.match(provider, /implements[^{]*PortalPluginConfigProviderInterface/);
   assert.match(provider, /public function getFrontendConfig\(\): array/);
+  assert.match(provider, /\$config\['talk'\] = \$talk;/);
 });
 
 test('AC4: the talk README names the three extension points used', () => {
@@ -81,7 +84,9 @@ test('AC4: the talk README names the three extension points used', () => {
   assert.match(readme, /@PimcorePortalEngine\/layout\/studio\.html\.twig/);
   assert.match(readme, /shellHeader/);
   assert.match(readme, /shellNav/);
-  assert.match(readme, /slots\.navEntries/);
+  assert.match(readme, /templates\/portal\/footer-talk\.html\.twig/, 'names the footer link');
+  assert.match(readme, /footerSnippet|footer snippet/, 'and the portal\'s footer snippet it is shown through');
+  assert.match(readme, /portalEngine_inline_icon/);
   assert.match(readme, /PORTAL_TALK_VIEWER_URL/, 'says how to point the frame at the viewer');
   // linked from the sub-bundle README like the other examples
   assert.match(read(join(enterpriseDir, 'README.md')), /assets\/portal\/talk\/README\.md/);
