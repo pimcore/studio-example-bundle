@@ -7,7 +7,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+const read = (path) => readFileSync(path, 'utf8');
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -257,4 +258,54 @@ test('AC3: on Pimcore, the supplier\'s workspaces are saved per folder from what
   assert.match(save, /\$this->markedFolder\(\$path\)/);
   const create = pimcore.slice(pimcore.indexOf('function createAsset('), pimcore.indexOf('function deleteAsset('));
   assert.match(create, /markedFolder\(\$folder\)/, 'the Pages folder is made marked, so reset --all removes it');
+});
+
+// DR-F160-1 A: Pimcore saves a wysiwyg through its HTML sanitizer, which drops <figure> with the image inside. The
+// bundle's WysiwygFigurePass adds figure, figcaption and the img's width, height and loading to it, nothing else. Run
+// against Pimcore's own sanitizer config (its default.yaml) with the Symfony of a Pimcore vendor; skips without one.
+const autoload = process.env.PIMCORE_VENDOR_AUTOLOAD || '/var/www/html/vendor/autoload.php';
+const pimcoreDefaults = join(dirname(autoload), 'pimcore/pimcore/bundles/CoreBundle/config/pimcore/default.yaml');
+const vendorSkip = !existsSync(autoload) || !existsSync(pimcoreDefaults) ? `no Pimcore vendor at ${autoload}` : false;
+
+const sanitize = (html, withPass) => execFileSync('php', ['-d', 'display_errors=stderr', '-d', 'error_reporting=-1', '-r', `
+  require ${JSON.stringify(autoload)};
+  require ${JSON.stringify(join(src, 'DependencyInjection/Compiler/WysiwygFigurePass.php'))};
+  use Symfony\\Component\\DependencyInjection\\ContainerBuilder;
+  use Symfony\\Component\\HtmlSanitizer\\HtmlSanitizer;
+  use Symfony\\Component\\HtmlSanitizer\\HtmlSanitizerConfig;
+  use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\DependencyInjection\\Compiler\\WysiwygFigurePass;
+  $config = Symfony\\Component\\Yaml\\Yaml::parseFile(${JSON.stringify(pimcoreDefaults)}, Symfony\\Component\\Yaml\\Yaml::PARSE_CONSTANT | Symfony\\Component\\Yaml\\Yaml::PARSE_CUSTOM_TAGS)['framework']['html_sanitizer']['sanitizers']['pimcore.wysiwyg_sanitizer'];
+  $container = new ContainerBuilder();
+  // as FrameworkExtension::registerHtmlSanitizerConfiguration() registers it
+  $def = $container->register(WysiwygFigurePass::SANITIZER_CONFIG, HtmlSanitizerConfig::class)->setPublic(true);
+  foreach ($config['allow_elements'] as $element => $attributes) { $def->addMethodCall('allowElement', [$element, $attributes], true); }
+  foreach ($config['allow_attributes'] ?? [] as $attribute => $elements) { $def->addMethodCall('allowAttribute', [$attribute, $elements], true); }
+  $def->addMethodCall('allowRelativeLinks', [$config['allow_relative_links'] ?? false], true);
+  $def->addMethodCall('allowRelativeMedias', [$config['allow_relative_medias'] ?? false], true);
+  $def->addMethodCall('withMaxInputLength', [$config['max_input_length'] ?? 20000], true);
+  ${withPass ? '$container->addCompilerPass(new WysiwygFigurePass());' : ''}
+  $container->compile();
+  echo (new HtmlSanitizer($container->get(WysiwygFigurePass::SANITIZER_CONFIG)))->sanitizeFor('body', ${JSON.stringify(html)});
+`], { encoding: 'utf8' });
+
+test('AC1: Pimcore\'s wysiwyg sanitizer keeps the figure, its img (src, alt, width, height, loading, style) and the caption with the bundle\'s pass, and only those', { skip: vendorSkip }, () => {
+  const figure = `<figure>${LAZY}<figcaption>Sketch: Loopwerk Engineering</figcaption></figure>`;
+  assert.ok(!sanitize(figure, false).includes('<img'), 'without the pass Pimcore drops the figure with its image (why the pass exists)');
+  const kept = sanitize(`<h1>About</h1>\n<figure>${HERO}</figure>\n${figure}\n<p>Text</p>`, true);
+  const attrs = (tag) => Object.fromEntries([...tag.matchAll(/(\w+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+  const imgs = [...kept.matchAll(/<img [^>]*>/g)].map((m) => attrs(m[0]));
+  assert.equal(imgs.length, 2, kept);
+  assert.deepEqual(imgs[0], { src: '/Pimcore%20Kingdom/Pages/park-entrance.svg', alt: 'The park&#039;s entrance gate at dusk', width: '1200', height: '600', style: 'max-width:100%;height:auto' });
+  assert.deepEqual(imgs[1], { src: '/Pimcore%20Kingdom/Pages/ride-sketch.webp', alt: 'A sketch of the next ride', width: '64', height: '36', loading: 'lazy', style: 'max-width:100%;height:auto' });
+  assert.match(kept, /<figure><img [^>]*><figcaption>Sketch: Loopwerk Engineering<\/figcaption><\/figure>/);
+  const hostile = sanitize('<figure onclick="x()"><img src="/a.svg" alt="a" onerror="x()" srcset="/b.svg 2x"><figcaption onmouseover="x()">c</figcaption></figure><script>x()</script><video src="/v.mp4"></video>', true);
+  assert.ok(!/onclick|onerror|onmouseover|srcset|<script|<video/.test(hostile), `nothing else gets through: ${hostile}`);
+});
+
+test('AC1: the bundle registers the pass, and the pass adds only figure, figcaption and img width/height/loading', () => {
+  assert.match(read(join(src, 'PimcoreStudioExampleEnterpriseBundle.php')), /addCompilerPass\(new WysiwygFigurePass\(\)\)/);
+  const pass = read(join(src, 'DependencyInjection/Compiler/WysiwygFigurePass.php'));
+  assert.match(pass, /'html_sanitizer\.config\.pimcore\.wysiwyg_sanitizer'/);
+  const allowed = pass.slice(pass.indexOf('ALLOWED = ['), pass.indexOf('];', pass.indexOf('ALLOWED = [')));
+  assert.deepEqual([...allowed.matchAll(/'(\w+)' => \[([^\]]*)\]/g)].map((m) => [m[1], m[2]]), [['figure', "'class'"], ['figcaption', "'class'"], ['img', "'width', 'height', 'loading'"]]);
 });
