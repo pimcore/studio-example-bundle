@@ -80,6 +80,8 @@ namespace {
             for ($i = 1; array_key_exists($free, $this->state['pages']); $i++) { $free = $key . '_' . $i; }
             $this->state['pages'][$free] = ['title' => $title, 'icon' => $icon, 'html' => $html, 'demo' => true] + ($free === $key ? [] : ['demoKey' => $key]);
         }
+        public function navigationIcon(int $documentId): string { return $this->state['icons'][$documentId] ?? ''; }
+        public function setNavigationIcon(int $documentId, string $icon): void { $this->writes++; $this->state['icons'][$documentId] = $icon; }
         public function portalBranding(int $portalId): array { return $this->state['branding'] ?? ['logo' => null, 'brand_primary' => null, 'brand_accent' => null]; }
         public function setPortalBranding(int $portalId, string $logo, string $brandPrimary, string $brandAccent): void {
             $this->writes++;
@@ -222,16 +224,19 @@ test('AC1: reset and reset --all keep one copy of each page, and an editor\'s ow
 test('AC2: every demo content page gets a navigation icon from portal_engine\'s icon set, the brief included, each its own', () => {
   const { ref, names } = iconSet();
   assert.ok(names.size > 100, `portal_engine ${ref} has its icon set (${names.size} icons)`);
-  const { pages } = php(`
+  const { pages: contentPages, dataPool } = php(`
     $env = new PagesEnvironment();
     demo($env)->setup();
-    echo json_encode(['pages' => pages($env)]);
+    echo json_encode(['pages' => pages($env), 'dataPool' => $env->navigationIcon(101)]);
   `);
-  assert.equal(pages.length, 4);
+  assert.equal(contentPages.length, 4);
+  // The data pool "Ride designs" is in the same navigation: it gets its own icon too, not the generic one.
+  const pages = [...contentPages, { title: 'Ride designs', icon: dataPool }];
   for (const page of pages) {
     assert.ok(page.icon, `"${page.title}" has a navigation icon`);
     assert.ok(names.has(page.icon), `"${page.title}": ${page.icon} is in portal_engine ${ref}'s assets/icons`);
     assert.notEqual(page.icon, 'menu.inline.svg', 'not the rail\'s generic icon');
+    assert.ok(!/^(?:th-large|grip|bars)\.svg$/.test(page.icon), `${page.icon}: not a generic grid or menu icon`);
   }
   assert.equal(new Set(pages.map((page) => page.icon)).size, pages.length, 'each page its own icon');
 });
@@ -241,7 +246,7 @@ test('AC2: the icon check fails for a name the set lacks', () => {
   assert.ok(!names.has('roller-coaster-made-up.svg'));
   const demo = read(join(src, 'Command/CoasterDemo/CoasterDemo.php'));
   const icons = [...demo.matchAll(/_ICON = '([^']+)'/g)].map((match) => match[1]);
-  assert.ok(icons.length >= 4, `CoasterDemo names the icons: ${icons.join(', ')}`);
+  assert.ok(icons.length >= 5, `CoasterDemo names the icons: ${icons.join(', ')}`);
   for (const icon of icons) assert.ok(names.has(icon), `${icon} is in portal_engine's icon set`);
 });
 
@@ -271,6 +276,7 @@ test('AC2: on Pimcore, a content page is saved with its navigation_icon select, 
   assert.match(pimcoreMethod('saveBrief'), /saveContentPage\(/, 'the brief is saved the same way, with its icon');
   assert.match(pimcoreMethod('contentPage'), /\$this->demoPage\(/);
   assert.match(pimcoreMethod('saveContentPage'), /\$this->demoPage\(/);
+  assert.match(pimcoreMethod('setNavigationIcon'), /getEditables\(\);[\s\S]*setRawEditable\(ContentConfig::NAVIGATION_ICON, 'select', \$icon\)/);
   assert.match(pimcoreMethod('demoPage'), /self::MARK/, 'only the demo\'s own pages are found as its pages');
   assert.match(pimcoreMethod('contentPage'), /NAVIGATION_ICON/);
 });

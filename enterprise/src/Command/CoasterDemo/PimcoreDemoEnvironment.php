@@ -197,6 +197,22 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages
         $page->save();
     }
 
+    public function navigationIcon(int $documentId): string
+    {
+        $icon = Document\Page::getById($documentId, ['force' => true])?->getEditable(ContentConfig::NAVIGATION_ICON)?->getData();
+
+        return is_string($icon) ? $icon : '';
+    }
+
+    public function setNavigationIcon(int $documentId, string $icon): void
+    {
+        $page = Document\Page::getById($documentId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal has no page %d for the navigation icon.', $documentId));
+        $page->getEditables(); // keeps the other settings, as in enablePlugin()
+        $page->setRawEditable(ContentConfig::NAVIGATION_ICON, 'select', $icon);
+        $page->save();
+    }
+
     public function portalBranding(int $portalId): array
     {
         $portal = Document\Page::getById($portalId, ['force' => true]);

@@ -3,8 +3,8 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
 /**
- * The demo's content pages in the portal's navigation (F155): the brief and the pages for suppliers, each with its
- * navigation icon. A DemoEnvironment that also implements this gets them; setup() checks for it, so an environment
+ * The demo's pages in the portal's navigation (F155): the brief and the pages for suppliers, each with its navigation
+ * icon, and the data pool's icon. A DemoEnvironment that also implements this gets them; setup() checks for it, so an environment
  * without it still runs (the brief then goes through DemoEnvironment::saveBrief(), without an icon).
  */
 interface ContentPages
@@ -22,4 +22,10 @@ interface ContentPages
      * page goes last in the navigation; if an editor's page has the key, the demo's takes the next free one.
      */
     public function saveContentPage(int $portalId, string $key, string $title, string $icon, string $html): void;
+
+    /** The navigation icon of a portal page (the data pool) by its document id: its navigation_icon name or ''. */
+    public function navigationIcon(int $documentId): string;
+
+    /** Sets the navigation icon of a portal page (the data pool) and saves it; its other settings stay. */
+    public function setNavigationIcon(int $documentId, string $icon): void;
 }

@@ -31,6 +31,8 @@ class CoasterDemo
 
     // Navigation icons (F155): names from portal_engine's bundled icon set (its assets/icons, which the portal's rail
     // reads; tests/coaster-content-pages.test.mjs checks each one there). Without one the rail shows its generic icon.
+    public const DATA_POOL_ICON = 'drafting-compass.svg';
+
     public const BRIEF_ICON = 'clipboard-list.svg';
 
     public const ABOUT_ICON = 'landmark.svg';
@@ -153,7 +155,7 @@ class CoasterDemo
             ?? throw new \RuntimeException(sprintf('The portal "%s" has no asset data pool "%s". Run coaster-demo:reset --all, then setup again.', self::PORTAL_NAME, self::DATA_POOL_NAME));
 
         if ($env instanceof ContentPages) {
-            $changes = [...$changes, ...$this->contentPages($env, $portalId)];
+            $changes = [...$changes, ...$this->contentPages($env, $portalId, $dataPoolId)];
         } else {
             $brief = $this->briefHtml();
             if (!self::sameHtml($env->briefHtml($portalId), $brief)) {
@@ -287,14 +289,18 @@ class CoasterDemo
     }
 
     /**
-     * Writes the brief and the supplier pages where their text is missing or changed, and sets a missing or other
-     * navigation icon; only the demo's own pages are touched (ContentPages::contentPage()).
+     * Sets the data pool's navigation icon, writes the brief and the supplier pages where their text is missing or
+     * changed, and sets a missing or other navigation icon on them; only the demo's own pages are touched (ContentPages::contentPage()).
      *
      * @return string[] what was changed
      */
-    private function contentPages(ContentPages $env, int $portalId): array
+    private function contentPages(ContentPages $env, int $portalId, int $dataPoolId): array
     {
         $changes = [];
+        if ($env->navigationIcon($dataPoolId) !== self::DATA_POOL_ICON) {
+            $env->setNavigationIcon($dataPoolId, self::DATA_POOL_ICON);
+            $changes[] = sprintf('Set the navigation icon %s on the data pool "%s"', self::DATA_POOL_ICON, self::DATA_POOL_NAME);
+        }
         $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, $this->briefHtml()]];
         foreach (self::CONTENT_PAGES as $key => [$title, $icon]) {
             $pages[$key] = [$title, $icon, BriefHtml::fromMarkdown($this->readDemoData('pages/' . $key . '.md'))];
