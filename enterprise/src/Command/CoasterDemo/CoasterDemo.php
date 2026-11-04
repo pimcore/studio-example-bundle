@@ -68,6 +68,14 @@ class CoasterDemo
 
     public const REVISION_1 = 'thunder-loop-rev1.coaster';
 
+    // The content pages' pictures (F160): the files their image lines name, in demo-data/pages/img, uploaded as plain
+    // assets (served as they are) into this folder; the supplier may view it, nothing more.
+    public const PAGES_FOLDER = self::ASSET_ROOT . '/Pages';
+
+    public const PAGE_IMAGES_DIR = 'pages/img';
+
+    public const PAGES_PERMISSIONS = ['view'];
+
     // The park's branding (DR-P22): an own-made logo in demo-data/branding, uploaded here and set as the portal's
     // logo (the SVG: the header inlines it in brand_primary; the PNG is for thumbnails and e-mails).
     public const BRANDING_FOLDER = self::ASSET_ROOT . '/Branding';
@@ -118,6 +126,8 @@ class CoasterDemo
     {
         $changes = [];
         $env = $this->environment;
+        // First, so a page naming a missing image or one without alt text stops setup before it changes anything.
+        $pagesHtml = $this->pagesHtml();
 
         $portalId = $env->portalId();
         $created = $portalId === null;
@@ -154,10 +164,13 @@ class CoasterDemo
         $dataPoolId = $env->dataPoolId($portalId, self::DATA_POOL_NAME)
             ?? throw new \RuntimeException(sprintf('The portal "%s" has no asset data pool "%s". Run coaster-demo:reset --all, then setup again.', self::PORTAL_NAME, self::DATA_POOL_NAME));
 
+        // Before the pages, so the images their HTML points at are there when it is saved.
+        $changes = [...$changes, ...$this->pageImages()];
+
         if ($env instanceof ContentPages) {
-            $changes = [...$changes, ...$this->contentPages($env, $portalId, $dataPoolId)];
+            $changes = [...$changes, ...$this->contentPages($env, $portalId, $dataPoolId, $pagesHtml)];
         } else {
-            $brief = $this->briefHtml();
+            $brief = $pagesHtml[self::BRIEF_KEY];
             if (!self::sameHtml($env->briefHtml($portalId), $brief)) {
                 $env->saveBrief($portalId, self::BRIEF_TITLE, $brief);
                 $changes[] = sprintf('Wrote the brief page "%s"', self::BRIEF_TITLE);
@@ -259,8 +272,10 @@ class CoasterDemo
                 self::PORTAL_ACCESS . $portalId => 'allow',
                 self::DATA_POOL_ACCESS . $dataPoolId => 'allow',
             ],
-            // A supplier saved with the park root (before F134) no longer matches, so setup narrows it once.
-            'assetWorkspaces' => [self::COASTER_FOLDER => self::WORKSPACE_PERMISSIONS],
+            // A supplier saved with the park root (before F134) no longer matches, so setup narrows it once. The pages'
+            // pictures (F160) are theirs to view only, and only when a page has any.
+            'assetWorkspaces' => [self::COASTER_FOLDER => self::WORKSPACE_PERMISSIONS]
+                + ($this->pageImageFiles() === [] ? [] : [self::PAGES_FOLDER => self::PAGES_PERMISSIONS]),
         ];
     }
 
@@ -308,16 +323,16 @@ class CoasterDemo
      *
      * @return string[] what was changed
      */
-    private function contentPages(ContentPages $env, int $portalId, int $dataPoolId): array
+    private function contentPages(ContentPages $env, int $portalId, int $dataPoolId, array $pagesHtml): array
     {
         $changes = [];
         if ($env->navigationIcon($dataPoolId) !== self::DATA_POOL_ICON) {
             $env->setNavigationIcon($dataPoolId, self::DATA_POOL_ICON);
             $changes[] = sprintf('Set the navigation icon %s on the data pool "%s"', self::DATA_POOL_ICON, self::DATA_POOL_NAME);
         }
-        $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, $this->briefHtml()]];
+        $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, $pagesHtml[self::BRIEF_KEY]]];
         foreach (self::CONTENT_PAGES as $key => [$title, $icon]) {
-            $pages[$key] = [$title, $icon, BriefHtml::fromMarkdown($this->readDemoData('pages/' . $key . '.md'))];
+            $pages[$key] = [$title, $icon, $pagesHtml[$key]];
         }
         foreach ($pages as $key => [$title, $icon, $html]) {
             $page = $env->contentPage($portalId, (string) $key);
@@ -359,7 +374,106 @@ class CoasterDemo
 
     public function briefHtml(): string
     {
-        return BriefHtml::fromMarkdown($this->readDemoData('brief.md'));
+        return $this->pagesHtml()[self::BRIEF_KEY];
+    }
+
+    /** @return array<string, string> the Markdown of the brief and the content pages: [key => Markdown] */
+    private function pagesMarkdown(): array
+    {
+        $markdown = [self::BRIEF_KEY => $this->readDemoData('brief.md')];
+        foreach (array_keys(self::CONTENT_PAGES) as $key) {
+            $markdown[$key] = $this->readDemoData('pages/' . $key . '.md');
+        }
+
+        return $markdown;
+    }
+
+    /**
+     * The HTML of the brief and the content pages, their images pointing at the uploaded assets.
+     *
+     * @return array<string, string> [key => HTML]
+     */
+    private function pagesHtml(): array
+    {
+        $html = [];
+        foreach ($this->pagesMarkdown() as $key => $markdown) {
+            $file = $key === self::BRIEF_KEY ? 'brief.md' : 'pages/' . $key . '.md';
+            try {
+                $html[$key] = BriefHtml::fromMarkdown($markdown, fn (string $image): array => $this->pageImage($image));
+            } catch (\RuntimeException $e) {
+                throw new \RuntimeException(sprintf('demo-data/%s: %s', $file, $e->getMessage()), 0, $e);
+            }
+        }
+
+        return $html;
+    }
+
+    /** @return string[] the image files the pages name, each once */
+    private function pageImageFiles(): array
+    {
+        $files = [];
+        foreach ($this->pagesMarkdown() as $markdown) {
+            $files = [...$files, ...BriefHtml::images($markdown)];
+        }
+
+        return array_values(array_unique($files));
+    }
+
+    /**
+     * An image line's file: its URL (the uploaded asset's path, each part URL-encoded) and its size.
+     *
+     * @return array{src: string, width: int, height: int}
+     */
+    private function pageImage(string $file): array
+    {
+        $content = $this->pageImageContent($file);
+        [$width, $height] = BriefHtml::imageSize($content);
+        $src = implode('/', array_map('rawurlencode', explode('/', self::PAGES_FOLDER . '/' . $file)));
+
+        return ['src' => $src, 'width' => $width, 'height' => $height];
+    }
+
+    private function pageImageContent(string $file): string
+    {
+        $path = $this->demoDataDir . '/' . self::PAGE_IMAGES_DIR . '/' . $file;
+        $content = preg_match('#^[^/\\\\]+$#', $file) && $file !== '.' && $file !== '..' && is_file($path) ? @file_get_contents($path) : false;
+        if ($content === false) {
+            throw new \RuntimeException(sprintf('the image %s is not in demo-data/%s/.', $file, self::PAGE_IMAGES_DIR));
+        }
+
+        return $content;
+    }
+
+    /**
+     * Uploads each image the pages name once into PAGES_FOLDER, replaces one whose file changed, and removes one no
+     * page names any more. The pages point at the path, so a replaced image needs no change to their HTML.
+     *
+     * @return string[] what was changed
+     */
+    private function pageImages(): array
+    {
+        $env = $this->environment;
+        $files = $this->pageImageFiles();
+        $there = $files === [] && !$env->folderExists(self::PAGES_FOLDER) ? [] : $env->assets(self::PAGES_FOLDER);
+        $uploaded = [];
+        foreach ($files as $file) {
+            $content = $this->pageImageContent($file);
+            if (($there[$file] ?? null) === $content) {
+                continue;
+            }
+            if (array_key_exists($file, $there)) {
+                $env->deleteAsset(self::PAGES_FOLDER, $file);
+            }
+            $env->createAsset(self::PAGES_FOLDER, $file, $content);
+            $uploaded[] = $file;
+        }
+        $changes = $uploaded === [] ? [] : [sprintf('Uploaded the page images %s to %s', implode(', ', $uploaded), self::PAGES_FOLDER)];
+        foreach (array_diff(array_map('strval', array_keys($there)), $files) as $stale) {
+            $env->deleteAsset(self::PAGES_FOLDER, $stale);
+            $changes[] = sprintf('Deleted %s/%s, which no page names any more', self::PAGES_FOLDER, $stale);
+        }
+
+        return $changes;
     }
 
     public function revision1(): string
