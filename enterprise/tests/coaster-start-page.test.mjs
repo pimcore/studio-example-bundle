@@ -50,7 +50,7 @@ namespace {
     // checks every link and picture against what is there, as Pimcore would resolve them.
     class StartEnvironment implements DemoEnvironment, ContentPages, StartPage {
         public int $writes = 0;
-        public array $state = ['portal' => null, 'pages' => [], 'users' => [], 'assets' => [], 'branding' => null, 'plugins' => [], 'start' => []];
+        public array $state = ['portal' => null, 'pages' => [], 'users' => [], 'assets' => [], 'branding' => null, 'plugins' => [], 'start' => [], 'variant' => null];
         public array $translations = [];
         // the root's bricks at the moment the portal was deleted (reset --all)
         public ?array $startWhenDeleted = null;
@@ -64,7 +64,7 @@ namespace {
         public function renamePortal(int $portalId, string $name): void { $this->writes++; $this->state['portal']['name'] = $name; }
         public function deletePortal(int $portalId): void {
             $this->writes++; $this->startWhenDeleted = $this->state['start'];
-            $this->state['portal'] = null; $this->state['pages'] = []; $this->state['start'] = [];
+            $this->state['portal'] = null; $this->state['pages'] = []; $this->state['start'] = []; $this->state['variant'] = null;
         }
         public function enabledPlugins(int $portalId): array { return $this->state['plugins']; }
         public function enablePlugin(int $portalId, string $pluginId): void { $this->writes++; $this->state['plugins'][] = $pluginId; }
@@ -134,6 +134,8 @@ namespace {
             }
             $this->state['start'] = array_map(static fn (array $brick) => ['demo' => true] + $brick, $bricks);
         }
+        public function frontendVariant(int $portalId): ?string { return $this->state['variant']; }
+        public function setFrontendVariant(int $portalId, string $variant): void { $this->writes++; $this->state['variant'] = $variant; }
         public function removeStartPage(int $portalId): void {
             $this->writes++;
             $this->state['start'] = array_values(array_filter($this->state['start'], static fn (array $brick) => !$brick['demo']));
@@ -280,6 +282,47 @@ test('AC2: reset --all removes only the demo\'s bricks from the start page', () 
   assert.ok(after.some((line) => /start page/i.test(line)), after.join('\n'));
   const remove = pimcoreMethod('removeStartPage');
   assert.match(remove, /self::START_BRICKS/, 'on Pimcore, only the bricks the demo remembers as its own');
+});
+
+test('AC1: setup sets the portal\'s frontend variant to new when it is empty, so the Studio frontend shows the start page; on Pimcore it is the root\'s frontend_variant select', () => {
+  for (const empty of [null, '']) {
+    const { changes, variant } = php(`
+      $env = new StartEnvironment();
+      $env->state['variant'] = ${JSON.stringify(empty)};
+      $changes = demo($env)->setup();
+      echo json_encode(['changes' => $changes, 'variant' => $env->state['variant']]);
+    `);
+    assert.equal(variant, 'new', `an empty variant (${JSON.stringify(empty)}) becomes new`);
+    assert.ok(changes.some((line) => /frontend variant/i.test(line) && /new/.test(line)), `a change line for the variant: ${changes.join('\n')}`);
+  }
+  const set = pimcoreMethod('setFrontendVariant');
+  assert.match(set, /getEditables\(\);/, 'loads the root\'s editables first, so the portal\'s settings stay');
+  assert.match(set, /PortalConfig::FRONTEND_VARIANT, 'select'/, 'as the portal\'s "Frontend" select saves it');
+  assert.match(pimcoreMethod('frontendVariant'), /PortalConfig::FRONTEND_VARIANT/);
+});
+
+test('AC2: a frontend variant that is already set stays as it is: new writes nothing, another value gets a line saying why', () => {
+  const { keptNew, writesNew, old, keptOld, againOld } = php(`
+    $env = new StartEnvironment();
+    $env->state['variant'] = 'new';
+    $keptNew = demo($env)->setup();
+    $writes = $env->writes;
+    demo($env)->setup();
+    $writesNew = $env->writes - $writes;
+    $env2 = new StartEnvironment();
+    $env2->state['variant'] = 'old';
+    $old = demo($env2)->setup();
+    $againOld = demo($env2)->setup();
+    echo json_encode(['keptNew' => $keptNew, 'writesNew' => $writesNew, 'old' => $old, 'keptOld' => $env2->state['variant'], 'againOld' => $againOld]);
+  `);
+  assert.ok(!keptNew.some((line) => /frontend variant/i.test(line)), `new is left without a line: ${keptNew.join('\n')}`);
+  assert.equal(writesNew, 0, 'a second run writes nothing');
+  assert.equal(keptOld, 'old', 'another value is left as it is');
+  const line = old.find((text) => /frontend variant/i.test(text));
+  assert.ok(line, `a line about the variant: ${old.join('\n')}`);
+  assert.match(line, /"old"/, 'it names the value');
+  assert.match(line, /start page/i, 'and says why it matters: the start page shows only on new');
+  assert.deepEqual(againOld, [line], 'the next run only says it again');
 });
 
 test('AC3: the start page\'s pictures are files in demo-data/pages/img listed in images.json, together at most 200 KB, with no external URL, font or script', () => {
