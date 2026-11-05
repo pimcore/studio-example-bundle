@@ -33,6 +33,15 @@ interface StartPage
      */
     public function saveStartPage(int $portalId, array $bricks): void;
 
+    /**
+     * The portal's frontend variant (portal_engine's "frontend_variant" select on the portal root: "new" is the Studio
+     * frontend, the only one that shows these bricks; "old" the legacy one); null or '' when it is not set.
+     */
+    public function frontendVariant(int $portalId): ?string;
+
+    /** Sets the portal's frontend variant; the portal's other settings stay. Setup calls it only when it is empty. */
+    public function setFrontendVariant(int $portalId, string $variant): void;
+
     /** Removes the demo's bricks from the portal root's content areablock; the others stay as they are. */
     public function removeStartPage(int $portalId): void;
 }

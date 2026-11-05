@@ -551,6 +551,24 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         Cache::clearAll();
     }
 
+    public function frontendVariant(int $portalId): ?string
+    {
+        $data = Document\Page::getById($portalId, ['force' => true])?->getEditable(PortalConfig::FRONTEND_VARIANT)?->getData();
+
+        return $data === null ? null : (string) $data;
+    }
+
+    /** As the portal's "Frontend" select saves it (portal_engine's DefaultValuesService on a new portal); the cache holds the config. */
+    public function setFrontendVariant(int $portalId, string $variant): void
+    {
+        $portal = Document\Page::getById($portalId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
+        $portal->getEditables(); // keeps the other settings, as in enablePlugin()
+        $portal->setRawEditable(PortalConfig::FRONTEND_VARIANT, 'select', $variant);
+        $portal->save();
+        Cache::clearAll();
+    }
+
     public function removeStartPage(int $portalId): void
     {
         $root = Document\Page::getById($portalId, ['force' => true]);

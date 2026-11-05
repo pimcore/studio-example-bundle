@@ -61,6 +61,9 @@ class CoasterDemo
     public const TILES_BRICK = 'portal-engine-entry-tiles';
 
     public const FEATURE_VARIANT = 'gradient';
+    // portal_engine's FrontendVariantService::VARIANT_NEW: the Studio frontend (PORTAL_STUDIO), the only one that
+    // renders the start-page bricks. Setup sets it on a portal without one (F211), so a fresh portal shows the page.
+    public const FRONTEND_VARIANT = 'new';
 
     public const TILES_SIZE = 'large';
 
@@ -199,6 +202,7 @@ class CoasterDemo
         if ($startPage !== null) {
             /** @var StartPage $env */
             $changes = [...$changes, ...$this->startPageStep($env, $portalId, $startPage)];
+            $changes = [...$changes, ...$this->frontendVariantStep($env, $portalId)];
         }
 
         $supplier = $this->supplier($portalId, $dataPoolId);
@@ -432,6 +436,31 @@ class CoasterDemo
         return [$bricks === []
             ? sprintf('Wrote the start page of the portal "%s"', self::PORTAL_NAME)
             : sprintf('Repaired the start page of the portal "%s"', self::PORTAL_NAME)];
+    }
+
+    /**
+     * The start page shows only on the Studio frontend: an empty frontend variant becomes "new"; "new" stays without a
+     * write; another value is an editor's choice and stays, with a line saying the start page won't show.
+     *
+     * @return string[] what was changed
+     */
+    private function frontendVariantStep(StartPage $env, int $portalId): array
+    {
+        $variant = (string) ($env->frontendVariant($portalId) ?? '');
+        if ($variant === self::FRONTEND_VARIANT) {
+            return [];
+        }
+        if ($variant !== '') {
+            return [sprintf(
+                'Left the frontend variant of the portal "%s" at "%s": it was set by hand; the start page shows only on "%s", so set it there to see it',
+                self::PORTAL_NAME,
+                $variant,
+                self::FRONTEND_VARIANT,
+            )];
+        }
+        $env->setFrontendVariant($portalId, self::FRONTEND_VARIANT);
+
+        return [sprintf('Set the frontend variant of the portal "%s" to "%s", so it shows the start page', self::PORTAL_NAME, self::FRONTEND_VARIANT)];
     }
 
     /** Whether setup writes a start page: on an environment with content pages and a start page (the tiles link the pages). */
