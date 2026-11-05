@@ -27,7 +27,7 @@ use Pimcore\Model\Translation;
  * asset created like an upload, so the coaster listener fills its metadata. Every element the demo creates gets the
  * property "coaster-demo", and only elements with it are found as the demo's or deleted.
  */
-class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter
+class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter, StartPage
 {
     public const MARK = 'coaster-demo';
 
@@ -45,6 +45,10 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
     public const FOOTER_KEY = 'coaster-demo-footer';
 
     public const FOOTER_WRAPS = 'coaster-demo-footer-wraps';
+
+    // The start page (F208): the keys of the portal root's content bricks the demo wrote, comma-separated. A brick with
+    // another key is an editor's.
+    public const START_BRICKS = 'coaster-demo-start-bricks';
 
     // The content areablock of a portal content page (PortalController::contentAction) and its WYSIWYG brick.
     private const AREABLOCK = 'content';
@@ -497,6 +501,210 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         }
         $snippet->delete();
         Cache::clearAll();
+    }
+
+    public function startPageBricks(int $portalId): array
+    {
+        $root = Document\Page::getById($portalId, ['force' => true]);
+        if (!$root) {
+            return [];
+        }
+        $own = self::startBrickKeys($root);
+        $bricks = [];
+        foreach (self::areablockEntries($root) as $entry) {
+            $key = (string) $entry['key'];
+            $type = (string) $entry['type'];
+            $brick = ['type' => $type, 'demo' => in_array($key, $own, true)];
+            if ($brick['demo']) {
+                $brick += $this->readBrick($root, $type, $key);
+            }
+            $bricks[] = $brick;
+        }
+
+        return $bricks;
+    }
+
+    /**
+     * As an editor composes the start page in Studio: one areablock entry per brick and the bricks' editables under
+     * "content:<key>.", the tiles in their block "content:<key>.tiles". The root also holds the portal's settings, so
+     * its editables are loaded first and only the content ones are replaced; the cache holds the portal's config.
+     */
+    public function saveStartPage(int $portalId, array $bricks): void
+    {
+        $root = Document\Page::getById($portalId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
+        $editables = $root->getEditables(); // keeps the portal's settings, as in enablePlugin()
+        foreach (array_keys($editables) as $name) {
+            if (str_starts_with((string) $name, self::AREABLOCK . ':')) {
+                $root->removeEditable((string) $name);
+            }
+        }
+        $entries = [];
+        foreach (array_values($bricks) as $index => $brick) {
+            $key = (string) ($index + 1);
+            $entries[] = ['key' => $key, 'type' => $brick['type'], 'hidden' => false];
+            $this->writeBrick($root, $portalId, $brick, $key);
+        }
+        $root->setRawEditable(self::AREABLOCK, 'areablock', $entries);
+        $root->setProperty(self::START_BRICKS, 'text', implode(',', array_column($entries, 'key')), false, false);
+        $root->save();
+        Cache::clearAll();
+    }
+
+    public function removeStartPage(int $portalId): void
+    {
+        $root = Document\Page::getById($portalId, ['force' => true]);
+        if (!$root) {
+            return;
+        }
+        $own = self::startBrickKeys($root);
+        $editables = $root->getEditables();
+        foreach ($own as $key) {
+            $prefix = self::AREABLOCK . ':' . $key . '.';
+            foreach (array_keys($editables) as $name) {
+                if (str_starts_with((string) $name, $prefix)) {
+                    $root->removeEditable((string) $name);
+                }
+            }
+        }
+        $left = array_values(array_filter(self::areablockEntries($root), static fn (array $entry): bool => !in_array((string) $entry['key'], $own, true)));
+        $root->setRawEditable(self::AREABLOCK, 'areablock', $left);
+        $root->removeProperty(self::START_BRICKS);
+        $root->save();
+        Cache::clearAll();
+    }
+
+    /** @return list<string> the keys of the root's content bricks the demo wrote */
+    private static function startBrickKeys(Document\Page $root): array
+    {
+        $keys = (string) $root->getProperty(self::START_BRICKS);
+
+        return $keys === '' ? [] : explode(',', $keys);
+    }
+
+    /** @return list<array{key: string, type: string}> the root's content areablock entries */
+    private static function areablockEntries(Document\Page $root): array
+    {
+        $block = $root->getEditable(self::AREABLOCK);
+
+        return array_values(array_filter((array) ($block instanceof Editable\Areablock ? $block->getData() : []), 'is_array'));
+    }
+
+    /** A demo brick's fields, as StartPage::startPageBricks() gives them. */
+    private function readBrick(Document\Page $root, string $type, string $key): array
+    {
+        $at = static fn (string $name, ?string $tiles = null): string => self::AREABLOCK . ':' . $key . '.' . ($tiles === null ? '' : 'tiles:' . $tiles . '.') . $name;
+        $text = static fn (string $name): string => (string) ($root->getEditable($name)?->getData() ?? '');
+        $image = static function (string $name) use ($root): ?string {
+            $editable = $root->getEditable($name);
+
+            return $editable instanceof Editable\Image ? $editable->getImage()?->getRealFullPath() : null;
+        };
+
+        switch ($type) {
+            case CoasterDemo::FEATURE_BRICK:
+                $link = $root->getEditable($at('link'));
+                $alt = $root->getEditable($at('image'));
+
+                return ['variant' => $text($at('variant')), 'eyebrow' => $text($at('eyebrow')), 'title' => $text($at('title')),
+                    'description' => $text($at('description')), 'image' => $image($at('image')),
+                    'alt' => $alt instanceof Editable\Image ? $alt->getAlt() : '',
+                    'link' => ['page' => $this->linkTarget($link), 'text' => $link instanceof Editable\Link ? (string) $link->getText() : '']];
+            case CoasterDemo::HERO_BRICK:
+                return ['headline' => $text($at('headline')), 'intro' => $text($at('intro'))];
+            case CoasterDemo::TILES_BRICK:
+                $block = $root->getEditable($at('tiles'));
+                $tiles = [];
+                foreach ((array) ($block instanceof Editable\Block ? $block->getData() : []) as $index) {
+                    $tiles[] = ['title' => $text($at('title', (string) $index)), 'meta' => $text($at('meta', (string) $index)),
+                        'cta' => $text($at('cta', (string) $index)), 'icon' => $text($at('icon1', (string) $index)),
+                        'image' => $image($at('image1', (string) $index)), 'link' => $this->linkTarget($root->getEditable($at('link', (string) $index)))];
+                }
+
+                return ['size' => $text($at('size')), 'tiles' => $tiles];
+        }
+
+        return [];
+    }
+
+    /** Sets a brick's editables, as its template (portal_engine's Areas/<type>/view.html.twig) names them. */
+    private function writeBrick(Document\Page $root, int $portalId, array $brick, string $key): void
+    {
+        $at = static fn (string $name, ?int $tile = null): string => self::AREABLOCK . ':' . $key . '.' . ($tile === null ? '' : 'tiles:' . $tile . '.') . $name;
+        switch ($brick['type']) {
+            case CoasterDemo::FEATURE_BRICK:
+                $root->setRawEditable($at('variant'), 'select', $brick['variant']);
+                $root->setRawEditable($at('eyebrow'), 'input', $brick['eyebrow']);
+                $root->setRawEditable($at('title'), 'input', $brick['title']);
+                $root->setRawEditable($at('description'), 'wysiwyg', $brick['description']);
+                $root->setRawEditable($at('image'), 'image', ['id' => $this->imageId($brick['image']), 'alt' => $brick['alt']]);
+                $root->setRawEditable($at('link'), 'link', $this->link($portalId, $brick['link']['page'], $brick['link']['text']));
+                break;
+            case CoasterDemo::HERO_BRICK:
+                $root->setRawEditable($at('headline'), 'input', $brick['headline']);
+                $root->setRawEditable($at('intro'), 'textarea', $brick['intro']);
+                break;
+            case CoasterDemo::TILES_BRICK:
+                // before the block, as the template renders it (content:<key>.size, not inside the tiles)
+                $root->setRawEditable($at('size'), 'select', $brick['size']);
+                $indices = [];
+                foreach (array_values($brick['tiles']) as $i => $tile) {
+                    $index = $i + 1;
+                    $indices[] = $index;
+                    $root->setRawEditable($at('title', $index), 'input', $tile['title']);
+                    $root->setRawEditable($at('meta', $index), 'input', $tile['meta']);
+                    $root->setRawEditable($at('cta', $index), 'input', $tile['cta']);
+                    $root->setRawEditable($at('icon1', $index), 'select', $tile['icon']);
+                    $root->setRawEditable($at('image1', $index), 'image', ['id' => $this->imageId($tile['image'])]);
+                    $root->setRawEditable($at('link', $index), 'link', $this->link($portalId, $tile['link'], ''));
+                }
+                $root->setRawEditable($at('tiles'), 'block', $indices);
+                break;
+            default:
+                throw new \RuntimeException(sprintf('The start page has no brick "%s".', $brick['type']));
+        }
+    }
+
+    private function imageId(string $path): int
+    {
+        $image = Asset::getByPath($path);
+        if (!$image instanceof Asset\Image) {
+            throw new \RuntimeException(sprintf('The start page picture %s is not an image asset.', $path));
+        }
+
+        return $image->getId();
+    }
+
+    /** A link editable's data to a page setup made ("page:<key>" or "data-pool:<name>"), as the link dialog saves it. */
+    private function link(int $portalId, string $target, string $text): array
+    {
+        $page = match (true) {
+            str_starts_with($target, 'page:') => $this->demoPage($portalId, substr($target, 5)),
+            str_starts_with($target, 'data-pool:') => $this->dataPool($portalId, substr($target, 10)),
+            default => null,
+        } ?? throw new \RuntimeException(sprintf('The start page links to %s, which the demo portal does not have.', $target));
+
+        return ['path' => $page->getRealFullPath(), 'linktype' => 'internal', 'internalType' => 'document', 'text' => $text];
+    }
+
+    /** The page a link editable points at, as link() names it, or its path for another document; null for none. */
+    private function linkTarget(?Editable $link): ?string
+    {
+        $data = $link instanceof Editable\Link ? $link->getData() : null;
+        $page = is_array($data) && ($data['internalType'] ?? null) === 'document' ? Document::getById((int) ($data['internalId'] ?? 0)) : null;
+        if (!$page instanceof Document\Page) {
+            return null;
+        }
+        if ($page->getController() === ControllerReference::DATA_POOL_ASSETS_LIST) {
+            return 'data-pool:' . $page->getTitle();
+        }
+        if ($page->getProperty(self::MARK)) {
+            $own = $page->getProperty(self::PAGE_KEY);
+
+            return 'page:' . ($own === null || $own === '' ? $page->getKey() : $own);
+        }
+
+        return $page->getRealFullPath();
     }
 
     /** The snippet the portal's configuration names as its footer, or null. */

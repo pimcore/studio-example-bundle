@@ -8,7 +8,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
  * plugin enabled, the park's brief and three pages for suppliers (About the park, Working with the Kingdom, Safety
  * first) as content pages in it, each with its navigation icon, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
- * metadata, and the park's own logo and brand colours on the portal, an English text for the asset tree's first line, and the small "Talk" link at the end of the portal footer (F157). setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
+ * metadata, and the park's own logo and brand colours on the portal, an English text for the asset tree's first line, and the small "Talk" link at the end of the portal footer (F157), and a start page on the portal root (F208): portal_engine's Feature (the park picture), Hero and large Entry tiles to the brief, the ride designs and the content pages. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
  */
 class CoasterDemo
@@ -48,6 +48,24 @@ class CoasterDemo
         'working-with-the-kingdom' => ['Working with the Kingdom', self::WORKING_ICON],
         'safety-first' => ['Safety first', self::SAFETY_ICON],
     ];
+
+    // The start page (F208, DR-P72): its text in demo-data/start-page.md, its pictures the pages' files in pages/img.
+    // portal_engine's own Studio start-page bricks, in this order; the tiles' variant and the feature's colour are the
+    // bricks' own options, so the page has the portal's design and no CSS of the demo's.
+    public const START_PAGE_FILE = 'start-page.md';
+
+    public const FEATURE_BRICK = 'portal-engine-feature';
+
+    public const HERO_BRICK = 'portal-engine-hero';
+
+    public const TILES_BRICK = 'portal-engine-entry-tiles';
+
+    public const FEATURE_VARIANT = 'gradient';
+
+    public const TILES_SIZE = 'large';
+
+    // The tile of the data pool in start-page.md ("## Tile: ride-designs"); the others are named by their page key.
+    public const DATA_POOL_TILE = 'ride-designs';
 
     // The public demo login: shown on stage and in the runbook, so it is no secret.
     public const SUPPLIER_EMAIL = 'supplier@loopwerk.example';
@@ -128,6 +146,7 @@ class CoasterDemo
         $env = $this->environment;
         // First, so a page naming a missing image or one without alt text stops setup before it changes anything.
         $pagesHtml = $this->pagesHtml();
+        $startPage = $this->hasStartPage() ? $this->startPage() : null;
 
         $portalId = $env->portalId();
         $created = $portalId === null;
@@ -175,6 +194,11 @@ class CoasterDemo
                 $env->saveBrief($portalId, self::BRIEF_TITLE, $brief);
                 $changes[] = sprintf('Wrote the brief page "%s"', self::BRIEF_TITLE);
             }
+        }
+
+        if ($startPage !== null) {
+            /** @var StartPage $env */
+            $changes = [...$changes, ...$this->startPageStep($env, $portalId, $startPage)];
         }
 
         $supplier = $this->supplier($portalId, $dataPoolId);
@@ -239,6 +263,17 @@ class CoasterDemo
                     $changes[] = $footer['wrapsPath'] === null
                         ? 'Removed the demo\'s portal footer with the Talk link'
                         : sprintf('Removed the Talk link from the portal footer %s', $footer['wrapsPath']);
+                }
+            }
+            // the start page's demo bricks go too, so an editor's bricks there are all that is left of it
+            if ($portalId !== null && $env instanceof StartPage) {
+                $bricks = $env->startPageBricks($portalId);
+                $own = array_filter($bricks, static fn (array $brick): bool => (bool) $brick['demo']);
+                if ($own !== []) {
+                    $env->removeStartPage($portalId);
+                    $changes[] = count($own) === count($bricks)
+                        ? 'Removed the demo\'s start page'
+                        : sprintf('Removed the demo\'s bricks from the start page, kept %d of an editor\'s', count($bricks) - count($own));
                 }
             }
             if ($portalId !== null) {
@@ -372,6 +407,163 @@ class CoasterDemo
             : sprintf('Kept the portal footer %s and added the Talk link at its end', $footer['path'])];
     }
 
+    /**
+     * Writes the start page where the demo's bricks are missing or changed; a start page holding any brick that is not
+     * the demo's stays as it is, with a line saying so.
+     *
+     * @return string[] what was changed
+     */
+    private function startPageStep(StartPage $env, int $portalId, array $wanted): array
+    {
+        $bricks = $env->startPageBricks($portalId);
+        $others = array_values(array_filter($bricks, static fn (array $brick): bool => !$brick['demo']));
+        if ($others !== []) {
+            return [sprintf(
+                'Left the start page of the portal "%s" as it is: it holds bricks that are not the demo\'s (%s); remove them to get the demo\'s',
+                self::PORTAL_NAME,
+                implode(', ', array_unique(array_map(static fn (array $brick): string => (string) $brick['type'], $others))),
+            )];
+        }
+        if (self::sameBricks($bricks, $wanted)) {
+            return [];
+        }
+        $env->saveStartPage($portalId, $wanted);
+
+        return [$bricks === []
+            ? sprintf('Wrote the start page of the portal "%s"', self::PORTAL_NAME)
+            : sprintf('Repaired the start page of the portal "%s"', self::PORTAL_NAME)];
+    }
+
+    /** Whether setup writes a start page: on an environment with content pages and a start page (the tiles link the pages). */
+    private function hasStartPage(): bool
+    {
+        return $this->environment instanceof StartPage && $this->environment instanceof ContentPages;
+    }
+
+    /**
+     * The start page's bricks from demo-data/start-page.md: "# headline", the purpose line, a "## Feature: <page key>"
+     * section and one "## Tile: <key>" section per main area (the brief, the data pool as "ride-designs", each content
+     * page), each with one image line, "Name: value" lines and, for the feature, its text. The tiles come in navigation
+     * order and carry their page's title and icon, so a tile names its page as the navigation does.
+     *
+     * @return list<array<string, mixed>> the bricks as StartPage::saveStartPage() takes them
+     */
+    public function startPage(): array
+    {
+        $file = 'demo-data/' . self::START_PAGE_FILE;
+        $sections = $this->startPageSections($this->readDemoData(self::START_PAGE_FILE), $file);
+        $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, 'page:' . self::BRIEF_KEY],
+            self::DATA_POOL_TILE => [self::DATA_POOL_NAME, self::DATA_POOL_ICON, 'data-pool:' . self::DATA_POOL_NAME]];
+        foreach (self::CONTENT_PAGES as $key => [$title, $icon]) {
+            $pages[$key] = [$title, $icon, 'page:' . $key];
+        }
+
+        $feature = $sections['feature'] ?? throw new \RuntimeException(sprintf('%s: no "## Feature: <page>" section.', $file));
+        $link = $pages[$feature['key']] ?? null;
+        if ($link === null || $feature['key'] === self::DATA_POOL_TILE) {
+            throw new \RuntimeException(sprintf('%s: the feature links to "%s", which is not a page setup makes.', $file, $feature['key']));
+        }
+        $tiles = [];
+        foreach ($pages as $key => [$title, $icon, $target]) {
+            $tile = $sections['tiles'][$key] ?? throw new \RuntimeException(sprintf('%s: no "## Tile: %s" section.', $file, $key));
+            $tiles[] = ['title' => $title, 'meta' => $tile['fields']['meta'] ?? '', 'cta' => $tile['fields']['button'] ?? '',
+                'icon' => $icon, 'image' => $tile['image'], 'link' => $target];
+        }
+        $unknown = array_diff(array_keys($sections['tiles']), array_keys($pages));
+        if ($unknown !== []) {
+            throw new \RuntimeException(sprintf('%s: a tile for %s, which is not a page setup makes.', $file, implode(', ', $unknown)));
+        }
+
+        return [
+            ['type' => self::FEATURE_BRICK, 'variant' => self::FEATURE_VARIANT, 'eyebrow' => $feature['fields']['overline'] ?? '',
+                'title' => $feature['fields']['title'] ?? '', 'description' => $feature['html'], 'image' => $feature['image'],
+                'alt' => $feature['alt'], 'link' => ['page' => $link[2], 'text' => $feature['fields']['link'] ?? $link[0]]],
+            ['type' => self::HERO_BRICK, 'headline' => $sections['headline'], 'intro' => $sections['intro']],
+            ['type' => self::TILES_BRICK, 'size' => self::TILES_SIZE, 'tiles' => $tiles],
+        ];
+    }
+
+    /**
+     * @return array{headline: string, intro: string, feature: ?array, tiles: array<string, array>} each section as
+     *                                                                                                   [key, image, alt, fields, html]
+     */
+    private function startPageSections(string $markdown, string $file): array
+    {
+        $result = ['headline' => '', 'intro' => '', 'feature' => null, 'tiles' => []];
+        $intro = [];
+        $section = null;
+        $flush = function () use (&$section, &$result, $file): void {
+            if ($section === null) {
+                return;
+            }
+            if ($section['image'] === null) {
+                throw new \RuntimeException(sprintf('%s: the section "%s" has no image line.', $file, $section['key']));
+            }
+            $paragraphs = array_filter(array_map('trim', preg_split('/\n\s*\n/', trim(implode("\n", $section['text'])))));
+            $section['html'] = implode("\n", array_map(static fn (string $text): string => '<p>' . htmlspecialchars(preg_replace('/\s+/', ' ', $text), ENT_QUOTES | ENT_HTML5) . '</p>', $paragraphs));
+            unset($section['text']);
+            if ($section['kind'] === 'feature') {
+                $result['feature'] = $section;
+            } else {
+                $result['tiles'][$section['key']] = $section;
+            }
+        };
+        foreach (explode("\n", str_replace("\r\n", "\n", $markdown)) as $line) {
+            if (preg_match('/^# (.+)$/', $line, $match) && $result['headline'] === '') {
+                $result['headline'] = trim($match[1]);
+            } elseif (preg_match('/^## (Feature|Tile): ([a-z0-9-]+)\s*$/', $line, $match)) {
+                $flush();
+                $section = ['kind' => strtolower($match[1]), 'key' => $match[2], 'image' => null, 'alt' => '', 'fields' => [], 'text' => []];
+            } elseif ($section === null) {
+                $intro[] = $line;
+            } elseif (preg_match(BriefHtml::IMAGE_LINE, $line, $match)) {
+                $this->pageImageContent($match[2]); // a missing file stops setup here
+                $section['image'] = self::PAGES_FOLDER . '/' . $match[2];
+                $section['alt'] = trim($match[1]);
+            } elseif (preg_match('/^(Overline|Title|Link|Meta|Button): (.+)$/', $line, $match)) {
+                $section['fields'][strtolower($match[1])] = trim($match[2]);
+            } else {
+                $section['text'][] = $line;
+            }
+        }
+        $flush();
+        $result['intro'] = trim(preg_replace('/\s+/', ' ', implode(' ', $intro)));
+        if ($result['headline'] === '' || $result['intro'] === '') {
+            throw new \RuntimeException(sprintf('%s: starts with "# <headline>" and the purpose line.', $file));
+        }
+
+        return $result;
+    }
+
+    /** Whether the start page's bricks are all the demo's and the same as $wanted (the HTML compared as by sameHtml()). */
+    private static function sameBricks(array $actual, array $wanted): bool
+    {
+        $normal = static function (array $bricks): string {
+            $bricks = array_map(static function (array $brick): array {
+                unset($brick['demo']);
+                if (isset($brick['description'])) {
+                    $brick['description'] = trim(preg_replace('#\\s*/>#', '>', html_entity_decode((string) $brick['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                }
+
+                return $brick;
+            }, array_values($bricks));
+            $sort = static function (mixed $value) use (&$sort): mixed {
+                if (!is_array($value)) {
+                    return is_string($value) ? trim($value) : $value;
+                }
+                if (!array_is_list($value)) {
+                    ksort($value);
+                }
+
+                return array_map($sort, $value);
+            };
+
+            return json_encode($sort($bricks));
+        };
+
+        return $normal($actual) === $normal($wanted);
+    }
+
     public function briefHtml(): string
     {
         return $this->pagesHtml()[self::BRIEF_KEY];
@@ -420,6 +612,9 @@ class CoasterDemo
         $pages = $this->pagesMarkdown();
         if (!$this->environment instanceof ContentPages) {
             $pages = [self::BRIEF_KEY => $pages[self::BRIEF_KEY]];
+        }
+        if ($this->hasStartPage()) {
+            $pages[] = $this->readDemoData(self::START_PAGE_FILE);
         }
         foreach ($pages as $markdown) {
             $files = [...$files, ...BriefHtml::images($markdown)];

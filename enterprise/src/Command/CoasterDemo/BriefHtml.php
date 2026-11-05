@@ -11,7 +11,7 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 final class BriefHtml
 {
     // An image line: alt, file and an optional "credit", nothing else on the line.
-    private const IMAGE_LINE = '/^\s*!\[([^\]]*)\]\(\s*([^\s)"]+)(?:\s+"([^"]*)")?\s*\)\s*$/';
+    public const IMAGE_LINE = '/^\s*!\[([^\]]*)\]\(\s*([^\s)"]+)(?:\s+"([^"]*)")?\s*\)\s*$/';
 
     /**
      * @param ?callable(string $file): array{src: string, width: int, height: int} $image resolves an image line's file
