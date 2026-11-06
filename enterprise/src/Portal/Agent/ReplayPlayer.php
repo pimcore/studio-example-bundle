@@ -3,6 +3,8 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent;
 
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\KingdomBriefTools;
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\KingdomSource;
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\NoPortalUserException;
 
 /**
@@ -14,6 +16,11 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\NoPortalUserException;
  * signed-in portal user, and the text's {placeholders} are filled from their results, so the answer shows the real
  * permission filter and the widget carries a real, stored proposal id. A question the file does not hold gets one fixed
  * reply. No model, no network.
+ *
+ * The brief check is about the ride design the brief is for, `thunder-loop.coaster` in the demo's Thunder Loop folder
+ * (CoasterDemo::COASTER_FOLDER and COASTER_FILENAME). Other .coaster files the supplier uploads next to it (a design
+ * variant such as thunder-loop-twister.coaster, F238) stay in the tool's own list, but the recorded check, its
+ * {revisionCount}, {revisionList} and its note consider only that asset: with a KingdomSource, the assets at that path.
  */
 class ReplayPlayer
 {
@@ -41,6 +48,8 @@ class ReplayPlayer
      * @param (\Closure(int): void)|null $sleepMs waits so many milliseconds; the tests pass a fake clock
      * @param (\Closure(): int)|null     $nowMs   the time in Unix milliseconds, for each event's `ts`
      * @param (\Closure(): string)|null  $newId   the turn's message id
+     * @param KingdomSource|null         $source  where the brief's design asset is found (by path); without one the
+     *                                            check considers every revision the tools list
      */
     public function __construct(
         private readonly KingdomBriefTools $tools,
@@ -48,6 +57,7 @@ class ReplayPlayer
         ?\Closure $sleepMs = null,
         ?\Closure $nowMs = null,
         ?\Closure $newId = null,
+        private readonly ?KingdomSource $source = null,
     ) {
         $replayFile ??= dirname(__DIR__, 3) . '/' . self::DEFAULT_REPLAY;
         $this->replay = json_decode((string) file_get_contents($replayFile), true, 512, JSON_THROW_ON_ERROR);
@@ -132,9 +142,30 @@ class ReplayPlayer
     {
         return match ($tool) {
             'kingdom_read_brief' => $state + ['brief' => $this->tools->readBrief()],
-            'kingdom_list_revisions' => ['revisions' => $this->tools->listRevisions()] + $state,
+            'kingdom_list_revisions' => ['revisions' => $this->briefDesign($this->tools->listRevisions())] + $state,
             default => throw new \UnexpectedValueException(sprintf('The replay calls an unknown tool "%s".', $tool)),
         };
+    }
+
+    /**
+     * The listed revisions of the brief's design asset only (the tools' filter by user stays as it is).
+     *
+     * @param list<array{assetId: int, revision: int, maxHeightM: ?float, lengthM: ?float}> $revisions
+     */
+    private function briefDesign(array $revisions): array
+    {
+        if ($this->source === null) {
+            return $revisions;
+        }
+        $path = CoasterDemo::COASTER_FOLDER . '/' . CoasterDemo::COASTER_FILENAME;
+        $designIds = [];
+        foreach ($this->source->coasterRevisions() as $revision) {
+            if ($revision['path'] === $path) {
+                $designIds[$revision['assetId']] = true;
+            }
+        }
+
+        return array_values(array_filter($revisions, static fn (array $r) => isset($designIds[$r['assetId']])));
     }
 
     /** The latest revision the user may view: the highest revision number, the first one listed on a tie. */

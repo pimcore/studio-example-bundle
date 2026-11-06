@@ -1,0 +1,24 @@
+{
+  "format": "coaster-design",
+  "version": "1.0",
+  "meta": {
+    "name": "Thunder Loop Twister",
+    "designer": "Loopwerk Engineering",
+    "park": "Pimcore Kingdom",
+    "revision": 1
+  },
+  "train": { "cars": 5, "seatsPerCar": 4 },
+  "track": [
+    { "type": "station", "length": 28 },
+    { "type": "liftHill", "height": 38, "angle": 45 },
+    { "type": "drop", "height": 36, "angle": 70 },
+    { "type": "loop", "diameter": 22 },
+    { "type": "helix", "turns": 1, "radius": 12, "bank": 70, "direction": "left", "label": "Twister" },
+    { "type": "loop", "diameter": 16 },
+    { "type": "airtimeHill", "height": 12 },
+    { "type": "turn", "angle": 90, "radius": 14, "bank": 40 },
+    { "type": "loop", "diameter": 14 },
+    { "type": "brakeRun", "length": 24 },
+    { "type": "station", "length": 0 }
+  ]
+}

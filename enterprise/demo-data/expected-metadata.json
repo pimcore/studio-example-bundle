@@ -28,5 +28,14 @@
       "topSpeed": 103.3,
       "duration": 76
     }
+  },
+  "variants": {
+    "thunder-loop-twister.coaster": {
+      "maxHeight": 38,
+      "length": 458.5,
+      "inversions": 3,
+      "topSpeed": 95.7,
+      "duration": 63
+    }
   }
 }

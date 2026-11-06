@@ -102,7 +102,12 @@ test('AC2: the PHP extractor gives the golden values for revisions 1 to 3', () =
     foreach (${JSON.stringify(revisionFiles)} as $file) {
         $out[$file] = $extractor->extract(json_decode(file_get_contents(${JSON.stringify(demoData)} . '/' . $file)));
     }
-    echo json_encode(['units' => CoasterMetadataExtractor::UNITS, 'revisions' => $out]);
+    $variants = [];
+    foreach (${JSON.stringify(Object.keys(golden.variants))} as $file) {
+        $variants[$file] = $extractor->extract(json_decode(file_get_contents(${JSON.stringify(demoData)} . '/' . $file)));
+    }
+    // F238: the golden file also holds the design variants (thunder-loop-twister.coaster).
+    echo json_encode(['units' => CoasterMetadataExtractor::UNITS, 'revisions' => $out, 'variants' => $variants]);
   `);
   assert.deepEqual(result, golden);
 });

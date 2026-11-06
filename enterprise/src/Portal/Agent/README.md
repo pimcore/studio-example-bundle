@@ -29,6 +29,10 @@ the portal's chat calls.
   view no revision hears so and gets no proposal. Any question the file does not hold (case, spaces and the final
   punctuation aside) gets one fixed "recorded questions only" reply. The text comes a few words per delta with short
   pauses; the clock is injected, so the tests never wait.
+  The check is about the ride design the brief is for, `/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster`: with
+  its `KingdomSource` (wired in `config/portal-agent.yaml`) the player keeps only that asset's revisions for the
+  placeholders, the conditions and the note, so a design variant next to it (`thunder-loop-twister.coaster`, F238) at
+  any revision never answers the check; `kingdom_list_revisions` itself still lists both.
 - Nothing personal in the file or the stream: no cookie, session id, `pmcp_` token, user id, e-mail or key.
 
 ## How to run

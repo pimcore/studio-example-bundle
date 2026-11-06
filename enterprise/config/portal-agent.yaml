@@ -8,7 +8,10 @@ services:
         public: false
 
     # Plays demo-data/agent/kingdom-brief-check.replay.json (ReplayPlayer::DEFAULT_REPLAY); pass $replayFile for another.
-    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent\ReplayPlayer: ~
+    # $source: the KingdomSource of config/agent.yaml, so the brief check answers for thunder-loop.coaster only (F238).
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent\ReplayPlayer:
+        arguments:
+            $source: '@Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\KingdomSource'
 
     # A plain invokable controller (no AbstractController), so only its own tag is needed.
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent\AgentChatController:
