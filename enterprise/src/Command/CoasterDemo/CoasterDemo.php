@@ -49,6 +49,40 @@ class CoasterDemo
         'safety-first' => ['Safety first', self::SAFETY_ICON],
     ];
 
+    // The park's open ride briefs (F293, RideBriefs): a data object class, the briefs in demo-data/open-briefs.json as its
+    // objects in a park folder, and a data-object data pool listing them, view only. The pool replaces the content page
+    // "Brief: Thunder Loop" in the navigation (right after the ride designs) and on the start page's brief tile.
+    public const BRIEF_CLASS = 'RideBrief';
+
+    public const BRIEF_CLASS_TITLE = 'Ride brief';
+
+    // [name => [type, title(, [value => label])]], in the detail page's order (RideBriefs).
+    public const BRIEF_FIELDS = [
+        'title' => ['input', 'Title'],
+        'rideType' => ['input', 'Ride type'],
+        'maxHeight' => ['numeric', 'Max height (m)'],
+        'maxLength' => ['numeric', 'Max length (m)'],
+        'inversionsAllowed' => ['numeric', 'Inversions allowed'],
+        'targetOpening' => ['input', 'Target opening'],
+        'status' => ['select', 'Status', ['open' => 'Open', 'closed' => 'Closed']],
+        'description' => ['textarea', 'Description'],
+    ];
+
+    public const BRIEFS_FILE = 'open-briefs.json';
+
+    public const BRIEFS_POOL_NAME = 'Open briefs';
+
+    public const BRIEFS_ICON = self::BRIEF_ICON;
+
+    // A data object folder (not an asset folder) of the park's name.
+    public const BRIEFS_FOLDER = self::ASSET_ROOT . '/Open briefs';
+
+    // The supplier browses the briefs: view, nothing more (no edit, no apply).
+    public const BRIEFS_PERMISSIONS = ['view'];
+
+    // The brief the Ask the brief agent reads (KingdomSource::briefText()).
+    public const THUNDER_LOOP_BRIEF = 'Thunder Loop';
+
     // The start page (F208, DR-P72): its text in demo-data/start-page.md, its pictures the pages' files in pages/img.
     // portal_engine's own Studio start-page bricks, in this order; the tiles' variant and the feature's colour are the
     // bricks' own options, so the page has the portal's design and no CSS of the demo's.
@@ -214,13 +248,20 @@ class CoasterDemo
             }
         }
 
+        $briefsPoolId = null;
+        if ($this->hasBriefs()) {
+            /** @var RideBriefs&ContentPages $env */
+            [$briefsPoolId, $briefChanges] = $this->briefs($env, $portalId, $dataPoolId);
+            $changes = [...$changes, ...$briefChanges];
+        }
+
         if ($startPage !== null) {
             /** @var StartPage $env */
             $changes = [...$changes, ...$this->startPageStep($env, $portalId, $startPage)];
             $changes = [...$changes, ...$this->frontendVariantStep($env, $portalId)];
         }
 
-        $supplier = $this->supplier($portalId, $dataPoolId);
+        $supplier = $this->supplier($portalId, $dataPoolId, $briefsPoolId);
         if (!$this->supplierMatches($env->supplier(self::SUPPLIER_EMAIL, self::SUPPLIER_PASSWORD), $supplier)) {
             $env->saveSupplier($supplier);
             $changes[] = sprintf('Set up the supplier %s %s (%s)', self::SUPPLIER_FIRSTNAME, self::SUPPLIER_LASTNAME, self::SUPPLIER_EMAIL);
@@ -273,6 +314,19 @@ class CoasterDemo
                     $changes[] = sprintf('Deleted the folder %s with the demo assets', $root);
                 }
             }
+            // the briefs before their class, which goes only when no object of it is left
+            if ($env instanceof RideBriefs) {
+                foreach ([self::ASSET_ROOT, ...self::legacyAssetRoots()] as $root) {
+                    if ($env->objectFolderExists($root)) {
+                        $env->deleteObjectFolder($root);
+                        $changes[] = sprintf('Deleted the data object folder %s with the open briefs', $root);
+                    }
+                }
+                if ($env->briefClassFields(self::BRIEF_CLASS) !== null) {
+                    $env->deleteBriefClass(self::BRIEF_CLASS);
+                    $changes[] = sprintf('Deleted the data object class "%s"', self::BRIEF_CLASS);
+                }
+            }
             $portalId = $env->portalId();
             // the Talk link's block goes first, so the portal's own footer is back as it was before setup
             if ($portalId !== null && $env instanceof PortalFooter) {
@@ -315,9 +369,9 @@ class CoasterDemo
     }
 
     /** What a setup must have given the supplier: compared with DemoEnvironment::supplier(), saved as is. */
-    public function supplier(int $portalId, int $dataPoolId): array
+    public function supplier(int $portalId, int $dataPoolId, ?int $briefsPoolId = null): array
     {
-        return [
+        $supplier = [
             'email' => self::SUPPLIER_EMAIL,
             'firstname' => self::SUPPLIER_FIRSTNAME,
             'lastname' => self::SUPPLIER_LASTNAME,
@@ -332,6 +386,13 @@ class CoasterDemo
             'assetWorkspaces' => [self::COASTER_FOLDER => self::WORKSPACE_PERMISSIONS]
                 + ($this->pageImageFiles() === [] ? [] : [self::PAGES_FOLDER => self::PAGES_PERMISSIONS]),
         ];
+        // The open briefs (F293): the data pool and a view-only data object workspace on the briefs' folder.
+        if ($briefsPoolId !== null) {
+            $supplier['permissions'][self::DATA_POOL_ACCESS . $briefsPoolId] = 'allow';
+            $supplier['objectWorkspaces'] = [self::BRIEFS_FOLDER => self::BRIEFS_PERMISSIONS];
+        }
+
+        return $supplier;
     }
 
     /**
@@ -414,7 +475,8 @@ class CoasterDemo
             $env->setNavigationIcon($dataPoolId, self::DATA_POOL_ICON);
             $changes[] = sprintf('Set the navigation icon %s on the data pool "%s"', self::DATA_POOL_ICON, self::DATA_POOL_NAME);
         }
-        $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, $pagesHtml[self::BRIEF_KEY]]];
+        // With the open briefs (F293) the brief page is no longer written: briefs() removes it.
+        $pages = $this->hasBriefs() ? [] : [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, $pagesHtml[self::BRIEF_KEY]]];
         foreach (self::CONTENT_PAGES as $key => [$title, $icon]) {
             $pages[$key] = [$title, $icon, $pagesHtml[$key]];
         }
@@ -508,6 +570,139 @@ class CoasterDemo
         return [sprintf('Set the frontend variant of the portal "%s" to "%s", so it shows the start page', self::PORTAL_NAME, self::FRONTEND_VARIANT)];
     }
 
+    /** Whether setup makes the open briefs: on an environment with content pages (the brief page it replaces) and briefs. */
+    private function hasBriefs(): bool
+    {
+        return $this->environment instanceof RideBriefs && $this->environment instanceof ContentPages;
+    }
+
+    /**
+     * The open briefs (F293): the "Ride brief" class with BRIEF_FIELDS, each brief of demo-data/open-briefs.json as its
+     * object where it is missing or changed (an editor's other briefs stay), the "Open briefs" data pool right after the
+     * ride designs, and the old brief page out of the navigation.
+     *
+     * @return array{0: int, 1: string[]} the data pool's id and what was changed
+     */
+    private function briefs(RideBriefs&ContentPages $env, int $portalId, int $dataPoolId): array
+    {
+        $changes = [];
+        $fields = $env->briefClassFields(self::BRIEF_CLASS);
+        if ($fields !== self::BRIEF_FIELDS) {
+            $env->saveBriefClass(self::BRIEF_CLASS, self::BRIEF_CLASS_TITLE, self::BRIEF_FIELDS);
+            $changes[] = $fields === null
+                ? sprintf('Created the data object class "%s" (%s)', self::BRIEF_CLASS, self::BRIEF_CLASS_TITLE)
+                : sprintf('Updated the fields of the data object class "%s"', self::BRIEF_CLASS);
+        }
+
+        $there = $env->briefs(self::BRIEF_CLASS, self::BRIEFS_FOLDER);
+        $written = [];
+        foreach ($this->openBriefs() as $key => $values) {
+            if (self::sameBrief($there[$key] ?? null, $values)) {
+                continue;
+            }
+            $env->saveRideBrief(self::BRIEF_CLASS, self::BRIEFS_FOLDER, $key, $values);
+            $written[] = $key;
+        }
+        if ($written !== []) {
+            $changes[] = sprintf('Wrote the open briefs %s to %s', implode(', ', $written), self::BRIEFS_FOLDER);
+        }
+
+        $pool = $env->briefsPool($portalId, self::BRIEFS_POOL_NAME);
+        $wanted = ['class' => self::BRIEF_CLASS, 'root' => self::BRIEFS_FOLDER, 'icon' => self::BRIEFS_ICON,
+            'permissions' => self::BRIEFS_PERMISSIONS, 'after' => self::DATA_POOL_NAME];
+        $poolId = $pool['id'] ?? null;
+        if ($pool === null || array_intersect_key($pool, $wanted) != $wanted) {
+            $poolId = $env->saveBriefsPool($portalId, self::BRIEFS_POOL_NAME, self::BRIEF_CLASS, self::BRIEFS_FOLDER, self::BRIEFS_ICON, self::BRIEFS_PERMISSIONS, $dataPoolId);
+            $changes[] = $pool === null
+                ? sprintf('Created the data pool "%s" (%s objects in %s, view only) after "%s"', self::BRIEFS_POOL_NAME, self::BRIEF_CLASS, self::BRIEFS_FOLDER, self::DATA_POOL_NAME)
+                : sprintf('Repaired the data pool "%s"', self::BRIEFS_POOL_NAME);
+        }
+
+        if ($env->contentPage($portalId, self::BRIEF_KEY) !== null) {
+            $env->deleteContentPage($portalId, self::BRIEF_KEY);
+            $changes[] = sprintf('Removed the brief page "%s": the data pool "%s" replaces it', self::BRIEF_TITLE, self::BRIEFS_POOL_NAME);
+        }
+
+        return [(int) $poolId, $changes];
+    }
+
+    /**
+     * The briefs of demo-data/open-briefs.json: [key => [field => value]], every field of BRIEF_FIELDS set, a select
+     * one of its options.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function openBriefs(): array
+    {
+        $file = 'demo-data/' . self::BRIEFS_FILE;
+        $data = json_decode($this->readDemoData(self::BRIEFS_FILE), true);
+        if (!is_array($data) || !is_array($data['briefs'] ?? null)) {
+            throw new \RuntimeException(sprintf('%s: no "briefs" list.', $file));
+        }
+        $briefs = [];
+        foreach ($data['briefs'] as $brief) {
+            $key = (string) ($brief['key'] ?? '');
+            if ($key === '' || isset($briefs[$key])) {
+                throw new \RuntimeException(sprintf('%s: every brief needs a key of its own.', $file));
+            }
+            $values = [];
+            foreach (self::BRIEF_FIELDS as $name => $field) {
+                $value = $brief[$name] ?? null;
+                $valid = match ($field[0]) {
+                    'numeric' => is_int($value) || is_float($value),
+                    'select' => is_string($value) && array_key_exists($value, $field[2]),
+                    default => is_string($value) && $value !== '',
+                };
+                if (!$valid) {
+                    throw new \RuntimeException(sprintf('%s: the brief "%s" has no valid %s.', $file, $key, $name));
+                }
+                $values[$name] = $value;
+            }
+            $briefs[$key] = $values;
+        }
+
+        return $briefs;
+    }
+
+    /**
+     * A brief as plain text, as the Ask the brief agent reads it (KingdomSource::briefText()): its title, one
+     * "<field title>: <value>" line per field (a select's label) and its description.
+     */
+    public static function briefText(array $brief): string
+    {
+        $lines = ['Ride brief: ' . (string) ($brief['title'] ?? '')];
+        foreach (self::BRIEF_FIELDS as $name => $field) {
+            if ($name === 'title' || $name === 'description') {
+                continue;
+            }
+            $value = $brief[$name] ?? null;
+            if ($field[0] === 'select') {
+                $value = $field[2][$value] ?? $value;
+            } elseif (is_float($value) && floor($value) === $value) {
+                $value = (int) $value;
+            }
+            $lines[] = sprintf('%s: %s', $field[1], (string) $value);
+        }
+
+        return implode("\n", $lines) . "\n\n" . trim((string) ($brief['description'] ?? ''));
+    }
+
+    /** Whether a stored brief has the wanted values (numbers compared as numbers). */
+    private static function sameBrief(?array $stored, array $wanted): bool
+    {
+        if ($stored === null) {
+            return false;
+        }
+        foreach ($wanted as $name => $value) {
+            $actual = $stored[$name] ?? null;
+            if (is_int($value) || is_float($value) ? !is_numeric($actual) || (float) $actual !== (float) $value : $actual !== $value) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** Whether setup writes a start page: on an environment with content pages and a start page (the tiles link the pages). */
     private function hasStartPage(): bool
     {
@@ -526,7 +721,11 @@ class CoasterDemo
     {
         $file = 'demo-data/' . self::START_PAGE_FILE;
         $sections = $this->startPageSections($this->readDemoData(self::START_PAGE_FILE), $file);
-        $pages = [self::BRIEF_KEY => [self::BRIEF_TITLE, self::BRIEF_ICON, 'page:' . self::BRIEF_KEY],
+        // The brief's tile ("## Tile: brief") opens the open briefs where setup makes them (F293), else the brief page.
+        $brief = $this->hasBriefs()
+            ? [self::BRIEFS_POOL_NAME, self::BRIEFS_ICON, 'data-pool:' . self::BRIEFS_POOL_NAME]
+            : [self::BRIEF_TITLE, self::BRIEF_ICON, 'page:' . self::BRIEF_KEY];
+        $pages = [self::BRIEF_KEY => $brief,
             self::DATA_POOL_TILE => [self::DATA_POOL_NAME, self::DATA_POOL_ICON, 'data-pool:' . self::DATA_POOL_NAME]];
         foreach (self::CONTENT_PAGES as $key => [$title, $icon]) {
             $pages[$key] = [$title, $icon, 'page:' . $key];
@@ -534,7 +733,7 @@ class CoasterDemo
 
         $feature = $sections['feature'] ?? throw new \RuntimeException(sprintf('%s: no "## Feature: <page>" section.', $file));
         $link = $pages[$feature['key']] ?? null;
-        if ($link === null || $feature['key'] === self::DATA_POOL_TILE) {
+        if ($link === null || !str_starts_with($link[2], 'page:')) {
             throw new \RuntimeException(sprintf('%s: the feature links to "%s", which is not a page setup makes.', $file, $feature['key']));
         }
         $tiles = [];
@@ -795,13 +994,18 @@ class CoasterDemo
                 return false;
             }
         }
-        $workspaces = $actual['assetWorkspaces'] ?? [];
-        if (array_keys($workspaces) !== array_keys($wanted['assetWorkspaces'])) {
-            return false;
-        }
-        foreach ($wanted['assetWorkspaces'] as $path => $permissions) {
-            if (array_diff($permissions, $workspaces[$path]) !== [] || array_diff($workspaces[$path], $permissions) !== []) {
+        foreach (['assetWorkspaces', 'objectWorkspaces'] as $kind) {
+            if (!array_key_exists($kind, $wanted)) {
+                continue;
+            }
+            $workspaces = $actual[$kind] ?? [];
+            if (array_keys($workspaces) !== array_keys($wanted[$kind])) {
                 return false;
+            }
+            foreach ($wanted[$kind] as $path => $permissions) {
+                if (array_diff($permissions, $workspaces[$path]) !== [] || array_diff($workspaces[$path], $permissions) !== []) {
+                    return false;
+                }
             }
         }
 

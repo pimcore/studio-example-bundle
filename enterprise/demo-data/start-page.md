@@ -16,8 +16,8 @@ Pimcore Kingdom builds every ride so a guest's heart races and they still step o
 
 ![A track whose highest point stays under the brief's dashed height limit](safety-limits.svg)
 
-Meta: What the park asks for its next coaster
-Button: Read the brief
+Meta: The rides the park asks its suppliers for
+Button: See the open briefs
 
 ## Tile: ride-designs
 

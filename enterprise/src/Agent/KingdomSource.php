@@ -11,7 +11,7 @@ use Pimcore\Bundle\PortalEngineBundle\Model\DataObject\PortalUserInterface;
  */
 interface KingdomSource
 {
-    /** The brief page's text (no markup), or null without a demo portal or brief. */
+    /** The Thunder Loop brief as plain text (its ride brief object, or the brief page before F293), or null without a demo portal or brief. */
     public function briefText(): ?string;
 
     /**

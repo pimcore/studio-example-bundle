@@ -8,11 +8,12 @@ use Pimcore\Bundle\PortalEngineBundle\Service\Security\PermissionService;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Coaster\CoasterMetadataListener;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\DemoEnvironment;
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\RideBriefs;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Version;
 
 /**
- * KingdomSource on Pimcore and the Portal Engine: the brief page the coaster demo set up, the .coaster assets with
+ * KingdomSource on Pimcore and the Portal Engine: the Thunder Loop ride brief the coaster demo set up, the .coaster assets with
  * their version history (version n = revision n, as the supplier uploaded them), and the Portal Engine's own "view"
  * check in the demo portal's data pool (workspaces of the user, its groups and the data pool).
  */
@@ -24,9 +25,19 @@ class PimcoreKingdomSource implements KingdomSource
     ) {
     }
 
+    /**
+     * The Thunder Loop ride brief (F293: a "Ride brief" data object, as CoasterDemo::briefText() writes it out), or the
+     * brief page of a demo set up before the open briefs.
+     */
     public function briefText(): ?string
     {
         $portalId = $this->environment->portalId();
+        if ($portalId !== null && $this->environment instanceof RideBriefs) {
+            $brief = $this->environment->briefs(CoasterDemo::BRIEF_CLASS, CoasterDemo::BRIEFS_FOLDER)[CoasterDemo::THUNDER_LOOP_BRIEF] ?? null;
+            if ($brief !== null) {
+                return CoasterDemo::briefText($brief);
+            }
+        }
         $html = $portalId === null ? null : $this->environment->briefHtml($portalId);
         if ($html === null) {
             return null;

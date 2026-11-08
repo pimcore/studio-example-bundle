@@ -4,6 +4,7 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\ControllerReference;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\AssetConfig;
+use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\DataObjectConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\DataPoolConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\WorkspaceConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\ContentConfig;
@@ -30,7 +31,7 @@ use Pimcore\Model\Translation;
  * asset created like an upload, so the coaster listener fills its metadata. Every element the demo creates gets the
  * property "coaster-demo", and only elements with it are found as the demo's or deleted.
  */
-class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter, StartPage, RideArea
+class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter, StartPage, RideArea, RideBriefs
 {
     public const MARK = 'coaster-demo';
 
@@ -57,6 +58,19 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
     private const AREABLOCK = 'content';
 
     private const BRICK = 'portal-engine-wysiwyg';
+
+    // The "Ride brief" class (F293): its id, and the id of its custom layout the briefs' data pool shows on the detail page.
+    public const BRIEF_CLASS_ID = 'ridebrief';
+
+    public const BRIEF_LAYOUT_ID = 'ridebrief_portal';
+
+    // Pimcore's field types for RideBriefs' plain type names.
+    private const BRIEF_FIELD_TYPES = [
+        'input' => DataObject\ClassDefinition\Data\Input::class,
+        'numeric' => DataObject\ClassDefinition\Data\Numeric::class,
+        'select' => DataObject\ClassDefinition\Data\Select::class,
+        'textarea' => DataObject\ClassDefinition\Data\Textarea::class,
+    ];
 
     // The columns of PortalUser.assetWorkspaceDefinition, without the "permission_" prefix.
     private const WORKSPACE_COLUMNS = ['view', 'download', 'edit', 'update', 'create', 'delete', 'subfolder', 'view_owned_assets_only'];
@@ -104,7 +118,9 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
 
     public function dataPoolId(int $portalId, string $dataPoolName): ?int
     {
-        return $this->dataPool($portalId, $dataPoolName)?->getId();
+        $page = $this->dataPool($portalId, $dataPoolName);
+
+        return $page?->getController() === ControllerReference::DATA_POOL_ASSETS_LIST ? $page->getId() : null;
     }
 
     public function portalName(int $portalId): ?string
@@ -279,6 +295,16 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
                 ));
             }
         }
+        $objectWorkspaces = [];
+        foreach ((array) $user->getDataObjectWorkspaceDefinition() as $workspace) {
+            $element = $workspace->getElement();
+            if ($element instanceof ElementInterface) {
+                $objectWorkspaces[$element->getRealFullPath()] = array_values(array_map(
+                    static fn (string $column) => substr($column, strlen('permission_')),
+                    array_keys(array_filter((array) $workspace->getData(), static fn (mixed $on, string $column) => $on && str_starts_with($column, 'permission_'), ARRAY_FILTER_USE_BOTH)),
+                ));
+            }
+        }
         $passwordField = $user->getClass()->getFieldDefinition('portalPassword');
 
         return [
@@ -290,6 +316,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
                 && $passwordField->verifyPassword($password, $user, false),
             'permissions' => (array) $user->getPermission(),
             'assetWorkspaces' => $workspaces,
+            'objectWorkspaces' => $objectWorkspaces,
         ];
     }
 
@@ -322,6 +349,22 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
             $workspaces[] = $workspace;
         }
         $user->setAssetWorkspaceDefinition($workspaces);
+        // The open briefs (F293): a data object workspace per folder, its columns as the PortalUser class defines them.
+        if (array_key_exists('objectWorkspaces', $supplier)) {
+            $field = $user->getClass()->getFieldDefinition('dataObjectWorkspaceDefinition');
+            $columns = $field instanceof DataObject\ClassDefinition\Data\AdvancedManyToManyRelation ? $field->getColumnKeys() : ['permission_view'];
+            $objectWorkspaces = [];
+            foreach ($supplier['objectWorkspaces'] as $path => $permissions) {
+                $folder = $this->markedObjectFolder($path);
+                $workspace = new ElementMetadata('dataObjectWorkspaceDefinition', $columns, $folder);
+                $workspace->setData(array_combine($columns, array_map(
+                    static fn (string $column) => in_array(substr($column, strlen('permission_')), $permissions, true),
+                    $columns,
+                )));
+                $objectWorkspaces[] = $workspace;
+            }
+            $user->setDataObjectWorkspaceDefinition($objectWorkspaces);
+        }
         $user->save();
     }
 
@@ -493,6 +536,297 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
      * folders that were there stay unmarked. Setup makes folders only here (the supplier's workspace made the park
      * folder unmarked before, F99).
      */
+    public function briefClassFields(string $className): ?array
+    {
+        $class = DataObject\ClassDefinition::getByName($className);
+        if (!$class) {
+            return null;
+        }
+        $types = array_flip(self::BRIEF_FIELD_TYPES);
+        $fields = [];
+        foreach ($class->getFieldDefinitions() as $name => $definition) {
+            $type = $types[$definition::class] ?? $definition->getFieldtype();
+            $field = [$type, (string) $definition->getTitle()];
+            if ($definition instanceof DataObject\ClassDefinition\Data\Select) {
+                $options = [];
+                foreach ((array) $definition->getOptions() as $option) {
+                    $options[(string) $option['value']] = (string) $option['key'];
+                }
+                $field[] = $options;
+            }
+            $fields[$name] = $field;
+        }
+
+        return $fields;
+    }
+
+    /** One panel with the fields, as the class editor saves it; the portal's custom layout repeats it (DetailHandler). */
+    public function saveBriefClass(string $className, string $title, array $fields): void
+    {
+        $class = DataObject\ClassDefinition::getByName($className);
+        if (!$class) {
+            $class = new DataObject\ClassDefinition();
+            $class->setId(self::BRIEF_CLASS_ID);
+            $class->setName($className);
+        }
+        $class->setTitle($title);
+        $class->setGroup('Coaster demo');
+        $class->setLayoutDefinitions($this->briefLayout($title, $fields));
+        $class->save();
+
+        $layout = DataObject\ClassDefinition\CustomLayout::getById(self::BRIEF_LAYOUT_ID)
+            ?? DataObject\ClassDefinition\CustomLayout::create(['id' => self::BRIEF_LAYOUT_ID, 'name' => 'Portal detail', 'classId' => $class->getId()]);
+        $layout->setDescription('The detail page of the portal\'s "' . CoasterDemo::BRIEFS_POOL_NAME . '" data pool (coaster demo).');
+        $layout->setLayoutDefinitions($this->briefLayout($title, $fields));
+        $layout->save();
+    }
+
+    public function deleteBriefClass(string $className): void
+    {
+        $class = DataObject\ClassDefinition::getByName($className);
+        if (!$class) {
+            return;
+        }
+        $objects = new DataObject\Listing();
+        $objects->setUnpublished(true);
+        $objects->setCondition('`className` = ?', [$className]);
+        if ($objects->getTotalCount() > 0) {
+            return;
+        }
+        DataObject\ClassDefinition\CustomLayout::getById(self::BRIEF_LAYOUT_ID)?->delete();
+        $class->delete();
+    }
+
+    public function briefs(string $className, string $folder): array
+    {
+        $parent = DataObject::getByPath($folder);
+        if (!$parent instanceof DataObject\Folder) {
+            return [];
+        }
+        $briefs = [];
+        foreach ($parent->getChildren([DataObject::OBJECT_TYPE_OBJECT], true) as $child) {
+            if ($child instanceof DataObject\Concrete && $child->getClassName() === $className) {
+                $values = [];
+                foreach (array_keys(CoasterDemo::BRIEF_FIELDS) as $name) {
+                    $values[$name] = $child->get($name);
+                }
+                $briefs[(string) $child->getKey()] = $values;
+            }
+        }
+
+        return $briefs;
+    }
+
+    public function saveRideBrief(string $className, string $folder, string $key, array $values): void
+    {
+        $parent = $this->markedObjectFolder($folder);
+        $object = DataObject::getByPath($folder . '/' . $key, ['force' => true]);
+        if (!$object instanceof DataObject\Concrete) {
+            $class = '\\Pimcore\\Model\\DataObject\\' . $className;
+            /** @var DataObject\Concrete $object */
+            $object = new $class();
+            $object->setParent($parent);
+            $object->setKey($key);
+            $object->setProperty(self::MARK, 'bool', true, false, false);
+        }
+        foreach ($values as $name => $value) {
+            $object->set($name, $value);
+        }
+        $object->setPublished(true);
+        $object->save();
+    }
+
+    public function objectFolderExists(string $folder): bool
+    {
+        $object = DataObject::getByPath($folder);
+
+        return $object instanceof DataObject\Folder && ($object->getProperty(self::MARK) || [] !== self::ownedObjects($object));
+    }
+
+    public function deleteObjectFolder(string $folder): void
+    {
+        $object = DataObject::getByPath($folder);
+        if (!$object instanceof DataObject\Folder) {
+            return;
+        }
+        if ($object->getProperty(self::MARK)) {
+            $object->delete();
+
+            return;
+        }
+        foreach (self::ownedObjects($object) as $child) {
+            $child->delete();
+        }
+    }
+
+    public function briefsPool(int $portalId, string $name): ?array
+    {
+        $page = $this->dataPool($portalId, $name);
+        if (!$page || $page->getController() !== ControllerReference::DATA_POOL_DATA_OBJECTS_LIST) {
+            return null;
+        }
+        $relation = $page->getEditable(self::workspacePathName());
+        $root = $relation instanceof Editable\Relation ? $relation->getElement() : null;
+        $permissions = [];
+        foreach (self::WORKSPACE_COLUMNS as $column) {
+            $checkboxName = $column === 'view_owned_assets_only' ? WorkspaceConfig::PERMISSION_VIEW_OWNED_ASSETS_ONLY : 'permission_' . $column;
+            $checkbox = $page->getEditable(Editable::buildChildEditableName($checkboxName, 'checkbox', [DataPoolConfig::WORKSPACE_DEFINITION], 1));
+            if ($checkbox instanceof Editable\Checkbox && $checkbox->isChecked()) {
+                $permissions[] = $column;
+            }
+        }
+        $icon = $page->getEditable(ContentConfig::NAVIGATION_ICON)?->getData();
+        $classId = (string) $page->getEditable(DataObjectConfig::DATA_OBJECT_CLASS)?->getData();
+        $before = null;
+        foreach ($page->getParent()?->getChildren(true) ?? [] as $sibling) {
+            if ($sibling->getId() === $page->getId()) {
+                break;
+            }
+            $before = $sibling;
+        }
+
+        return [
+            'id' => $page->getId(),
+            'class' => $classId === '' ? null : DataObject\ClassDefinition::getById($classId)?->getName(),
+            'root' => $root instanceof DataObject\AbstractObject ? $root->getRealFullPath() : null,
+            'icon' => is_string($icon) ? $icon : '',
+            'permissions' => $permissions,
+            'after' => $before === null ? null : (string) ($before->getProperty('navigation_name') ?: $before->getTitle()),
+            'detailLayout' => $page->getEditable(DataObjectConfig::DETAIL_PAGE_LAYOUT)?->getData(),
+        ];
+    }
+
+    /** As the wizard writes a data-object data pool (WizardService::createObjectDataPool()), with the demo's settings. */
+    public function saveBriefsPool(int $portalId, string $name, string $className, string $folder, string $icon, array $permissions, int $afterDataPoolId): int
+    {
+        $after = Document\Page::getById($afterDataPoolId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal has no data pool %d to put "%s" after.', $afterDataPoolId, $name));
+        $page = $this->dataPool($portalId, $name);
+        if ($page && $page->getController() !== ControllerReference::DATA_POOL_DATA_OBJECTS_LIST) {
+            throw new \RuntimeException(sprintf('The demo portal has a page "%s" that is no data-object data pool; rename or remove it, then run setup again.', $name));
+        }
+        if (!$page) {
+            $page = new Document\Page();
+            $page->setController(ControllerReference::DATA_POOL_DATA_OBJECTS_LIST);
+            $page->setKey(Element\Service::getValidKey($name, 'document'));
+            $page->setParent($after->getParent());
+            $page->setKey(Document\Service::getUniqueKey($page));
+            $page->setProperty(self::MARK, 'bool', true, false, false);
+            $page->setProperty('language', 'select', CoasterDemo::LANGUAGE, false, true);
+            $page->setRawEditable(DataPoolConfig::ENABLE_FOLDER_NAVIGATION, 'checkbox', false);
+            $page->setRawEditable(DataPoolConfig::ENABLE_TAG_NAVIGATION, 'checkbox', false);
+        } else {
+            $page->getEditables(); // keeps the other settings, as in enablePlugin()
+        }
+        $page->setPublished(true);
+        $page->setTitle($name);
+        $page->setProperty('navigation_name', 'text', $name);
+        $page->setRawEditable(ContentConfig::NAVIGATION_ICON, 'select', $icon);
+        // The pool names its class by id (the class definition select's store).
+        $classId = DataObject\ClassDefinition::getByName($className)?->getId()
+            ?? throw new \RuntimeException(sprintf('There is no data object class "%s" for the data pool "%s".', $className, $name));
+        $page->setRawEditable(DataObjectConfig::DATA_OBJECT_CLASS, 'select', $classId);
+        $page->setRawEditable(DataObjectConfig::DETAIL_PAGE_LAYOUT, 'select', self::BRIEF_LAYOUT_ID);
+        $page->setRawEditable(DataPoolConfig::WORKSPACE_DEFINITION, 'block', [1]);
+        $relation = new Editable\Relation();
+        $relation->setDataFromEditmode(['id' => $this->markedObjectFolder($folder)->getId(), 'type' => 'object', 'subtype' => 'folder']);
+        $relation->setParentBlockNames([DataPoolConfig::WORKSPACE_DEFINITION]);
+        $relation->setName(self::workspacePathName());
+        $page->setEditable($relation);
+        foreach (self::WORKSPACE_COLUMNS as $column) {
+            $checkboxName = $column === 'view_owned_assets_only' ? WorkspaceConfig::PERMISSION_VIEW_OWNED_ASSETS_ONLY : 'permission_' . $column;
+            $checkbox = new Editable\Checkbox();
+            $checkbox->setDataFromEditmode(in_array($column, $permissions, true));
+            $checkbox->setParentBlockNames([DataPoolConfig::WORKSPACE_DEFINITION]);
+            $checkbox->setName(Editable::buildChildEditableName($checkboxName, 'checkbox', [DataPoolConfig::WORKSPACE_DEFINITION], 1));
+            $page->setEditable($checkbox);
+        }
+        $page->save();
+
+        // Right after the ride designs in the navigation (the rail lists the language root's pages by their index).
+        $siblings = array_values(array_filter(
+            iterator_to_array($after->getParent()->getChildren(true), false),
+            static fn (Document $sibling): bool => $sibling->getId() !== $page->getId(),
+        ));
+        $order = [];
+        foreach ($siblings as $sibling) {
+            $order[] = $sibling;
+            if ($sibling->getId() === $after->getId()) {
+                $order[] = $page;
+            }
+        }
+        foreach ($order as $index => $document) {
+            if ($document->getIndex() !== $index) {
+                $document->saveIndex($index);
+            }
+        }
+        Cache::clearAll();
+
+        return $page->getId();
+    }
+
+    public function deleteContentPage(int $portalId, string $key): void
+    {
+        $this->demoPage($portalId, $key)?->delete();
+        Cache::clearAll();
+    }
+
+    /** The class's one panel with $fields, built as the class editor saves it. */
+    private function briefLayout(string $title, array $fields): DataObject\ClassDefinition\Layout\Panel
+    {
+        $panel = new DataObject\ClassDefinition\Layout\Panel();
+        $panel->setName('Brief');
+        $panel->setTitle($title);
+        foreach ($fields as $name => $field) {
+            $class = self::BRIEF_FIELD_TYPES[$field[0]] ?? throw new \RuntimeException(sprintf('No Pimcore field type for "%s".', $field[0]));
+            $definition = new $class();
+            $definition->setName($name);
+            $definition->setTitle($field[1]);
+            if ($definition instanceof DataObject\ClassDefinition\Data\Select) {
+                $definition->setOptions(array_map(static fn (string $value, string $label) => ['key' => $label, 'value' => $value], array_keys($field[2]), $field[2]));
+            }
+            if ($definition instanceof DataObject\ClassDefinition\Data\Numeric) {
+                $definition->setDecimalPrecision(1);
+            }
+            $panel->addChild($definition);
+        }
+        $root = new DataObject\ClassDefinition\Layout\Panel();
+        $root->setName('pimcore_root');
+        $root->addChild($panel);
+
+        return $root;
+    }
+
+    /** As markedFolder(), in the data object tree. */
+    private function markedObjectFolder(string $folder): DataObject\Folder
+    {
+        $missing = [];
+        $path = '';
+        foreach (explode('/', trim($folder, '/')) as $segment) {
+            $path .= '/' . $segment;
+            if (!DataObject::getByPath($path)) {
+                $missing[] = $path;
+            }
+        }
+        $made = DataObject\Service::createFolderByPath($folder);
+        foreach ($missing as $created) {
+            $created = DataObject::getByPath($created);
+            $created?->setProperty(self::MARK, 'bool', true, false, false);
+            $created?->save();
+        }
+
+        return $made;
+    }
+
+    /** @return list<DataObject\AbstractObject> the marked children of $folder (the demo's briefs and folders) */
+    private static function ownedObjects(DataObject\Folder $folder): array
+    {
+        return array_values(array_filter(
+            iterator_to_array($folder->getChildren([DataObject::OBJECT_TYPE_OBJECT, DataObject::OBJECT_TYPE_FOLDER], true), false),
+            static fn (DataObject\AbstractObject $child): bool => (bool) $child->getProperty(self::MARK),
+        ));
+    }
+
     public function translation(string $domain, string $key, string $language): ?string
     {
         return Translation::getByKey($key, $domain)?->getTranslation($language);
@@ -786,7 +1120,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         if (!$page instanceof Document\Page) {
             return null;
         }
-        if ($page->getController() === ControllerReference::DATA_POOL_ASSETS_LIST) {
+        if (in_array($page->getController(), [ControllerReference::DATA_POOL_ASSETS_LIST, ControllerReference::DATA_POOL_DATA_OBJECTS_LIST], true)) {
             return 'data-pool:' . $page->getTitle();
         }
         if ($page->getProperty(self::MARK)) {
@@ -863,7 +1197,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         return $user instanceof PortalUser ? $user : null;
     }
 
-    /** The asset data pool page the wizard made: in the portal's language root (or the portal page itself). */
+    /** A data pool page (the asset one the wizard made, or the demo's briefs): in the portal's language root (or the portal page itself). */
     private function dataPool(int $portalId, string $dataPoolName): ?Document\Page
     {
         $portal = Document\Page::getById($portalId);
@@ -873,7 +1207,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         foreach ([$portal, ...iterator_to_array($portal->getChildren(), false)] as $parent) {
             foreach ($parent->getChildren() as $child) {
                 if ($child instanceof Document\Page
-                    && $child->getController() === ControllerReference::DATA_POOL_ASSETS_LIST
+                    && in_array($child->getController(), [ControllerReference::DATA_POOL_ASSETS_LIST, ControllerReference::DATA_POOL_DATA_OBJECTS_LIST], true)
                     && $child->getTitle() === $dataPoolName) {
                     return $child;
                 }

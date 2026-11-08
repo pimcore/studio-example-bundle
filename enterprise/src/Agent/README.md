@@ -16,7 +16,7 @@ may see: the user is the signed-in portal user, and every revision passes the Po
 - `ProposalStore` keeps a proposal on the server (portal user, asset, revision, text) under a random 128-bit id, for
   15 minutes (the TTL). Proposing writes no note: the confirm step (a later feature) reads the note from here, never
   from the request.
-- `KingdomSource` is where the data comes from; `PimcoreKingdomSource` reads the brief page and the `.coaster` assets'
+- `KingdomSource` is where the data comes from; `PimcoreKingdomSource` reads the Thunder Loop ride brief (the "Ride brief" data object of the portal's Open briefs, F293; the brief page on a demo set up before it) and the `.coaster` assets'
   version history (version n = revision n) and asks the Portal Engine's `PermissionService` for "view" in the demo
   portal's data pool. The fixture `demo-data/agent-fixtures/night-fury.coaster` is a design the supplier may not see.
 - With PimcoreAgentBundle installed, `Tools/` wraps the three methods as MCP tools (`#[McpTool]`, tag
