@@ -25,10 +25,11 @@ one line per change and ends with the demo login.
 | The portal "Pimcore Kingdom" with the asset data pool "Ride designs", English only | a new site on `--domain`, made by the Portal Engine's own portal wizard |
 | The example portal plugin `studio-example-enterprise` in the portal's **Enabled plugins** (the coaster tile and preview need it); other plugins there stay | the portal's configuration document; setup saves it and clears the cache |
 | The park's brief ([`demo-data/brief.md`](../../demo-data/brief.md)) as a content page "Brief: Thunder Loop", and three pages for suppliers from [`demo-data/pages/`](../../demo-data/pages): "About the park", "Working with the Kingdom" and "Safety first". Each has a navigation icon from portal_engine's bundled icon set (`clipboard-list`, `landmark`, `handshake`, `shield-alt`; the data pool gets `drafting-compass`), so none shows the rail's generic icon; a missing icon or changed text is put back, an editor's own pages stay | next to the data pool in the portal's navigation, in this order |
+| The coasters' own area: the data pool "Ride designs" lists from `/Pimcore Kingdom/Ride designs` (each ride's folder below it, Thunder Loop first), so the page pictures (`/Pimcore Kingdom/Pages`) and the branding (`/Pimcore Kingdom/Branding`) are in no pool the supplier browses. A Thunder Loop folder from before (at `/Pimcore Kingdom/Thunder Loop`) is moved there in place, with its files and the supplier's workspace | the data pool's first **Workspace** row (the Portal Engine lists from the workspaces' common folder; its wizard puts it on `/`); setup saves it and clears the cache |
 | The park's own-made logo ([`demo-data/branding/`](../../demo-data/branding/LICENSE.md), SVG and PNG) in `/Pimcore Kingdom/Branding`, set as the portal's **Logo**, with **brand_primary** `#6428b4` (Pimcore Purple, the slides' colour) and **brand_accent** `#502090` (its darker shade) | the portal's configuration document (Style Settings); setup saves it and clears the cache. A changed colour or a missing logo file is put back |
-| The supplier Loopwerk Engineering, a portal user with access to the portal and the data pool, and all rights in the asset folder `/Pimcore Kingdom/Thunder Loop` (not the Branding folder next to it) | data object `/Portal Users/Coaster demo/loopwerk-supplier` |
+| The supplier Loopwerk Engineering, a portal user with access to the portal and the data pool, and all rights in the asset folder `/Pimcore Kingdom/Ride designs/Thunder Loop` (not the Branding folder next to it) | data object `/Portal Users/Coaster demo/loopwerk-supplier` |
 | The English text "All ride designs" for the asset tree's first line (`portal-engine.listing.root-folder`), added only where it is missing or empty, so an edited text stays. A 2026.3 ships "/ (root)" for it; an older 2026.x install shows the raw key | a Pimcore translation in the domain `portal_engine_frontend` (Settings > Translations); reset leaves it |
-| Revision 1 of Thunder Loop, with the five metadata values the coaster listener (`src/Coaster/`) fills on upload | asset `/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster` |
+| Revision 1 of Thunder Loop, with the five metadata values the coaster listener (`src/Coaster/`) fills on upload | asset `/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster` |
 
 **Demo login** (public, shown on stage): `supplier@loopwerk.example`, password `thunder-loop`.
 
@@ -44,7 +45,7 @@ nothing. The earlier names are in `CoasterDemo::LEGACY_PARK_NAMES`.
 
 ### What reset does
 
-- `coaster-demo:reset` deletes every other asset in `/Pimcore Kingdom/Thunder Loop`, replaces a changed
+- `coaster-demo:reset` deletes every other asset in `/Pimcore Kingdom/Ride designs/Thunder Loop`, replaces a changed
   `thunder-loop.coaster` with a fresh revision 1 (no version history), then runs setup. At revision 1 it changes
   nothing.
 - `coaster-demo:reset --all` deletes the supplier, the folder `/Pimcore Kingdom` (or one under an earlier park name)

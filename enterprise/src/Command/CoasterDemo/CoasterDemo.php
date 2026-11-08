@@ -82,8 +82,15 @@ class CoasterDemo
     // The park's asset folder; everything the demo uploads lives below it.
     public const ASSET_ROOT = '/' . self::PORTAL_NAME;
 
-    // The supplier's asset workspace (F134): only the ride designs, not the park's Branding folder next to it.
-    public const COASTER_FOLDER = self::ASSET_ROOT . '/Thunder Loop';
+    // The coasters' own area (F292): the "Ride designs" data pool lists from here (RideArea), so the page pictures and
+    // the branding next to it are in no pool the supplier browses; every ride's folder lives below it.
+    public const RIDE_DESIGNS_FOLDER = self::ASSET_ROOT . '/Ride designs';
+
+    // The supplier's asset workspace (F134): only the ride designs, not the park's Branding folder.
+    public const COASTER_FOLDER = self::RIDE_DESIGNS_FOLDER . '/Thunder Loop';
+
+    // Where Thunder Loop was before F292, at the park root: setup moves a folder there in place.
+    public const LEGACY_COASTER_FOLDER = self::ASSET_ROOT . '/Thunder Loop';
 
     public const COASTER_FILENAME = 'thunder-loop.coaster';
 
@@ -185,6 +192,10 @@ class CoasterDemo
         }
         $dataPoolId = $env->dataPoolId($portalId, self::DATA_POOL_NAME)
             ?? throw new \RuntimeException(sprintf('The portal "%s" has no asset data pool "%s". Run coaster-demo:reset --all, then setup again.', self::PORTAL_NAME, self::DATA_POOL_NAME));
+
+        if ($env instanceof RideArea) {
+            $changes = [...$changes, ...$this->rideArea($env, $dataPoolId)];
+        }
 
         // Before the pages, so the images their HTML points at are there when it is saved.
         $changes = [...$changes, ...$this->pageImages()];
@@ -316,6 +327,29 @@ class CoasterDemo
             'assetWorkspaces' => [self::COASTER_FOLDER => self::WORKSPACE_PERMISSIONS]
                 + ($this->pageImageFiles() === [] ? [] : [self::PAGES_FOLDER => self::PAGES_PERMISSIONS]),
         ];
+    }
+
+    /**
+     * The coasters' own area (F292): moves a Thunder Loop folder from the park root (a demo set up before F292) into the
+     * ride-designs folder in place, then points the data pool at that folder where it points elsewhere. Before the
+     * supplier step, so the supplier's workspace (which follows the folder) already matches.
+     *
+     * @return string[] what was changed
+     */
+    private function rideArea(RideArea $env, int $dataPoolId): array
+    {
+        $changes = [];
+        $demo = $this->environment;
+        if (!$demo->folderExists(self::COASTER_FOLDER) && $demo->folderExists(self::LEGACY_COASTER_FOLDER)) {
+            $env->moveFolder(self::LEGACY_COASTER_FOLDER, self::RIDE_DESIGNS_FOLDER);
+            $changes[] = sprintf('Moved the folder %s to %s', self::LEGACY_COASTER_FOLDER, self::COASTER_FOLDER);
+        }
+        if ($env->dataPoolRoot($dataPoolId) !== self::RIDE_DESIGNS_FOLDER) {
+            $env->setDataPoolRoot($dataPoolId, self::RIDE_DESIGNS_FOLDER);
+            $changes[] = sprintf('Set the listing root of the data pool "%s" to %s', self::DATA_POOL_NAME, self::RIDE_DESIGNS_FOLDER);
+        }
+
+        return $changes;
     }
 
     /**

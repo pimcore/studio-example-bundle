@@ -235,7 +235,7 @@ test('AC2: an image no page names any more is removed on the next setup; pages w
   assert.deepEqual(Object.keys(images), ['park-entrance.svg']);
   // F161: the demo's own pages name their pictures: setup uploads exactly those, and the supplier may view them.
   assert.deepEqual(Object.keys(plain.images).sort(), readdirSync(join(enterpriseDir, 'demo-data', 'pages', 'img')).filter((name) => /\.(svg|webp)$/.test(name)).sort(), 'the demo\'s own pages: their pictures uploaded');
-  assert.deepEqual(Object.keys(plain.workspaces), ['/Pimcore Kingdom/Thunder Loop', PAGES], 'and the supplier\'s workspaces are the ride designs and the pictures');
+  assert.deepEqual(Object.keys(plain.workspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop', PAGES], 'and the supplier\'s workspaces are the ride designs and the pictures');
 });
 
 test('AC3: setup gives the supplier view access to /Pimcore Kingdom/Pages, nothing more, and keeps the Thunder Loop workspace', () => {
@@ -246,9 +246,9 @@ test('AC3: setup gives the supplier view access to /Pimcore Kingdom/Pages, nothi
     $again = demo($env, $dir)->setup();
     echo json_encode(['workspaces' => $workspaces, 'again' => $again]);
   `, demoData());
-  assert.deepEqual(Object.keys(workspaces), ['/Pimcore Kingdom/Thunder Loop', PAGES]);
+  assert.deepEqual(Object.keys(workspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop', PAGES]);
   assert.deepEqual(workspaces[PAGES], ['view'], 'view only');
-  assert.deepEqual([...workspaces['/Pimcore Kingdom/Thunder Loop']].sort(), ['create', 'delete', 'download', 'edit', 'subfolder', 'update', 'view']);
+  assert.deepEqual([...workspaces['/Pimcore Kingdom/Ride designs/Thunder Loop']].sort(), ['create', 'delete', 'download', 'edit', 'subfolder', 'update', 'view']);
   assert.deepEqual(again, []);
 });
 

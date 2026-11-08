@@ -265,6 +265,7 @@ test('AC3: setup moves today\'s demo (Thunder Loop at the park root, pool on /) 
     unset($state['folders']['${RIDE_DESIGNS}']);
     $area = new AreaEnvironment();
     $area->state = $state;
+    $area->translations = $env->translations;
     $area->createAsset('${OLD_THUNDER_LOOP}', 'thunder-loop-twister.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-twister.coaster'));
     $changes = demo($area)->setup();
     echo json_encode(['changes' => $changes, 'state' => $area->state, 'root' => $area->dataPoolRoot(dataPool($area)),

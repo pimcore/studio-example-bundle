@@ -3,6 +3,8 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\ControllerReference;
+use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\DataPoolConfig;
+use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\WorkspaceConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\ContentConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\PortalConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Wizard;
@@ -27,7 +29,7 @@ use Pimcore\Model\Translation;
  * asset created like an upload, so the coaster listener fills its metadata. Every element the demo creates gets the
  * property "coaster-demo", and only elements with it are found as the demo's or deleted.
  */
-class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter, StartPage
+class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter, StartPage, RideArea
 {
     public const MARK = 'coaster-demo';
 
@@ -392,6 +394,53 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         // The same element under a new name: workspaces reference it by id, and Pimcore moves the children's paths.
         $asset->setFilename($name);
         $asset->save();
+    }
+
+    public function moveFolder(string $folder, string $parent): void
+    {
+        $asset = Asset::getByPath($folder);
+        if (!$asset instanceof Asset\Folder) {
+            throw new \RuntimeException(sprintf('The asset folder %s is gone.', $folder));
+        }
+        // The same element under a new parent: workspaces reference it by id, and Pimcore moves the children's paths.
+        $asset->setParentId($this->markedFolder($parent)->getId());
+        $asset->save();
+    }
+
+    /** The data pool's first workspace row, as the wizard writes it (WizardService::addWorkspaceBlock()). */
+    private static function workspacePathName(): string
+    {
+        return Editable::buildChildEditableName(WorkspaceConfig::WORKSPACE_PATH, 'relation', [DataPoolConfig::WORKSPACE_DEFINITION], 1);
+    }
+
+    public function dataPoolRoot(int $dataPoolId): ?string
+    {
+        $editable = Document\Page::getById($dataPoolId, ['force' => true])?->getEditable(self::workspacePathName());
+        $element = $editable instanceof Editable\Relation ? $editable->getElement() : null;
+
+        return $element instanceof Asset ? $element->getRealFullPath() : null;
+    }
+
+    /** As the data pool's settings save it: the first row's relation; its permission checkboxes stay as they are. */
+    public function setDataPoolRoot(int $dataPoolId, string $folder): void
+    {
+        $page = Document\Page::getById($dataPoolId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal has no data pool %d.', $dataPoolId));
+        $target = $this->markedFolder($folder);
+        $page->getEditables(); // keeps the other settings, as in enablePlugin()
+        $block = $page->getEditable(DataPoolConfig::WORKSPACE_DEFINITION)?->getData();
+        $rows = is_array($block) && $block !== [] ? array_values($block) : [];
+        if (!in_array(1, array_map('intval', $rows), true)) {
+            $rows = [1, ...$rows];
+        }
+        $page->setRawEditable(DataPoolConfig::WORKSPACE_DEFINITION, 'block', $rows);
+        $relation = new Editable\Relation();
+        $relation->setDataFromEditmode(['id' => $target->getId(), 'type' => 'asset', 'subtype' => 'folder']);
+        $relation->setParentBlockNames([DataPoolConfig::WORKSPACE_DEFINITION]);
+        $relation->setName(self::workspacePathName());
+        $page->setEditable($relation);
+        $page->save();
+        Cache::clearAll();
     }
 
     public function deleteFolder(string $folder): void

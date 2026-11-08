@@ -124,7 +124,7 @@ test('AC4: setup on an environment without content pages (the existing tests\' k
     echo json_encode(['uploads' => $env->uploads, 'workspaces' => $env->state['users']['supplier@loopwerk.example']['assetWorkspaces']]);
   `);
   assert.deepEqual(uploads.filter((path) => path.startsWith('/Pimcore Kingdom/Pages/')), [], 'no page picture uploaded');
-  assert.deepEqual(Object.keys(workspaces), ['/Pimcore Kingdom/Thunder Loop']);
+  assert.deepEqual(Object.keys(workspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop']);
 });
 
 const bootstrap = `

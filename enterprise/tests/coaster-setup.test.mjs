@@ -147,7 +147,7 @@ namespace {
     }
     // The demo in its middle: revision 2 uploaded over revision 1, and a second design next to it.
     function playDemo(MemoryEnvironment $env): void {
-        $folder = '/Pimcore Kingdom/Thunder Loop';
+        $folder = '/Pimcore Kingdom/Ride designs/Thunder Loop';
         $env->deleteAsset($folder, 'thunder-loop.coaster');
         $env->createAsset($folder, 'thunder-loop.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev2.coaster'));
         $env->createAsset($folder, 'thunder-loop-rev3.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev3.coaster'));
@@ -161,7 +161,7 @@ const php = (body) =>
 
 const golden = JSON.parse(read(join(demoData, 'expected-metadata.json')));
 const rev1 = read(join(demoData, 'thunder-loop-rev1.coaster'));
-const COASTER = '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster';
+const COASTER = '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster';
 
 test('AC1: setup creates the portal, the supplier with a demo login, the brief and revision 1 with its metadata', () => {
   const { changes, state, html } = php(`
@@ -196,8 +196,8 @@ test('AC1: setup creates the portal, the supplier with a demo login, the brief a
   assert.equal(`${supplier.firstname} ${supplier.lastname}`, 'Loopwerk Engineering');
   assert.equal(supplier.password, 'thunder-loop');
   assert.deepEqual(supplier.permissions, { [`portal-access___${portalId}`]: 'allow', [`data-pool-access___${dataPoolId}`]: 'allow' });
-  assert.deepEqual(Object.keys(supplier.assetWorkspaces), ['/Pimcore Kingdom/Thunder Loop']);
-  assert.ok(supplier.assetWorkspaces['/Pimcore Kingdom/Thunder Loop'].includes('create'), 'may upload');
+  assert.deepEqual(Object.keys(supplier.assetWorkspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop']);
+  assert.ok(supplier.assetWorkspaces['/Pimcore Kingdom/Ride designs/Thunder Loop'].includes('create'), 'may upload');
 
   const coaster = state.assets[COASTER];
   assert.equal(coaster.content, rev1, 'revision 1 uploaded');
@@ -327,7 +327,7 @@ test('AC1: setup on an empty instance creates one portal "Pimcore Kingdom" with 
   `);
   const portals = Object.values(state.portals).filter((portal) => portal.demo);
   assert.deepEqual(portals.map((portal) => portal.name), ['Pimcore Kingdom']);
-  assert.ok(state.assets['/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster'], 'the coaster asset');
+  assert.ok(state.assets['/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster'], 'the coaster asset');
   assert.equal(Object.keys(state.folders).some((path) => path.includes(LEGACY)), false);
 });
 
@@ -353,7 +353,7 @@ test('AC2 AC4: setup renames a legacy-named marked portal and folder in place, o
   assert.equal(Object.keys(state.folders).some((path) => path.includes(LEGACY)), false, 'no old folder');
   assert.equal(Object.keys(state.assets).some((path) => path.includes(LEGACY)), false, 'no asset under the old name');
   assert.ok(state.assets[COASTER], 'the coaster moved with the folder');
-  assert.deepEqual(Object.keys(state.users['supplier@loopwerk.example'].assetWorkspaces), ['/Pimcore Kingdom/Thunder Loop']);
+  assert.deepEqual(Object.keys(state.users['supplier@loopwerk.example'].assetWorkspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop']);
 
   assert.deepEqual(again, [], 'a second setup changes nothing');
   assert.equal(writes, 0);

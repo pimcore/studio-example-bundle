@@ -100,21 +100,21 @@ namespace {
         public function coasterRevisions(): array {
             $revisions = [];
             foreach (json_decode(${JSON.stringify(JSON.stringify(thunderLoop))}, true) as $i => $m) {
-                $revisions[] = ['assetId' => 10, 'path' => '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster', 'revision' => $i + 1, 'maxHeightM' => (float) $m['maxHeight'], 'lengthM' => (float) $m['length']];
+                $revisions[] = ['assetId' => 10, 'path' => '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster', 'revision' => $i + 1, 'maxHeightM' => (float) $m['maxHeight'], 'lengthM' => (float) $m['length']];
             }
-            $revisions[] = ['assetId' => 20, 'path' => '/Pimcore Kingdom/Night Fury/night-fury.coaster', 'revision' => ${nightFury.meta.revision}, 'maxHeightM' => 40.0, 'lengthM' => 500.0];
+            $revisions[] = ['assetId' => 20, 'path' => '/Pimcore Kingdom/Ride designs/Night Fury/night-fury.coaster', 'revision' => ${nightFury.meta.revision}, 'maxHeightM' => 40.0, 'lengthM' => 500.0];
             return $revisions;
         }
         public function mayView(PortalUserInterface $user, int $assetId): bool {
             $this->viewChecks[] = [$user->getId(), $assetId];
-            $path = $assetId === 10 ? '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster' : '/Pimcore Kingdom/Night Fury/night-fury.coaster';
+            $path = $assetId === 10 ? '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster' : '/Pimcore Kingdom/Ride designs/Night Fury/night-fury.coaster';
             foreach ($user->workspaces as $workspace) { if (str_starts_with($path, $workspace . '/')) return true; }
             return false;
         }
     }
 
     // The Loopwerk supplier (portal user 7, its workspace the Thunder Loop folder), and the tools for a context.
-    function supplier(): TestPortalUser { return new TestPortalUser(7, ['/Pimcore Kingdom/Thunder Loop']); }
+    function supplier(): TestPortalUser { return new TestPortalUser(7, ['/Pimcore Kingdom/Ride designs/Thunder Loop']); }
     function tools(A\\PortalUserContext $context, ?TestPool $pool = null, ?\\Closure $now = null): A\\KingdomBriefTools {
         return new A\\KingdomBriefTools($context, new TestSource(), new A\\ProposalStore($pool ?? new TestPool(), 900, $now));
     }

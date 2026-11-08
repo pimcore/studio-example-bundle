@@ -285,7 +285,7 @@ test('AC1: the owner confirms a pending proposal: edit is re-checked on the revi
 
 test('AC1: the Pimcore writer saves one note of type "Supplier note" on the asset with the text and the supplier\'s name in its data, and sets no Pimcore author', () => {
   const r = php(`
-    \\Pimcore\\Model\\Asset::$assets[10] = new \\Pimcore\\Model\\Asset(10, '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster');
+    \\Pimcore\\Model\\Asset::$assets[10] = new \\Pimcore\\Model\\Asset(10, '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster');
     $pools = new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\DataPool\\DataPoolConfigService();
     $backend = new N\\PimcoreSupplierNoteBackend(new TestEnvironmentStub(), $pools, new TestAuthorization());
     $noteId = $backend->writeSupplierNote(10, 3, 'Loopwerk Engineering', ${JSON.stringify(NOTE_TEXT)});
@@ -309,7 +309,7 @@ test('AC1: the Pimcore writer saves one note of type "Supplier note" on the asse
 
 test('AC1: the edit re-check goes through the Portal Engine\'s data-pool voter: isGranted(edit, asset) with the demo\'s data pool current, which is restored afterwards', () => {
   const r = php(`
-    \\Pimcore\\Model\\Asset::$assets[10] = new \\Pimcore\\Model\\Asset(10, '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster');
+    \\Pimcore\\Model\\Asset::$assets[10] = new \\Pimcore\\Model\\Asset(10, '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster');
     $pools = new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\DataPool\\DataPoolConfigService();
     $pools->known = [33];
     $granted = new TestAuthorization(['edit'], $pools);
@@ -467,7 +467,7 @@ test('AC4: the Pimcore backend removes only notes of type "Supplier note" on the
 
 test('AC4: the demo\'s fixture assets are the assets under the park\'s asset folder', () => {
   const r = php(`
-    \\Pimcore\\Model\\Asset::$listed = [new \\Pimcore\\Model\\Asset(10, '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster'), new \\Pimcore\\Model\\Asset(20, '/Pimcore Kingdom/Night Fury/night-fury.coaster')];
+    \\Pimcore\\Model\\Asset::$listed = [new \\Pimcore\\Model\\Asset(10, '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster'), new \\Pimcore\\Model\\Asset(20, '/Pimcore Kingdom/Ride designs/Night Fury/night-fury.coaster')];
     $backend = new N\\PimcoreSupplierNoteBackend(new TestEnvironmentStub(), new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\DataPool\\DataPoolConfigService(), new TestAuthorization());
     echo json_encode(['ids' => $backend->demoAssetIds(), 'conditions' => \\Pimcore\\Model\\Asset\\Listing::$conditions]);
   `);

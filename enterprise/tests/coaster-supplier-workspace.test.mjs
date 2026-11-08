@@ -147,7 +147,7 @@ namespace {
     }
     // The demo in its middle: revision 2 uploaded over revision 1, and a second design next to it.
     function playDemo(MemoryEnvironment $env): void {
-        $folder = '/Pimcore Kingdom/Thunder Loop';
+        $folder = '/Pimcore Kingdom/Ride designs/Thunder Loop';
         $env->deleteAsset($folder, 'thunder-loop.coaster');
         $env->createAsset($folder, 'thunder-loop.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev2.coaster'));
         $env->createAsset($folder, 'thunder-loop-rev3.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev3.coaster'));
@@ -161,9 +161,9 @@ const php = (body) =>
 
 const golden = JSON.parse(read(join(demoData, 'expected-metadata.json')));
 const rev1 = read(join(demoData, 'thunder-loop-rev1.coaster'));
-const COASTER = '/Pimcore Kingdom/Thunder Loop/thunder-loop.coaster';
+const COASTER = '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster';
 const SUPPLIER = 'supplier@loopwerk.example';
-const THUNDER_LOOP = '/Pimcore Kingdom/Thunder Loop';
+const THUNDER_LOOP = '/Pimcore Kingdom/Ride designs/Thunder Loop';
 const BRANDING = '/Pimcore Kingdom/Branding';
 const PERMISSIONS = ['view', 'download', 'edit', 'update', 'create', 'delete', 'subfolder'];
 const LEGACY = 'Theme Park of Tomorrow';

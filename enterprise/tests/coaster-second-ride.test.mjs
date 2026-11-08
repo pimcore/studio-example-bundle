@@ -1,5 +1,5 @@
 // F238: a second demo ride design, Thunder Loop Twister (demo-data/thunder-loop-twister.coaster): Loopwerk's
-// alternative design for the same ride, which the supplier uploads live into /Pimcore Kingdom/Thunder Loop in demo 1
+// alternative design for the same ride, which the supplier uploads live into /Pimcore Kingdom/Ride designs/Thunder Loop in demo 1
 // (DR-P95). Its golden figures sit under expected-metadata.json's `variants`; setup never uploads it, reset removes it
 // after the supplier uploaded it, and the agent's recorded brief check still answers for thunder-loop.coaster only.
 // Needs the php CLI (8.1+). The setup and reset tests use the in-memory environment of coaster-setup.test.mjs, the
@@ -20,7 +20,7 @@ const read = (path) => readFileSync(path, 'utf8');
 const readJson = (path) => JSON.parse(read(path));
 
 const TWISTER = 'thunder-loop-twister.coaster';
-const FOLDER = '/Pimcore Kingdom/Thunder Loop';
+const FOLDER = '/Pimcore Kingdom/Ride designs/Thunder Loop';
 const COASTER = `${FOLDER}/thunder-loop.coaster`;
 const SUPPLIER = 'supplier@loopwerk.example';
 const FIVE = ['maxHeight', 'length', 'inversions', 'topSpeed', 'duration'];
@@ -440,7 +440,7 @@ namespace {
     function check(array $assets): array {
         $source = new TwoDesignsSource($assets);
         $pool = new TestPool();
-        $tools = new A\\KingdomBriefTools(new A\\PortalUserContext(new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\Security\\SecurityService(new TestPortalUser(7, ['/Pimcore Kingdom/Thunder Loop'])), new TestTokenStorage()), $source, new A\\ProposalStore($pool, 900));
+        $tools = new A\\KingdomBriefTools(new A\\PortalUserContext(new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\Security\\SecurityService(new TestPortalUser(7, ['/Pimcore Kingdom/Ride designs/Thunder Loop'])), new TestTokenStorage()), $source, new A\\ProposalStore($pool, 900));
         $player = new R\\ReplayPlayer($tools, ${JSON.stringify(replayFile)}, static function (int $ms): void {}, static fn (): int => 0, static fn (): string => 'm1', $source);
         $events = [];
         $player->play('Does my latest Thunder Loop revision meet the brief?', function (array $e) use (&$events): void { $events[] = $e; });
@@ -454,7 +454,7 @@ const agent = (body) => runPhp(`${agentStubs}\nnamespace {\n${body}\n}\n`);
 
 const rev = (file) => [golden.revisions[file].maxHeight, golden.revisions[file].length];
 const twisterFigures = [golden.variants[TWISTER].maxHeight, golden.variants[TWISTER].length];
-const NIGHT_FURY = [20, '/Pimcore Kingdom/Night Fury/night-fury.coaster', [[40, 500]]];
+const NIGHT_FURY = [20, '/Pimcore Kingdom/Ride designs/Night Fury/night-fury.coaster', [[40, 500]]];
 // Asset ids: the Twister 5 (listed first), thunder-loop.coaster 10, night-fury 20 (outside the workspace).
 const assets = (thunderLoop, twisterRevisions) => ({
   5: [`${FOLDER}/${TWISTER}`, twisterRevisions],
