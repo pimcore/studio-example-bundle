@@ -408,15 +408,12 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         $asset->save();
     }
 
-    /** The data pool's first workspace row, as the wizard writes it (WizardService::addWorkspaceBlock()). */
-    private static function workspacePathName(): string
-    {
-        return Editable::buildChildEditableName(WorkspaceConfig::WORKSPACE_PATH, 'relation', [DataPoolConfig::WORKSPACE_DEFINITION], 1);
-    }
-
     public function dataPoolRoot(int $dataPoolId): ?string
     {
-        $editable = Document\Page::getById($dataPoolId, ['force' => true])?->getEditable(self::workspacePathName());
+        $editable = Document\Page::getById($dataPoolId, ['force' => true])?->getEditable(
+            // The data pool's first workspace row, as the wizard writes it (WizardService::addWorkspaceBlock()).
+            Editable::buildChildEditableName(WorkspaceConfig::WORKSPACE_PATH, 'relation', [DataPoolConfig::WORKSPACE_DEFINITION], 1)
+        );
         $element = $editable instanceof Editable\Relation ? $editable->getElement() : null;
 
         return $element instanceof Asset ? $element->getRealFullPath() : null;
@@ -438,7 +435,8 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         $relation = new Editable\Relation();
         $relation->setDataFromEditmode(['id' => $target->getId(), 'type' => 'asset', 'subtype' => 'folder']);
         $relation->setParentBlockNames([DataPoolConfig::WORKSPACE_DEFINITION]);
-        $relation->setName(self::workspacePathName());
+        // The first workspace row's path relation, as the wizard writes it (WizardService::addWorkspaceBlock()).
+        $relation->setName(Editable::buildChildEditableName(WorkspaceConfig::WORKSPACE_PATH, 'relation', [DataPoolConfig::WORKSPACE_DEFINITION], 1));
         $page->setEditable($relation);
         $page->save();
         Cache::clearAll();

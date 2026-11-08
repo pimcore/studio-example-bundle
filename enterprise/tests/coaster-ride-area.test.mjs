@@ -25,7 +25,7 @@ namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
     interface PortalPluginConfigProviderInterface {}
 }
 namespace {
-    foreach (['Coaster/CoasterValidator', 'Coaster/CoasterMetadataExtractor', 'Command/CoasterDemo/DemoEnvironment', 'Command/CoasterDemo/RideArea',
+    foreach (['Coaster/CoasterValidator', 'Coaster/CoasterMetadataExtractor', 'Command/CoasterDemo/DemoEnvironment', 'Command/CoasterDemo/RideArea', 'Command/CoasterDemo/ContentPages',
               'Command/CoasterDemo/BriefHtml', 'Command/CoasterDemo/CoasterDemo', 'Portal/StudioExampleEnterprisePortalPlugin'] as $file) {
         require ${JSON.stringify(src)} . '/' . $file . '.php';
     }
@@ -154,10 +154,22 @@ namespace {
         $env->createAsset($folder, 'thunder-loop.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev2.coaster'));
         $env->createAsset($folder, 'thunder-loop-rev3.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev3.coaster'));
     }
-}
+    // With content pages (F155), as the Pimcore environment: setup writes the brief and the pages, uploads their
+    // pictures to /Pimcore Kingdom/Pages and lets the supplier view them (as coaster-page-pictures.test.mjs).
+    class PagesEnvironment extends MemoryEnvironment implements \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\ContentPages {
+        public function briefHtml(int $portalId): ?string { return $this->contentPage($portalId, 'brief')['html'] ?? null; }
+        public function saveBrief(int $portalId, string $title, string $html): void { $this->saveContentPage($portalId, 'brief', $title, '', $html); }
+        public function contentPage(int $portalId, string $key): ?array { return $this->state['pages'][$key] ?? null; }
+        public function saveContentPage(int $portalId, string $key, string $title, string $icon, string $html): void {
+            $this->writes++;
+            $this->state['pages'][$key] = ['title' => $title, 'icon' => $icon, 'html' => $html];
+        }
+        public function navigationIcon(int $documentId): string { return $this->state['icons'][$documentId] ?? ''; }
+        public function setNavigationIcon(int $documentId, string $icon): void { $this->writes++; $this->state['icons'][$documentId] = $icon; }
+    }
     // The RideArea part (F292): the data pool's listing root, and a folder moved under another one, as in Pimcore
     // (the same element: what is in it and the workspaces pointing at it follow).
-    class AreaEnvironment extends MemoryEnvironment implements \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\RideArea {
+    class AreaEnvironment extends PagesEnvironment implements \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\RideArea {
         public array $roots = [];
         public array $uploadFolders = [];
         public function dataPoolRoot(int $dataPoolId): ?string { return $this->roots[$dataPoolId] ?? '/'; }
@@ -258,10 +270,13 @@ test('AC1: the pages keep their pictures and the portal its logo (paths unchange
 
 test('AC3: setup moves today\'s demo (Thunder Loop at the park root, pool on /) to the new layout in place', () => {
   const { changes, state, root, folders } = php(`
-    $env = new MemoryEnvironment();
+    $env = new PagesEnvironment();
     demo($env)->setup();
-    // Today's demo: made before F292, with the supplier's Twister uploaded next to revision 1.
+    // Today's demo: made before F292 (so the supplier has no review right on the pool's upload folder yet), with the
+    // supplier's Twister uploaded next to revision 1.
     $state = $env->state;
+    $pool = dataPool($env);
+    unset($state['users']['${SUPPLIER}']['permissions']['asset-upload-folder-reviewing___' . $pool]);
     $old = fn (string $path) => str_replace('${RIDE_DESIGNS}/', '/Pimcore Kingdom/', $path);
     foreach (['folders', 'assets'] as $kind) { $state[$kind] = array_combine(array_map($old, array_keys($state[$kind])), $state[$kind]); }
     foreach ($state['users'] as $email => $user) { $state['users'][$email]['assetWorkspaces'] = array_combine(array_map($old, array_keys($user['assetWorkspaces'])), $user['assetWorkspaces']); }
