@@ -325,8 +325,14 @@ test('AC3: the Pimcore environment moves the folder as the same element and sets
   assert.match(pimcore, /class PimcoreDemoEnvironment implements [^{]*\bRideArea\b/);
   const method = (name) => pimcore.slice(pimcore.indexOf(`public function ${name}(`), pimcore.indexOf('\n    }\n', pimcore.indexOf(`public function ${name}(`)));
   assert.match(method('moveFolder'), /setParentId\(/, 'moved, not copied');
-  assert.match(method('setDataPoolRoot'), /WorkspaceConfig::WORKSPACE_PATH/);
-  assert.match(method('setDataPoolRoot'), /DataPoolConfig::WORKSPACE_DEFINITION/);
+  // The relation's name comes from WORKSPACE_PATH in the first WORKSPACE_DEFINITION row: named in setDataPoolRoot
+  // itself or in the private workspacePathName() helper it calls (DR-F296-1, answer A).
+  const helperStart = pimcore.indexOf('private static function workspacePathName(');
+  const helper = helperStart < 0 ? '' : pimcore.slice(helperStart, pimcore.indexOf('\n    }\n', helperStart));
+  const pathName = /self::workspacePathName\(\)/.test(method('setDataPoolRoot')) ? method('setDataPoolRoot') + helper : method('setDataPoolRoot');
+  assert.match(pathName, /WorkspaceConfig::WORKSPACE_PATH/);
+  assert.match(pathName, /DataPoolConfig::WORKSPACE_DEFINITION/);
+  assert.match(method('setDataPoolRoot'), /DataPoolConfig::WORKSPACE_DEFINITION/, 'it writes the workspace block');
   assert.match(method('setDataPoolRoot'), /Cache::clearAll\(\)/, 'the portal config cache is cleared');
   assert.match(method('dataPoolRoot'), /getRealFullPath\(\)/);
 });
