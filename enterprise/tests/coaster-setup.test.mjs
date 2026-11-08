@@ -195,7 +195,8 @@ test('AC1: setup creates the portal, the supplier with a demo login, the brief a
   assert.ok(supplier, 'the supplier user exists');
   assert.equal(`${supplier.firstname} ${supplier.lastname}`, 'Loopwerk Engineering');
   assert.equal(supplier.password, 'thunder-loop');
-  assert.deepEqual(supplier.permissions, { [`portal-access___${portalId}`]: 'allow', [`data-pool-access___${dataPoolId}`]: 'allow' });
+  assert.deepEqual(supplier.permissions, { [`portal-access___${portalId}`]: 'allow', [`data-pool-access___${dataPoolId}`]: 'allow',
+    [`asset-upload-folder-reviewing___${dataPoolId}`]: 'allow' });
   assert.deepEqual(Object.keys(supplier.assetWorkspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop']);
   assert.ok(supplier.assetWorkspaces['/Pimcore Kingdom/Ride designs/Thunder Loop'].includes('create'), 'may upload');
 

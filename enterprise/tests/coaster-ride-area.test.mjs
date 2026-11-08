@@ -159,7 +159,10 @@ namespace {
     // (the same element: what is in it and the workspaces pointing at it follow).
     class AreaEnvironment extends MemoryEnvironment implements \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\RideArea {
         public array $roots = [];
+        public array $uploadFolders = [];
         public function dataPoolRoot(int $dataPoolId): ?string { return $this->roots[$dataPoolId] ?? '/'; }
+        public function uploadFolder(int $dataPoolId): ?string { return $this->uploadFolders[$dataPoolId] ?? null; }
+        public function setUploadFolder(int $dataPoolId, string $folder): void { $this->writes++; $this->uploadFolders[$dataPoolId] = $folder; }
         public function setDataPoolRoot(int $dataPoolId, string $folder): void {
             $this->writes++;
             for ($path = $folder; $path !== '/'; $path = dirname($path)) {
@@ -274,7 +277,9 @@ test('AC3: setup moves today\'s demo (Thunder Loop at the park root, pool on /) 
   assert.deepEqual(changes, [
     `Moved the folder ${OLD_THUNDER_LOOP} to ${THUNDER_LOOP}`,
     `Set the listing root of the data pool "Ride designs" to ${RIDE_DESIGNS}`,
-  ], 'the move and the root, nothing uploaded again');
+    `Set the upload folder of the data pool "Ride designs" to ${THUNDER_LOOP}`,
+    'Set up the supplier Loopwerk Engineering (supplier@loopwerk.example)',
+  ], 'the move, the root, the upload folder and the supplier\'s review right, nothing uploaded again');
   assert.equal(root, RIDE_DESIGNS);
   assert.deepEqual(folders, [THUNDER_LOOP]);
   assert.deepEqual(Object.keys(state.assets).filter((p) => p.includes('/Thunder Loop/')).sort(),
@@ -310,3 +315,36 @@ test('AC3: the Pimcore environment moves the folder as the same element and sets
   assert.match(method('setDataPoolRoot'), /Cache::clearAll\(\)/, 'the portal config cache is cleared');
   assert.match(method('dataPoolRoot'), /getRealFullPath\(\)/);
 });
+
+// AC2 (DR-F292-1, answer A): portal_engine 2026.x shows an Upload button only on a pool's Upload Folder screen
+// (AssetGrid: "Upload Folder" in the listing when /list returns `uploadFolder`, then "Upload new assets" there).
+// /list returns it when the pool has an upload folder and the user holds create on it; the screen lists every
+// contributor's files only with asset-upload-folder-reviewing___<pool>, else only the user's own.
+test('AC2: setup makes Thunder Loop the pool\'s upload folder and lets the supplier review it, so the Upload button shows', () => {
+  const { changes, uploadFolder, permissions, poolId, workspaces, second } = php(`
+    $env = new AreaEnvironment();
+    $changes = demo($env)->setup();
+    echo json_encode(['changes' => $changes, 'uploadFolder' => $env->uploadFolder(dataPool($env)), 'poolId' => dataPool($env),
+      'permissions' => $env->state['users']['${SUPPLIER}']['permissions'],
+      'workspaces' => $env->state['users']['${SUPPLIER}']['assetWorkspaces'], 'second' => demo($env)->setup()]);
+  `);
+  assert.equal(uploadFolder, THUNDER_LOOP, 'uploads through the button land in Thunder Loop, as a dropped file does');
+  assert.ok(changes.includes(`Set the upload folder of the data pool "Ride designs" to ${THUNDER_LOOP}`), changes.join('\n'));
+  assert.equal(permissions[`asset-upload-folder-reviewing___${poolId}`], 'allow', 'the Upload Folder screen shows revision 1 too');
+  assert.ok(workspaces[THUNDER_LOOP].includes('create'), 'create on the upload folder: /list offers the Upload Folder button');
+  assert.deepEqual(second, [], 'a second setup changes nothing');
+});
+
+test('AC2: the Pimcore environment writes the pool\'s upload_folder relation and reads it back', () => {
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  const method = (name) => pimcore.slice(pimcore.indexOf(`public function ${name}(`), pimcore.indexOf('\n    }\n', pimcore.indexOf(`public function ${name}(`)));
+  assert.match(method('setUploadFolder'), /AssetConfig::UPLOAD_FOLDER/);
+  assert.match(method('setUploadFolder'), /Editable\\Relation/);
+  assert.match(method('setUploadFolder'), /Cache::clearAll\(\)/, 'the portal config cache is cleared');
+  assert.match(method('uploadFolder'), /AssetConfig::UPLOAD_FOLDER/);
+  assert.match(method('uploadFolder'), /getRealFullPath\(\)/);
+  const area = read(join(src, 'Command/CoasterDemo/RideArea.php'));
+  assert.match(area, /public function uploadFolder\(int \$dataPoolId\): \?string;/);
+  assert.match(area, /public function setUploadFolder\(int \$dataPoolId, string \$folder\): void;/);
+});
+
