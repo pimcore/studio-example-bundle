@@ -24,7 +24,8 @@ one line per change and ends with the demo login.
 | --- | --- |
 | The portal "Pimcore Kingdom" with the asset data pool "Ride designs", English only | a new site on `--domain`, made by the Portal Engine's own portal wizard |
 | The example portal plugin `studio-example-enterprise` in the portal's **Enabled plugins** (the coaster tile and preview need it); other plugins there stay | the portal's configuration document; setup saves it and clears the cache |
-| The park's brief ([`demo-data/brief.md`](../../demo-data/brief.md)) as a content page "Brief: Thunder Loop", and three pages for suppliers from [`demo-data/pages/`](../../demo-data/pages): "About the park", "Working with the Kingdom" and "Safety first". Each has a navigation icon from portal_engine's bundled icon set (`clipboard-list`, `landmark`, `handshake`, `shield-alt`; the data pool gets `drafting-compass`), so none shows the rail's generic icon; a missing icon or changed text is put back, an editor's own pages stay | next to the data pool in the portal's navigation, in this order |
+| The park's open ride briefs (F293, browse only): a data object class "Ride brief" (`RideBrief`: title, ride type, max height (m), max length (m), inversions allowed, target opening, status open/closed, description; with a custom layout "Portal detail" of the same fields, which the portal's detail page shows), the three briefs of [`demo-data/open-briefs.json`](../../demo-data/open-briefs.json) (Thunder Loop at max height 45 m, Splash Canyon, Little Thunder, all open) as its objects, and the data-object data pool "Open briefs" listing them, icon `clipboard-list`, right after "Ride designs". The supplier gets access to the pool and a view-only data object workspace on the briefs' folder: browse, no edit, no apply. It replaces the content page "Brief: Thunder Loop": setup removes the demo's brief page on a demo from before, and the start page's brief tile opens the pool. A changed brief or field is put back; an editor's own briefs stay | the class in Settings > Data Objects > Classes (group "Coaster demo"); the briefs in the data object folder `/Pimcore Kingdom/Open briefs`; the data pool in the portal's navigation |
+| Three pages for suppliers from [`demo-data/pages/`](../../demo-data/pages): "About the park", "Working with the Kingdom" and "Safety first" (on an environment without the open briefs also the park's brief, [`demo-data/brief.md`](../../demo-data/brief.md), as the content page "Brief: Thunder Loop"). Each has a navigation icon from portal_engine's bundled icon set (`clipboard-list`, `landmark`, `handshake`, `shield-alt`; the data pool gets `drafting-compass`), so none shows the rail's generic icon; a missing icon or changed text is put back, an editor's own pages stay | next to the data pool in the portal's navigation, in this order |
 | The coasters' own area: the data pool "Ride designs" lists from `/Pimcore Kingdom/Ride designs` (each ride's folder below it, Thunder Loop first), so the page pictures (`/Pimcore Kingdom/Pages`) and the branding (`/Pimcore Kingdom/Branding`) are in no pool the supplier browses. A Thunder Loop folder from before (at `/Pimcore Kingdom/Thunder Loop`) is moved there in place, with its files and the supplier's workspace | the data pool's first **Workspace** row (the Portal Engine lists from the workspaces' common folder; its wizard puts it on `/`); setup saves it and clears the cache |
 | The supplier's Upload button: Thunder Loop is the data pool's upload folder, so the listing offers **Upload Folder** to anyone with create there, and that screen has **Upload new assets**, which opens the portal's upload dialog (the 2026.x frontend shows the button nowhere else, DR-F292-1). The supplier may review the upload folder, so the screen lists revision 1 next to the upload | the data pool's **Upload Folder** setting; the permission `asset-upload-folder-reviewing___<data pool id>` on the supplier |
 | The park's own-made logo ([`demo-data/branding/`](../../demo-data/branding/LICENSE.md), SVG and PNG) in `/Pimcore Kingdom/Branding`, set as the portal's **Logo**, with **brand_primary** `#6428b4` (Pimcore Purple, the slides' colour) and **brand_accent** `#502090` (its darker shade) | the portal's configuration document (Style Settings); setup saves it and clears the cache. A changed colour or a missing logo file is put back |
@@ -49,8 +50,9 @@ nothing. The earlier names are in `CoasterDemo::LEGACY_PARK_NAMES`.
 - `coaster-demo:reset` deletes every other asset in `/Pimcore Kingdom/Ride designs/Thunder Loop`, replaces a changed
   `thunder-loop.coaster` with a fresh revision 1 (no version history), then runs setup. At revision 1 it changes
   nothing.
-- `coaster-demo:reset --all` deletes the supplier, the folder `/Pimcore Kingdom` (or one under an earlier park name)
-  and the portal with its site.
+- `coaster-demo:reset --all` deletes the supplier, the folder `/Pimcore Kingdom` (or one under an earlier park name),
+  the data object folder `/Pimcore Kingdom` with the open briefs, the class "Ride brief" (once no object of it is
+  left) and the portal with its site (the "Open briefs" data pool with it).
   It deletes only what the demo made: setup marks each element it creates with the property `coaster-demo`.
 
 Before either, the reset command dispatches `CoasterDemo\CoasterDemoResetEvent`, so other demo state can be dropped
@@ -71,7 +73,7 @@ above).
 Test, from the repository root: `enterprise/tests/coaster-setup.test.mjs` runs setup and reset against an in-memory
 environment; `enterprise/tests/coaster-setup-plugin.test.mjs` covers enabling the plugin;
 `enterprise/tests/coaster-branding.test.mjs` the logo, its safety and the brand colours' contrast;
-`enterprise/tests/coaster-translation.test.mjs` the tree's root-folder text.
+`enterprise/tests/coaster-translation.test.mjs` the tree's root-folder text; `enterprise/tests/coaster-briefs.test.mjs` the open briefs (F293).
 
 ## Code
 
@@ -81,5 +83,7 @@ environment; `enterprise/tests/coaster-setup-plugin.test.mjs` covers enabling th
 - `CoasterDemo/ContentPages.php`: the demo's content pages with their navigation icons, beside that interface
 - `CoasterDemo/PimcoreDemoEnvironment.php`: both interfaces on Pimcore and the Portal Engine
 - `CoasterDemo/BriefHtml.php`: the brief's Markdown as the WYSIWYG brick's HTML
+- `CoasterDemo/RideBriefs.php`: the open briefs' part of the environment (F293): the class, the briefs, the data-object
+  data pool, the old brief page's removal; `PimcoreDemoEnvironment` implements it
 - Test: `tests/coaster-setup.test.mjs` runs setup and reset against an in-memory environment;
   `tests/coaster-setup-plugin.test.mjs` the plugin step; `tests/coaster-content-pages.test.mjs` the content pages and their icons

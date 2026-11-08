@@ -6,7 +6,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
 
 /**
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
- * plugin enabled, the park's brief and three pages for suppliers (About the park, Working with the Kingdom, Safety
+ * plugin enabled, the park's open ride briefs as data objects in an "Open briefs" data pool (F293; the brief page where an environment has no RideBriefs) and three pages for suppliers (About the park, Working with the Kingdom, Safety
  * first) as content pages in it, each with its navigation icon, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
  * metadata, and the park's own logo and brand colours on the portal, an English text for the asset tree's first line, and the small "Talk" link at the end of the portal footer (F157), and a start page on the portal root (F208): portal_engine's Feature (the park picture), Hero and large Entry tiles to the brief, the ride designs and the content pages. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.

@@ -7,7 +7,8 @@ park's brief for the change-control demo. All names are fictional.
 
 | File | What it is |
 | --- | --- |
-| `brief.md` | The park's brief: requirements, target audience, a maximum height of 45 m. |
+| `brief.md` | The park's brief: requirements, target audience, a maximum height of 45 m. Since F293 the portal shows it as the Thunder Loop ride brief of `open-briefs.json`; `coaster-demo:setup` writes the page only on an environment without the open briefs. |
+| `open-briefs.json` | The park's open ride briefs (F293), which `coaster-demo:setup` writes as "Ride brief" data objects for the portal's "Open briefs" data pool: Thunder Loop (family thrill coaster, max height 45 m, two inversions, the facts of `brief.md`), Splash Canyon (a water ride) and Little Thunder (a kids' coaster), all open. |
 | `thunder-loop-rev1.coaster` | Revision 1: the first draft (lower lift hill, a turn instead of the helix). |
 | `thunder-loop-rev2.coaster` | Revision 2: the approved baseline. |
 | `thunder-loop-rev3.coaster` | Revision 3: two changes to revision 2: the first loop's diameter 24 to 30 m (within the brief) and the lift hill's height 45 to 52 m (above the brief's 45 m limit). |
@@ -21,7 +22,7 @@ park's brief for the change-control demo. All names are fictional.
 ## How to run
 
 Nothing to run: `bin/console coaster-demo:setup` ([`src/Command/README.md`](../src/Command/README.md)) uploads revision 1
-and the brief, `bin/console coaster-demo:change-set` ([`src/ChangeControl/README.md`](../src/ChangeControl/README.md))
+and writes the open briefs, `bin/console coaster-demo:change-set` ([`src/ChangeControl/README.md`](../src/ChangeControl/README.md))
 proposes revision 3. To look at a file, open it in the viewer
 ([`assets/shared/coaster/viewer/README.md`](../assets/shared/coaster/viewer/README.md)), or upload it to any asset
 folder to get its metadata ([`src/Coaster/README.md`](../src/Coaster/README.md)).
