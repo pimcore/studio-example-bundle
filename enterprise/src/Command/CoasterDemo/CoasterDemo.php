@@ -134,6 +134,10 @@ class CoasterDemo
 
     public const DATA_POOL_ACCESS = 'data-pool-access___';
 
+    // The Upload Folder screen lists every contributor's files only with this, else only the user's own (F292), so the
+    // supplier sees revision 1 next to an upload.
+    public const UPLOAD_FOLDER_REVIEWING = 'asset-upload-folder-reviewing___';
+
     // What the supplier may do in the asset workspace: everything an upload and its edits need.
     public const WORKSPACE_PERMISSIONS = ['view', 'download', 'edit', 'update', 'create', 'delete', 'subfolder'];
 
@@ -321,6 +325,7 @@ class CoasterDemo
             'permissions' => [
                 self::PORTAL_ACCESS . $portalId => 'allow',
                 self::DATA_POOL_ACCESS . $dataPoolId => 'allow',
+                self::UPLOAD_FOLDER_REVIEWING . $dataPoolId => 'allow',
             ],
             // A supplier saved with the park root (before F134) no longer matches, so setup narrows it once. The pages'
             // pictures (F160) are theirs to view only, and only when a page has any.
@@ -331,7 +336,8 @@ class CoasterDemo
 
     /**
      * The coasters' own area (F292): moves a Thunder Loop folder from the park root (a demo set up before F292) into the
-     * ride-designs folder in place, then points the data pool at that folder where it points elsewhere. Before the
+     * ride-designs folder in place, then points the data pool at that folder where it points elsewhere, and makes
+     * Thunder Loop its upload folder (the supplier's Upload button). Before the
      * supplier step, so the supplier's workspace (which follows the folder) already matches.
      *
      * @return string[] what was changed
@@ -347,6 +353,11 @@ class CoasterDemo
         if ($env->dataPoolRoot($dataPoolId) !== self::RIDE_DESIGNS_FOLDER) {
             $env->setDataPoolRoot($dataPoolId, self::RIDE_DESIGNS_FOLDER);
             $changes[] = sprintf('Set the listing root of the data pool "%s" to %s', self::DATA_POOL_NAME, self::RIDE_DESIGNS_FOLDER);
+        }
+        // The supplier's Upload button (DR-F292-1): uploads through it land in Thunder Loop, as a dropped file does.
+        if ($env->uploadFolder($dataPoolId) !== self::COASTER_FOLDER) {
+            $env->setUploadFolder($dataPoolId, self::COASTER_FOLDER);
+            $changes[] = sprintf('Set the upload folder of the data pool "%s" to %s', self::DATA_POOL_NAME, self::COASTER_FOLDER);
         }
 
         return $changes;

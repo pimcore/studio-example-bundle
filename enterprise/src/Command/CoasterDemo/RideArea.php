@@ -24,4 +24,14 @@ interface RideArea
      * what is in it, its versions and the workspaces pointing at it follow.
      */
     public function moveFolder(string $folder, string $parent): void;
+
+    /**
+     * The path of the data pool's upload folder (its "upload_folder" setting), or null if it has none. With one, and
+     * create on it, the new frontend offers "Upload Folder" in the listing and an Upload button on that screen
+     * (DR-F292-1): portal_engine 2026.x shows the button nowhere else.
+     */
+    public function uploadFolder(int $dataPoolId): ?string;
+
+    /** Sets the data pool's upload folder to $folder (made, and marked, if missing); saves it and clears the cache. */
+    public function setUploadFolder(int $dataPoolId, string $folder): void;
 }

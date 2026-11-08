@@ -3,6 +3,7 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo;
 
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\ControllerReference;
+use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\AssetConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\DataPoolConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\DataPool\WorkspaceConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\ContentConfig;
@@ -438,6 +439,29 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         $relation->setDataFromEditmode(['id' => $target->getId(), 'type' => 'asset', 'subtype' => 'folder']);
         $relation->setParentBlockNames([DataPoolConfig::WORKSPACE_DEFINITION]);
         $relation->setName(self::workspacePathName());
+        $page->setEditable($relation);
+        $page->save();
+        Cache::clearAll();
+    }
+
+    public function uploadFolder(int $dataPoolId): ?string
+    {
+        $editable = Document\Page::getById($dataPoolId, ['force' => true])?->getEditable(AssetConfig::UPLOAD_FOLDER);
+        $element = $editable instanceof Editable\Relation ? $editable->getElement() : null;
+
+        return $element instanceof Asset ? $element->getRealFullPath() : null;
+    }
+
+    /** As the data pool's settings save it: the top-level "upload_folder" relation (asset folders only). */
+    public function setUploadFolder(int $dataPoolId, string $folder): void
+    {
+        $page = Document\Page::getById($dataPoolId, ['force' => true])
+            ?? throw new \RuntimeException(sprintf('The demo portal has no data pool %d.', $dataPoolId));
+        $target = $this->markedFolder($folder);
+        $page->getEditables(); // keeps the other settings, as in enablePlugin()
+        $relation = new Editable\Relation();
+        $relation->setDataFromEditmode(['id' => $target->getId(), 'type' => 'asset', 'subtype' => 'folder']);
+        $relation->setName(AssetConfig::UPLOAD_FOLDER);
         $page->setEditable($relation);
         $page->save();
         Cache::clearAll();
