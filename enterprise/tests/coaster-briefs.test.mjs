@@ -155,10 +155,9 @@ namespace {
         $env->createAsset($folder, 'thunder-loop.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev2.coaster'));
         $env->createAsset($folder, 'thunder-loop-rev3.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev3.coaster'));
     }
-}
     // The RideArea part (F292): the data pool's listing root, and a folder moved under another one, as in Pimcore
     // (the same element: what is in it and the workspaces pointing at it follow).
-    class AreaEnvironment extends MemoryEnvironment implements \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\RideArea {
+    class AreaEnvironment extends MemoryEnvironment implements \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\RideArea {
         public array $roots = [];
         public array $uploadFolders = [];
         public function dataPoolRoot(int $dataPoolId): ?string { return $this->roots[$dataPoolId] ?? '/'; }
@@ -207,8 +206,8 @@ namespace {
 
     // F293: the content pages (the brief page the open briefs replace), the start page and the RideBriefs part. The
     // navigation is the portal's pages in order: the data pool first, then the pages as setup saves them.
-    class BriefsEnvironment extends AreaEnvironment implements \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ContentPages,
-        \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\StartPage, \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\RideBriefs {
+    class BriefsEnvironment extends AreaEnvironment implements \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\ContentPages,
+        \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\StartPage, \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\RideBriefs {
         public array $pages = [];
         public array $icons = [];
         public array $navigation = [];
@@ -318,7 +317,7 @@ namespace {
         $env->translations = $before->translations;
         $env->roots = $before->roots;
         $env->uploadFolders = $before->uploadFolders;
-        $demo = new \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo($env);
+        $demo = new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo($env);
         $env->saveContentPage(0, 'brief', 'Brief: Thunder Loop', 'clipboard-list.svg', $demo->briefHtml());
         return $env;
     }
@@ -451,7 +450,7 @@ test('AC3: Ask the brief reads Thunder Loop\'s brief object, 45 m included; the 
   const { text } = php(`
     $env = new BriefsEnvironment();
     demo($env)->setup();
-    echo json_encode(['text' => \Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo::briefText($env->briefs('RideBrief', '${BRIEFS_FOLDER}')['Thunder Loop'])]);
+    echo json_encode(['text' => \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo::briefText($env->briefs('RideBrief', '${BRIEFS_FOLDER}')['Thunder Loop'])]);
   `);
   assert.match(text, /^Ride brief: Thunder Loop\n/);
   assert.match(text, /\nMax height \(m\): 45\n/);
