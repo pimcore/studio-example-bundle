@@ -465,3 +465,62 @@ test('AC3: Ask the brief reads Thunder Loop\'s brief object, 45 m included; the 
   assert.equal(replay.briefLimitM, 45, 'the recorded answer\'s limit');
   assert.match(JSON.stringify(replay.turns[0].steps), /no point of the track may be higher than \{briefLimitM\} m above the station/);
 });
+
+// F299: the try's setup crashed with "RideBrief::setMaxHeight(): Argument #1 ($maxHeight) must be of type ?string, int
+// given": briefLayout() makes the numeric fields with a decimal precision, so Pimcore generates ?string setters, and the
+// briefs' numbers are ints. The stubs below mirror Pimcore's Numeric::getParameterTypeDeclaration() (integer: ?int,
+// decimal size or precision: ?string, else ?float); the setters are typed like the generated ones, under strict types
+// as in AbstractObject::set().
+const setterCheck = (precision, integer) => `declare(strict_types=1);
+namespace Pimcore\\Model\\DataObject\\ClassDefinition {
+    abstract class Data { private string $name = ''; public function setName(string $n): void { $this->name = $n; } public function getName(): string { return $this->name; } }
+}
+namespace Pimcore\\Model\\DataObject\\ClassDefinition\\Data {
+    class Numeric extends \\Pimcore\\Model\\DataObject\\ClassDefinition\\Data {
+        private ?int $decimalPrecision = null; private bool $integer = false;
+        public function setDecimalPrecision(?int $p): void { $this->decimalPrecision = $p; }
+        public function setInteger(bool $i): void { $this->integer = $i; }
+        public function getParameterTypeDeclaration(): ?string { return '?' . ($this->integer ? 'int' : ($this->decimalPrecision !== null ? 'string' : 'float')); }
+    }
+    class Input extends \\Pimcore\\Model\\DataObject\\ClassDefinition\\Data {}
+}
+namespace {
+    foreach (['DemoEnvironment', 'ContentPages', 'PortalFooter', 'StartPage', 'RideArea', 'RideBriefs', 'CoasterDemo', 'PimcoreDemoEnvironment'] as $file) {
+        require_once ${JSON.stringify(src)} . '/Command/CoasterDemo/' . $file . '.php';
+    }
+    $setters = ['?string' => fn (?string $v) => $v, '?int' => fn (?int $v) => $v, '?float' => fn (?float $v) => $v];
+    $setterValue = new \\ReflectionMethod(\\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\PimcoreDemoEnvironment::class, 'setterValue');
+    $briefs = json_decode(file_get_contents(${JSON.stringify(join(demoData, 'open-briefs.json'))}), true)['briefs'];
+    $out = [];
+    foreach ($briefs as $brief) {
+        foreach (\\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo::BRIEF_FIELDS as $name => $field) {
+            if ($field[0] !== 'numeric') { continue; }
+            $definition = new \\Pimcore\\Model\\DataObject\\ClassDefinition\\Data\\Numeric();
+            $definition->setName($name);
+            ${precision === null ? '' : `$definition->setDecimalPrecision(${precision});`}
+            ${integer ? '$definition->setInteger(true);' : ''}
+            $type = $definition->getParameterTypeDeclaration();
+            $value = $setters[$type]($setterValue->invoke(null, $definition, $brief[$name]));
+            $out[] = [$brief['key'], $name, $type, get_debug_type($value), (float) $value === (float) $brief[$name]];
+        }
+    }
+    echo json_encode($out);
+}
+`;
+
+test('AC1: every numeric brief value reaches its setter in the type the generated RideBrief class takes', () => {
+  // The class as setup creates it (briefLayout's decimal precision, read from the source), and the other two kinds.
+  const precision = Number(pimcore.match(/Numeric\) \{\s*\$definition->setDecimalPrecision\((\d+)\)/)[1]);
+  for (const [p, integer, want] of [[precision, false, 'string'], [null, true, 'int'], [null, false, 'float']]) {
+    const rows = JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-r', setterCheck(p, integer)], { encoding: 'utf8' }));
+    assert.equal(rows.length, 9, 'three briefs with three numeric fields each');
+    for (const [key, name, type, got, same] of rows) {
+      assert.equal(type, `?${want}`, `${key}.${name}: the generated setter's type`);
+      assert.equal(got, want, `${key}.${name} reaches its setter as ${want}`);
+      assert.ok(same, `${key}.${name} keeps its value`);
+    }
+  }
+  const thunder = JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-r', setterCheck(precision, false)], { encoding: 'utf8' }))
+    .find(([key, name]) => key === 'Thunder Loop' && name === 'maxHeight');
+  assert.ok(thunder && thunder[4], 'Thunder Loop keeps its max height 45 m');
+});

@@ -629,11 +629,30 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
             $object->setKey($key);
             $object->setProperty(self::MARK, 'bool', true, false, false);
         }
+        $class = $object->getClass();
         foreach ($values as $name => $value) {
-            $object->set($name, $value);
+            $object->set($name, self::setterValue($class->getFieldDefinition($name), $value));
         }
         $object->setPublished(true);
         $object->save();
+    }
+
+    /**
+     * A number of the brief data in the type the generated setter of its field takes (F299): a numeric field with a
+     * decimal precision (as briefLayout() creates it) takes ?string, an integer one ?int, any other ?float.
+     */
+    private static function setterValue(?DataObject\ClassDefinition\Data $field, mixed $value): mixed
+    {
+        if (!$field instanceof DataObject\ClassDefinition\Data\Numeric || !(is_int($value) || is_float($value))) {
+            return $value;
+        }
+        $type = (string) $field->getParameterTypeDeclaration();
+
+        return match (true) {
+            str_contains($type, 'string') => (string) $value,
+            str_contains($type, 'int') => (int) $value,
+            default => (float) $value,
+        };
     }
 
     public function objectFolderExists(string $folder): bool
