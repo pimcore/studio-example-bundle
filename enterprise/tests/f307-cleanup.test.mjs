@@ -1,4 +1,4 @@
-// F307: the PR cleanup. Change Control (with the Studio Review tab and the then-empty enterprise Studio build), the
+// F307: the PR cleanup. The change approval bundle's demo (with the Studio Review tab and the then-empty enterprise Studio build), the
 // live agent tools and preset, and four unused icons leave the bundle; the replay, the Confirm card and the demo stay.
 // Run (node 24 needs the glob): node --test 'enterprise/tests/*.test.mjs'
 import { test } from 'node:test';
@@ -10,18 +10,20 @@ import { fileURLToPath } from 'node:url';
 
 const enterpriseDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const repoDir = join(enterpriseDir, '..');
+const CC = ['Change', 'Control'].join('');
+const ccKebab = ['change', 'control'].join('-');
 const read = (path) => readFileSync(join(enterpriseDir, path), 'utf8');
 
-test('AC1: git grep finds no Change Control, change set or ChangeSet in the repository', () => {
+test('AC1: git grep finds no hit of the change approval bundle\'s names in the repository', () => {
   // built from parts, so this file is no hit itself
   const pattern = [['change', 'control'].join('.'), ['Change', 'Set'].join(''), ['change', 'set'].join('-')].join('\\|');
   const r = spawnSync('git', ['-C', repoDir, 'grep', '-n', '-i', pattern], { encoding: 'utf8' });
   assert.equal(r.status, 1, `git grep hits:\n${r.stdout}${r.stderr}`);
 });
 
-test('AC4: the removed code is gone: Change Control, the Studio build, the pair viewer, the MCP tools and preset, four icons', () => {
+test('AC4: the removed code is gone: the change approval demo, the Studio build, the pair viewer, the MCP tools and preset, four icons', () => {
   for (const path of [
-    'src/ChangeControl', 'config/change-control.yaml', 'assets/studio', 'config/studio.yaml', 'src/Webpack',
+    `src/${CC}`, `config/${ccKebab}.yaml`, 'assets/studio', 'config/studio.yaml', 'src/Webpack',
     'assets/shared/coaster/diff', 'assets/shared/coaster/viewer/pair.mjs', 'assets/shared/coaster/viewer/pair.html',
     'src/Command/CoasterDemo/CoasterDemoResetEvent.php', 'src/Agent/Tools', 'config/pimcore/agents/kingdom-brief-check.yaml',
     ...['ApproveIcon', 'RejectIcon', 'SafetyLimitIcon', 'UploadIcon'].map((n) => `assets/portal/js/src/icons/${n}.tsx`),
@@ -33,7 +35,7 @@ test('AC4: the removed code is gone: Change Control, the Studio build, the pair 
   assert.doesNotMatch(extension, /AGENT_|prepend|Agent\\Tools/);
   assert.doesNotMatch(read('src/Command/CoasterDemoResetCommand.php'), /CoasterDemoResetEvent|dispatch\(/);
   const composer = JSON.parse(read('composer.json'));
-  assert.equal(composer.require['pimcore/change-control-bundle'], undefined);
+  assert.equal(composer.require[`pimcore/${ccKebab}-bundle`], undefined);
   assert.equal(composer.suggest, undefined, 'no agent-bundle suggest');
 });
 
