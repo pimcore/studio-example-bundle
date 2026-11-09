@@ -3,7 +3,7 @@
 The one write of the agent demo. The agent only proposes a Supplier note ([`../README.md`](../README.md),
 `ProposalStore`); the Loopwerk supplier confirms it in the portal, and this writes it as a Pimcore note on the
 revision's asset: "rev3 exceeds the 45 m limit, rev4 will lower the lift hill". It is not PimcoreAgentBundle's
-proposal pipeline, which merges Change Control branches (DR-P27): one confirm, one note.
+proposal pipeline (DR-P27): one confirm, one note.
 
 ## What it shows
 

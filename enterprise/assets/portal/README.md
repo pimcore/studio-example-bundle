@@ -24,7 +24,7 @@ what the examples register: today the **Talk** entry under the portal's navigati
 ### Own icons
 
 `js/src/icons/` holds the plugin's own icons, made for these examples (no third-party art, so no license review):
-Ride, Upload, Safety limit, Review, Approve, Reject and Talk. Each is a React component drawing an inline SVG on a
+Ride, Review and Talk. Each is a React component drawing an inline SVG on a
 24 x 24 grid in the surrounding text colour (`currentColor`), through the shared frame `CoasterIcon.tsx`. Without a
 `label` an icon is decorative (`aria-hidden="true"`) and needs visible text beside it; with one it is an image with
 that `aria-label`. Import each icon from its own file, never through a collection: the Talk entry's icon is in the

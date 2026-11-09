@@ -8,7 +8,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\ProposalStore;
 /**
  * The confirmed write: a portal user confirms the Supplier note the agent proposed (F126's ProposalStore), and exactly
  * one note is written. Everything comes from the stored proposal, never from the request. Not PimcoreAgentBundle's
- * proposal pipeline: that one merges Change Control branches (DR-P27).
+ * proposal pipeline (DR-P27).
  *
  * In order: no such (or an expired) proposal 404; another portal user's 403 (a proposal without an owner matches
  * nobody); already confirmed 409; no `edit` on the asset 403 (still pending); else the note.

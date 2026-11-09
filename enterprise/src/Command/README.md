@@ -55,20 +55,10 @@ nothing. The earlier names are in `CoasterDemo::LEGACY_PARK_NAMES`.
   left) and the portal with its site (the "Open briefs" data pool with it).
   It deletes only what the demo made: setup marks each element it creates with the property `coaster-demo`.
 
-Before either, the reset command dispatches `CoasterDemo\CoasterDemoResetEvent`, so other demo state can be dropped
-too (the Change Control seed discards its open change set there):
-
-```php
-#[AsEventListener(event: CoasterDemoResetEvent::class)]
-public function onReset(CoasterDemoResetEvent $event): void { /* ... */ }
-```
-
 ## Extension point
 
 **Symfony console commands** (`#[AsCommand]`, registered as services in `config/commands.yaml`), which create
-portals, users and assets through the Portal Engine and Pimcore. The reset command offers one extension point of its
-own: **the event `CoasterDemoResetEvent`**, for other examples to drop their demo state on reset (the listener
-above).
+portals, users and assets through the Portal Engine and Pimcore.
 
 Test, from the repository root: `enterprise/tests/coaster-setup.test.mjs` runs setup and reset against an in-memory
 environment; `enterprise/tests/coaster-setup-plugin.test.mjs` covers enabling the plugin;

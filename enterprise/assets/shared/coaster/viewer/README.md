@@ -17,9 +17,8 @@ The centre line comes from [`../geometry/track.mjs`](../geometry/track.mjs); thi
 ## Extension point
 
 None of its own: the viewer is a shared component that the extension points host. Plain DOM (`orbit.mjs`,
-`ride.mjs`, `pair.mjs`) mounts it in any element; React hosts take the component from `react.mjs` and pass their own
-React in, as the Studio Review tab's side-by-side view does
-([`studio/js/src/coaster-review/side-by-side/`](../../../studio/js/src/coaster-review/side-by-side/README.md)) and the portal's coaster preview stage
+`ride.mjs`) mounts it in any element; React hosts take the component from `react.mjs` and pass their own
+React in, as the portal's coaster preview stage does
 ([`portal/js/src/coaster/preview-stage/`](../../../portal/js/src/coaster/preview-stage/README.md)).
 
 ## Files
@@ -36,16 +35,10 @@ React in, as the Studio Review tab's side-by-side view does
   host passes its own React in, so no second copy of React is loaded. `createCoasterRide(React)` is the ride view,
   with the extra props `speed` and `autoplay`.
 - `react.d.mts`: the types of `react.mjs`, for TypeScript hosts in strict mode (the portal plugin).
-- `pair.mjs`: `mountRidePair(element, { left, right, speed })`, two rides side by side for a review, each side
-  `{ file, title, marks }`, under one Play/Pause and Restart that drive both trains at once (each ride's own buttons
-  are hidden). `pairMarks(before, after)` gives the elements to mark on each side from the coaster diff's pairing of
-  the two element lists: a changed element on both sides, a removed one on the left, an added one on the right.
-  `createRidePair(React)` in `react.mjs` is the same as a component, props `left`, `right` and `speed`.
 - `display.mjs`: the pixel ratio cap and visibility watch for the projector (F80); see [PROJECTOR.md](PROJECTOR.md).
 - `scene.mjs`: `buildCoasterScene(design, { colors, marks })`, the three.js scene (rails, spine, ties, supports, station, ground)
   without a renderer; it also builds in Node, for tests.
-- `demo.html`: the orbit view on its own page; `ride.html` the ride view; `pair.html` two rides side by side
-  (`?live=<url>&proposed=<url>&speed=<m/s>`, default Thunder Loop revision 2 and 3).
+- `demo.html`: the orbit view on its own page; `ride.html` the ride view.
 
 ## Props
 

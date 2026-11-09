@@ -1,5 +1,5 @@
 // F86: follow-up of F74's review. The extension-point index and the folder READMEs hold what F74's verifier
-// checked: nine rows, every link to an existing README, three exact headings each. Run: node --test enterprise/tests/
+// checked: the rows, every link to an existing README, three exact headings each. Run: node --test enterprise/tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -18,23 +18,23 @@ const rows = () => {
   });
 };
 
-test('AC1: the two READMEs that were missing exist and the index links them', () => {
+test('AC1: the README that was missing exists and the index links it', () => {
   const links = rows().map((r) => r.readme);
-  for (const path of ['src/Coaster/README.md', 'assets/studio/js/src/coaster-review/side-by-side/README.md']) {
+  for (const path of ['src/Coaster/README.md']) {
     assert.ok(existsSync(join(enterpriseDir, path)), `${path} exists`);
     assert.ok(links.includes(path), `the index links ${path}`);
   }
 });
 
-test('AC2: the index has fifteen rows, thirteen extension points and two None rows, each with a docs cell', () => {
+test('AC2: the index has twelve rows, ten extension points and two None rows, each with a docs cell', () => {
   const all = rows();
-  assert.equal(all.length, 15); // F48 added the portal preview stage, F49 the portal tile picture, F126 the agent tools, F127 the agent chat route, F129 the confirmed Supplier note, F128 the agent panel
+  assert.equal(all.length, 12); // F48 added the portal preview stage, F49 the portal tile picture, F126 the agent tools, F127 the agent chat route, F129 the confirmed Supplier note, F128 the agent panel; F307 removed three Studio rows
   assert.equal(all.filter((r) => r.point.startsWith('None:')).length, 2);
   for (const r of all) assert.ok(r.docs, `row "${r.point}" has a docs cell`);
   assert.doesNotMatch(read('README.md'), /^## Examples$/m, 'the old "Examples" list is gone');
 });
 
-test('AC3: each of the fifteen READMEs has the exact lines What it shows, How to run and Extension point', () => {
+test('AC3: each of the twelve READMEs has the exact lines What it shows, How to run and Extension point', () => {
   for (const r of rows()) {
     const lines = read(r.readme).split('\n');
     for (const h of ['## What it shows', '## How to run', '## Extension point']) {
@@ -56,10 +56,6 @@ test('AC5: readme-index.test.mjs names a test for each of the F74 criteria AC1, 
   for (const ac of ['AC1', 'AC2', 'AC3']) assert.match(source, new RegExp(`test\\(['"\`]${ac}: `));
 });
 
-test('AC6: the side-by-side README is a row of the index with its three sections, next to the viewer F85 changed', () => {
-  const row = rows().find((r) => r.folder === 'assets/studio/js/src/coaster-review/side-by-side');
-  assert.ok(row, 'the side-by-side folder is a row');
-  const lines = read(row.readme).split('\n');
-  for (const h of ['## What it shows', '## How to run', '## Extension point']) assert.ok(lines.includes(h));
-  assert.ok(rows().some((r) => r.folder === 'assets/shared/coaster/viewer'), 'the viewer F85 changed is a row too');
+test('AC6: the viewer F85 changed is a row of the index', () => {
+  assert.ok(rows().some((r) => r.folder === 'assets/shared/coaster/viewer'), 'the viewer F85 changed is a row');
 });

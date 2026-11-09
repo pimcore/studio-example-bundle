@@ -8,7 +8,7 @@ For further information, visit the [Pimcore Studio UI Plugin Development Example
 
 ## Enterprise examples
 
-Examples for Pimcore enterprise bundles (Portal Engine, Change Control) live in `enterprise/`, a separate Composer
+Examples for Pimcore enterprise bundles (Portal Engine) live in `enterprise/`, a separate Composer
 package that needs enterprise access. This bundle itself requires only public packages. See
 [the enterprise examples' README](enterprise/README.md) for the three install steps.
 

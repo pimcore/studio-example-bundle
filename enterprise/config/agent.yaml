@@ -1,7 +1,6 @@
-# The agent demo's tool service (src/Agent/README.md). These services need only the Portal Engine, so the portal's
-# replay route (F127) uses them with or without PimcoreAgentBundle. The bundle's MCP group `kingdom-portal` and the
-# preset `kingdom-brief-check` are added by PimcoreStudioExampleEnterpriseExtension only when the bundle is installed:
-# this file is loaded on every boot, so it must never hold a `pimcore_agent:` key (an unknown extension stops the boot).
+# The agent demo's tool service (src/Agent/README.md). These services need only the Portal Engine; the portal's
+# replay route (F127) uses them. This file is loaded on every boot, so it must never hold a `pimcore_agent:` key
+# (an unknown extension stops the boot).
 services:
     _defaults:
         autowire: true

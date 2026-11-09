@@ -19,5 +19,4 @@ The frame time itself is measured on the presentation laptop, not in the tests.
 ## Tests
 
 `enterprise/tests/coaster-projector.test.mjs` checks the above in headless Chromium: no redraw while idle, hidden
-views stop their loops, the buffer stays at 1.5x on a 2x screen, and the side-by-side review opened and closed 10
-times leaves no canvas and no live WebGL context.
+views stop their loops, and the buffer stays at 1.5x on a 2x screen.

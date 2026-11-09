@@ -11,11 +11,11 @@ const rootDir = join(enterpriseDir, '..');
 const read = (path) => readFileSync(path, 'utf8');
 const bundleClass = 'Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\PimcoreStudioExampleEnterpriseBundle';
 
-test('AC1: enterprise/composer.json declares the pimcore-bundle package, its three requirements and the bundle class', () => {
+test('AC1: enterprise/composer.json declares the pimcore-bundle package, its two requirements and the bundle class', () => {
   const composer = JSON.parse(read(join(enterpriseDir, 'composer.json')));
   assert.equal(composer.type, 'pimcore-bundle');
   assert.equal(composer.name, 'pimcore/studio-example-enterprise-bundle');
-  for (const pkg of ['pimcore/studio-example-bundle', 'pimcore/change-control-bundle', 'pimcore/portal-engine']) {
+  for (const pkg of ['pimcore/studio-example-bundle', 'pimcore/portal-engine']) {
     assert.ok(pkg in (composer.require ?? {}), `requires ${pkg}`);
   }
   assert.deepEqual(composer.extra?.pimcore?.bundles, [bundleClass]);

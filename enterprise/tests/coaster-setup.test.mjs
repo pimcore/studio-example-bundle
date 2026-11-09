@@ -303,11 +303,9 @@ test('AC3: reset --all returns to the state before setup and keeps what the demo
   assert.deepEqual(again, [], 'nothing left to remove');
 });
 
-test('AC3: the reset command dispatches the reset event first, so other demo state (a change set) can go too', () => {
+test('AC3: the reset command resets the demo, with the --all option for the state before setup', () => {
   const command = read(join(src, 'Command/CoasterDemoResetCommand.php'));
-  const dispatch = command.indexOf('dispatch(new CoasterDemoResetEvent($removeAll))');
-  assert.ok(dispatch > 0, 'dispatches CoasterDemoResetEvent');
-  assert.ok(dispatch < command.indexOf('$this->demo->reset('), 'before the reset');
+  assert.ok(command.indexOf('$this->demo->reset(') > 0, 'resets the demo');
   assert.match(command, /addOption\('all'/);
 });
 

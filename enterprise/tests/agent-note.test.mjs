@@ -388,7 +388,7 @@ test('AC2: through the route: anonymous or guest 401, wrong or missing Origin or
   assert.deepEqual(r.written, [{ assetId: 10, revision: 3, supplierName: 'Loopwerk Engineering', text: NOTE_TEXT }], 'one note, from the stored proposal, not the body');
 });
 
-test('AC2: the route is POST-only on portal sites at /studio-example-enterprise/agent/proposal/{id}/confirm, and does not use the bundle\'s proposal pipeline or Change Control', () => {
+test('AC2: the route is POST-only on portal sites at /studio-example-enterprise/agent/proposal/{id}/confirm, and does not use the bundle\'s proposal pipeline or the ChangeControl bundle', () => {
   const routing = read(join(enterpriseDir, 'config/pimcore/routing.yaml'));
   const block = routing.match(/^pimcore_studio_example_enterprise_agent_proposal_confirm:\n((?: {4}.*\n?|\s*#.*\n?)+)/m)?.[1];
   assert.ok(block, 'the route pimcore_studio_example_enterprise_agent_proposal_confirm is declared');
@@ -402,7 +402,7 @@ test('AC2: the route is POST-only on portal sites at /studio-example-enterprise/
   for (const file of readdirSync(noteSrc).filter((f) => f.endsWith('.php'))) {
     // the code, not its comments (they name what it does not use)
     const src = read(join(noteSrc, file)).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    assert.doesNotMatch(src, /PimcoreAgentBundle|ChangeControl|getContent\(\)|->request->|toArray\(\)/, `${file}: no agent bundle, no Change Control, no request body`);
+    assert.doesNotMatch(src, /PimcoreAgentBundle|ChangeControl|getContent\(\)|->request->|toArray\(\)/, `${file}: no agent bundle, no ChangeControl, no request body`);
   }
 });
 

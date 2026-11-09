@@ -1,9 +1,9 @@
 // F80: the coaster viewer tuned for the projector: it draws on demand, stops when hidden, caps the drawing buffer at
-// 1.5x the CSS size and gives everything back when the side-by-side review closes. Run (node 24 needs the glob; the
+// 1.5x the CSS size. Run (node 24 needs the glob; the
 // viewer's three.js first: npm ci in enterprise/assets/shared/coaster/viewer):
 // node --test 'enterprise/tests/*.test.mjs'
 // The browser tests drive headless Chromium over the DevTools protocol (coaster-ride-browser.mjs) on demo.html,
-// ride.html and pair.html. The frame time on the laptop itself is measured apart (F77, F79), not here.
+// and ride.html. The frame time on the laptop itself is measured apart (F77, F79), not here.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { dirname, join } from 'node:path';
@@ -128,21 +128,6 @@ test('AC2: in the browser a hidden ride stops its animation loop, and rides on f
   assert.deepEqual(page.errors, []);
 });
 
-test('AC2: in the browser the hidden side-by-side review stops both rides and its bar', async () => {
-  await open('pair.html', 'speed=10');
-  const pair = 'window.coasterPair';
-  await page.evaluate(`${pair}.play()`);
-  await until(() => page.evaluate(`${pair}.looping() && ${pair}.rides.every((r) => r.looping())`), 10, 'both ride');
-  await page.evaluate(`document.getElementById('pair').style.display = 'none'`);
-  await until(() => page.evaluate(`!${pair}.looping() && ${pair}.rides.every((r) => !r.looping())`), 5,
-    'hidden: both rides and the bar stopped');
-  await page.evaluate(`document.getElementById('pair').style.display = ''`);
-  await until(() => page.evaluate(`${pair}.looping() && ${pair}.rides.every((r) => r.looping())`), 10,
-    'shown again: both ride on');
-  await page.evaluate(`${pair}.pause()`);
-  assert.deepEqual(page.errors, []);
-});
-
 // The drawing buffer against the canvas's CSS size, for every canvas on the page.
 const buffers = () =>
   page.evaluate(`[...document.querySelectorAll('canvas')].map((c) => ({
@@ -152,7 +137,7 @@ const buffers = () =>
 test('AC3: in the browser on a 2x screen every viewer draws at 1.5x its CSS size, not more', async () => {
   await page.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 2, mobile: false });
   try {
-    for (const [file, query] of [['demo.html', 'width=800&height=500'], ['demo.html', ''], ['ride.html', ''], ['pair.html', '']]) {
+    for (const [file, query] of [['demo.html', 'width=800&height=500'], ['demo.html', ''], ['ride.html', '']]) {
       await open(file, query);
       assert.equal(await page.evaluate('window.devicePixelRatio'), 2);
       const ratios = await buffers();
@@ -169,73 +154,22 @@ test('AC3: in the browser on a 2x screen every viewer draws at 1.5x its CSS size
     for (const r of await buffers()) assert.ok(r.x <= 1.5 && r.y <= 1.5, `resized: ${r.x}x${r.y}`);
 
     // a host asking for 3x gets 1.5x too
-    await open('pair.html');
+    await open('ride.html');
     const asked = await page.evaluate(`(async () => {
-      const { mountRidePair } = await import('./index.mjs');
+      const { mountCoasterRide } = await import('./index.mjs');
       const host = document.createElement('div');
+      host.style.width = '480px';
+      host.style.height = '300px';
       document.body.append(host);
       const file = await (await fetch('../../../../demo-data/thunder-loop-rev2.coaster')).json();
-      const pair = mountRidePair(host, { left: { file, title: 'A' }, right: { file, title: 'B' }, pixelRatio: 3 });
-      const result = pair.rides.map((r) => r.canvas.width / parseFloat(r.canvas.style.width));
-      pair.dispose();
+      const ride = mountCoasterRide(host, { file, pixelRatio: 3 });
+      const result = ride.canvas.width / parseFloat(ride.canvas.style.width);
+      ride.dispose();
       return result;
     })()`);
-    assert.deepEqual(asked, [1.5, 1.5]);
+    assert.equal(asked, 1.5);
   } finally {
     await page.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
   }
-  assert.deepEqual(page.errors, []);
-});
-
-test('AC4: in the browser the side-by-side review opened and closed 10 times disposes both viewers every time', async () => {
-  await open('pair.html');
-  const result = await page.evaluate(`(async () => {
-    const { createRidePair, pairMarks } = await import('./index.mjs');
-    const load = async (url) => (await fetch(url)).json();
-    const live = await load('../../../../demo-data/thunder-loop-rev2.coaster');
-    const proposed = await load('../../../../demo-data/thunder-loop-rev3.coaster');
-    const marks = pairMarks(live.track, proposed.track);
-    window.coasterPair.dispose(); // the page's own pair goes first, so only the review's count below
-    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
-
-    // The review tab's component (react.mjs) with just enough React: an effect on open, its cleanup on close.
-    let cleanup;
-    const React = {
-      createElement: (type, props) => ({ type, props }),
-      useRef: () => (React.ref ??= { current: null }),
-      useEffect: (effect) => { React.effect = effect; },
-    };
-    const RidePair = createRidePair(React);
-    const opened = [];
-    for (let i = 0; i < 10; i++) {
-      const host = document.createElement('div');
-      host.style.width = '480px'; // small: a quick software WebGL draw per frame
-      document.body.append(host);
-      React.ref = { current: host };
-      RidePair({ left: { file: live, title: 'Live', marks: marks.left }, right: { file: proposed, title: 'Proposed', marks: marks.right }, speed: 20 });
-      cleanup = React.effect();
-      const canvases = [...host.querySelectorAll('canvas')];
-      const contexts = canvases.map((c) => c.getContext('webgl2') ?? c.getContext('webgl'));
-      host.querySelector('.coaster-ride-pair-controls button[name=play]').click();
-      await frame();
-      await frame();
-      opened.push({ canvases, contexts, drawn: contexts.every((gl) => gl && !gl.isContextLost()) });
-      cleanup(); // the reviewer closes the review
-      host.remove();
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return {
-      opens: opened.length,
-      canvasesPerOpen: opened.map((o) => o.canvases.length),
-      drawnWhileOpen: opened.every((o) => o.drawn),
-      leftInPage: document.querySelectorAll('canvas, .coaster-ride-pair').length,
-      contextsLost: opened.flatMap((o) => o.contexts.map((gl) => gl.isContextLost())),
-    };
-  })()`);
-  assert.equal(result.opens, 10);
-  assert.deepEqual(result.canvasesPerOpen, Array(10).fill(2), 'two viewers per open');
-  assert.equal(result.drawnWhileOpen, true, 'each time both viewers had a live WebGL context while open');
-  assert.equal(result.leftInPage, 0, 'no canvas and no pair left in the page');
-  assert.deepEqual(result.contextsLost, Array(20).fill(true), 'all 20 WebGL contexts given back');
   assert.deepEqual(page.errors, []);
 });

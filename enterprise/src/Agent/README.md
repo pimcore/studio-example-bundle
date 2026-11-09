@@ -19,30 +19,24 @@ may see: the user is the signed-in portal user, and every revision passes the Po
 - `KingdomSource` is where the data comes from; `PimcoreKingdomSource` reads the Thunder Loop ride brief (the "Ride brief" data object of the portal's Open briefs, F293; the brief page on a demo set up before it) and the `.coaster` assets'
   version history (version n = revision n) and asks the Portal Engine's `PermissionService` for "view" in the demo
   portal's data pool. The fixture `demo-data/agent-fixtures/night-fury.coaster` is a design the supplier may not see.
-- With PimcoreAgentBundle installed, `Tools/` wraps the three methods as MCP tools (`#[McpTool]`, tag
-  `pimcore.mcp_tool`) in the group `kingdom-portal`: `kingdom_read_brief` and `kingdom_list_revisions` (read-only)
-  and `kingdom_propose_supplier_note`. The agent preset `kingdom-brief-check`
-  ([`config/pimcore/agents/kingdom-brief-check.yaml`](../../config/pimcore/agents/kingdom-brief-check.yaml)) gets them
-  through the tool bundle `kingdom-portal` and no other group.
+- The portal's agent chat replays a recorded turn and fills it from these methods
+  ([`src/Portal/Agent/README.md`](../Portal/Agent/README.md)); the Confirm card's route confirms a stored proposal
+  ([`Note/README.md`](Note/README.md)).
 
 ## How to run
 
 1. Install the sub-bundle ([the enterprise README](../../README.md)) and run `bin/console coaster-demo:setup`.
-   `config/agent.yaml` registers the service; `KingdomBriefTools` works with or without PimcoreAgentBundle.
-2. With PimcoreAgentBundle (`composer.json` only suggests it) and `bin/console cache:clear`, the group
-   `kingdom-portal` is at `/pimcore-mcp/agent/kingdom-portal`, and the preset "Kingdom brief check" is in Studio's
-   agent configuration, tagged Bundle. A Studio user who is not linked to exactly one portal user gets no data from
-   it: the portal user's agent runs through the portal (the replay route,
-   [`src/Portal/Agent/README.md`](../Portal/Agent/README.md)), not through Studio.
+   `config/agent.yaml` registers the services; they need no PimcoreAgentBundle.
+2. Sign in to the portal as the supplier and open "Ask the brief": the replay reads through `KingdomBriefTools`
+   ([`src/Portal/Agent/README.md`](../Portal/Agent/README.md)).
 
 Tests: `enterprise/tests/agent-tools.test.mjs` (needs `php`), run with the other enterprise tests. Its container
-tests also need a Pimcore `vendor/` with PimcoreAgentBundle (`PIMCORE_VENDOR_AUTOLOAD`, else
-`/var/www/html/vendor/autoload.php`) and run the bundle's own `McpToolRegistryPass`; they skip without one.
+test also needs a Pimcore `vendor/` (`PIMCORE_VENDOR_AUTOLOAD`, else `/var/www/html/vendor/autoload.php`); it skips
+without one.
 
 ## Extension point
 
-**PimcoreAgentBundle MCP tools and an agent preset from an optional bundle.** A tool is a service with an `#[McpTool]`
-method, tagged `pimcore.mcp_tool` with a `group`. The preset directory and the tool bundle are prepended to the
-`pimcore_agent` config. Both happen only when PimcoreAgentBundle is in `kernel.bundles`
-(`PimcoreStudioExampleEnterpriseExtension::load()` and `prepend()`). No `config/*.yaml` of this bundle may hold a
-`pimcore_agent:` key: those files are loaded on every boot, and an unknown extension key stops it.
+**Symfony services for the portal user** (`config/agent.yaml`): one service that reads only what the signed-in portal
+user may see, behind a `KingdomSource` interface, so the portal's replay route and the confirm route share it. No
+`config/*.yaml` of this bundle may hold a `pimcore_agent:` key: those files are loaded on every boot, and an unknown
+extension key stops it.

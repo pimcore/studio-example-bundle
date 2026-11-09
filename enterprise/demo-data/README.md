@@ -3,7 +3,7 @@
 ## What it shows
 
 Sample `.coaster` files (format: [`../assets/shared/coaster/FORMAT.md`](../assets/shared/coaster/FORMAT.md)) and the
-park's brief for the change-control demo. All names are fictional.
+park's brief for the portal demo. All names are fictional.
 
 | File | What it is |
 | --- | --- |
@@ -22,8 +22,7 @@ park's brief for the change-control demo. All names are fictional.
 ## How to run
 
 Nothing to run: `bin/console coaster-demo:setup` ([`src/Command/README.md`](../src/Command/README.md)) uploads revision 1
-and writes the open briefs, `bin/console coaster-demo:change-set` ([`src/ChangeControl/README.md`](../src/ChangeControl/README.md))
-proposes revision 3. To look at a file, open it in the viewer
+and writes the open briefs. To look at a file, open it in the viewer
 ([`assets/shared/coaster/viewer/README.md`](../assets/shared/coaster/viewer/README.md)), or upload it to any asset
 folder to get its metadata ([`src/Coaster/README.md`](../src/Coaster/README.md)).
 

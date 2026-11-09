@@ -7,8 +7,7 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent;
  * the user may view, and propose a Supplier note on one of them. The user comes from PortalUserContext; without one
  * every read returns nothing and the proposal is refused. A proposal is only stored (ProposalStore), never written.
  *
- * Plain PHP with no PimcoreAgentBundle class, so the portal's replay route (F127) uses it without the bundle; the MCP
- * tools in Tools/ only wrap it for the bundle's `kingdom-portal` group.
+ * Plain PHP with no PimcoreAgentBundle class, so the portal's replay route (F127) uses it without the bundle.
  */
 class KingdomBriefTools
 {

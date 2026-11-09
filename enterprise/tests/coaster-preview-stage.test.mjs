@@ -158,7 +158,7 @@ test('AC4: the plugin build gets the viewer types in strict mode and includes th
   assert.equal(tsconfig.compilerOptions.strict, true);
   assert.ok(tsconfig.include.includes('js/src'), 'the stage folder is type-checked');
   const types = read(join(viewerDir, 'react.d.mts'));
-  for (const factory of ['createCoasterViewer', 'createCoasterRide', 'createRidePair']) {
+  for (const factory of ['createCoasterViewer', 'createCoasterRide']) {
     assert.match(types, new RegExp(`export function ${factory}\\(React: ReactModule\\)`), `declares ${factory}`);
   }
   // every export of react.mjs is declared

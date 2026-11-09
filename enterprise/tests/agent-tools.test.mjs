@@ -1,9 +1,9 @@
 // F126: the agent demo's tools (src/Agent): KingdomBriefTools reads only what the portal user may see, the
-// PortalUserContext fails closed, proposals are stored server-side with random ids and a TTL, and PimcoreAgentBundle's
-// group `kingdom-portal` and preset `kingdom-brief-check` exist only when that bundle is installed.
+// PortalUserContext fails closed, proposals are stored server-side with random ids and a TTL, and the bundle needs no
+// PimcoreAgentBundle (the portal's replay uses these services without it).
 // The logic tests need the php CLI only (Pimcore, the Portal Engine, Symfony security and PSR-6 are stubbed below).
 // The container tests run against a Pimcore install's vendor/ (PIMCORE_VENDOR_AUTOLOAD, else
-// /var/www/html/vendor/autoload.php) with PimcoreAgentBundle's own McpToolRegistryPass; they skip without one.
+// /var/www/html/vendor/autoload.php); they skip without one.
 // Run (node 24 needs the glob): node --test 'enterprise/tests/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,10 +18,7 @@ const demoData = join(enterpriseDir, 'demo-data');
 const fixture = join(demoData, 'agent-fixtures/night-fury.coaster');
 const read = (path) => readFileSync(path, 'utf8');
 const autoload = process.env.PIMCORE_VENDOR_AUTOLOAD || '/var/www/html/vendor/autoload.php';
-const agentBundle = join(dirname(autoload), 'pimcore/pimcore-agent-bundle/src/PimcoreAgentBundle.php');
-const vendorSkip = !existsSync(autoload)
-  ? `no Pimcore vendor at ${autoload}`
-  : !existsSync(agentBundle) ? 'PimcoreAgentBundle is not in that vendor/' : false;
+const vendorSkip = !existsSync(autoload) ? `no Pimcore vendor at ${autoload}` : false;
 
 const golden = JSON.parse(read(join(demoData, 'expected-metadata.json')));
 const thunderLoop = [1, 2, 3].map((n) => golden.revisions[`thunder-loop-rev${n}.coaster`]);
@@ -270,11 +267,8 @@ test('AC3: proposal ids are random, and a proposal expires after its TTL', () =>
   assert.equal(result.notAnId, null);
 });
 
-// The container as a kernel builds it: our extension's prepend() and load(), with or without PimcoreAgentBundle in
-// kernel.bundles, a stand-in `pimcore_agent` extension that records its config, then PimcoreAgentBundle's own
-// McpToolRegistryPass. With the bundle, also its tool results for a context without a portal user, and the preset
-// processed by its Configuration tree.
-const container = (withAgentBundle) => {
+// The container as a kernel builds it: our extension's load(), against a Pimcore install's vendor/.
+const container = () => {
   const script = `
     define('PIMCORE_PROJECT_ROOT', sys_get_temp_dir());
     $loader = require ${JSON.stringify(autoload)};
@@ -291,59 +285,11 @@ const container = (withAgentBundle) => {
     $result = [];
     try {
         $c = new ContainerBuilder();
-        $bundles = ['PimcoreStudioExampleEnterpriseBundle' => 'Pimcore\\\\Bundle\\\\StudioExampleEnterpriseBundle\\\\PimcoreStudioExampleEnterpriseBundle'];
-        if (${withAgentBundle ? 'true' : 'false'}) { $bundles['PimcoreAgentBundle'] = Ext::AGENT_BUNDLE; }
-        $c->setParameter('kernel.bundles', $bundles);
+        $c->setParameter('kernel.bundles', ['PimcoreStudioExampleEnterpriseBundle' => 'Pimcore\\\\Bundle\\\\StudioExampleEnterpriseBundle\\\\PimcoreStudioExampleEnterpriseBundle']);
         $c->setParameter('kernel.project_dir', sys_get_temp_dir());
-        if (${withAgentBundle ? 'true' : 'false'}) {
-            $c->registerExtension(new class extends \\Symfony\\Component\\DependencyInjection\\Extension\\Extension {
-                public function load(array $configs, ContainerBuilder $container): void {}
-                public function getAlias(): string { return 'pimcore_agent'; }
-            });
-        }
-        $ext = new Ext();
-        $ext->prepend($c);
-        $result['agentConfig'] = $c->hasExtension('pimcore_agent') ? $c->getExtensionConfig('pimcore_agent') : null;
-        $ext->load([], $c);
+        (new Ext())->load([], $c);
         $result['briefToolsDefined'] = $c->hasDefinition('Pimcore\\\\Bundle\\\\StudioExampleEnterpriseBundle\\\\Agent\\\\KingdomBriefTools');
         $result['tagged'] = array_keys($c->findTaggedServiceIds('pimcore.mcp_tool'));
-        if (class_exists('Pimcore\\\\Bundle\\\\PimcoreAgentBundle\\\\Mcp\\\\McpToolRegistry')) {
-            $c->register('Pimcore\\\\Bundle\\\\PimcoreAgentBundle\\\\Mcp\\\\McpToolRegistry', 'Pimcore\\\\Bundle\\\\PimcoreAgentBundle\\\\Mcp\\\\McpToolRegistry');
-            (new \\Pimcore\\Bundle\\PimcoreAgentBundle\\DependencyInjection\\Compiler\\McpToolRegistryPass())->process($c);
-            $args = $c->getDefinition('Pimcore\\\\Bundle\\\\PimcoreAgentBundle\\\\Mcp\\\\McpToolRegistry')->getArguments();
-            $result['groups'] = array_map(static fn (array $g) => array_map(static fn (array $t) => ['readOnly' => $t['annotations']['readOnlyHint'] ?? null, 'class' => $t['class']], $g['tools']), $args['$groupMetadata'] ?? []);
-        }
-        if (${withAgentBundle ? 'true' : 'false'}) {
-            $preset = \\Symfony\\Component\\Yaml\\Yaml::parseFile(${JSON.stringify(join(enterpriseDir, 'config/pimcore/agents/kingdom-brief-check.yaml'))});
-            $result['preset'] = $preset;
-            $processed = (new \\Symfony\\Component\\Config\\Definition\\Processor())->processConfiguration(
-                new \\Pimcore\\Bundle\\PimcoreAgentBundle\\DependencyInjection\\Configuration(),
-                [...$result['agentConfig'], ['agents' => ['definitions' => [$preset['name'] => $preset]]]],
-            );
-            $result['processedToolBundles'] = $processed['tool_bundles'];
-            // The tools for a caller without a portal user: the Portal Engine's real SecurityService, no token, no request.
-            $context = new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\PortalUserContext(
-                new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\Security\\SecurityService(
-                    new \\Symfony\\Component\\Security\\Core\\Authentication\\Token\\Storage\\TokenStorage(),
-                    new \\Symfony\\Component\\HttpFoundation\\RequestStack(),
-                ),
-                new \\Symfony\\Component\\Security\\Core\\Authentication\\Token\\Storage\\TokenStorage(),
-            );
-            $pool = new \\Symfony\\Component\\Cache\\Adapter\\ArrayAdapter();
-            $source = new class implements \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\KingdomSource {
-                public function briefText(): ?string { return 'brief'; }
-                public function coasterRevisions(): array { return [['assetId' => 10, 'path' => '/x.coaster', 'revision' => 1, 'maxHeightM' => 1.0, 'lengthM' => 1.0]]; }
-                public function mayView(\\Pimcore\\Bundle\\PortalEngineBundle\\Model\\DataObject\\PortalUserInterface $user, int $assetId): bool { return true; }
-            };
-            $tools = new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\KingdomBriefTools($context, $source, new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\ProposalStore($pool));
-            $call = static fn ($r) => ['isError' => $r->isError, 'text' => json_decode($r->content[0]->text, true)];
-            $result['calls'] = [
-                'propose' => $call((new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\Tools\\ProposeSupplierNoteTool($tools))->execute(10, 1, 'A note')),
-                'brief' => $call((new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\Tools\\ReadBriefTool($tools))->execute()),
-                'revisions' => $call((new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Agent\\Tools\\ListRevisionsTool($tools))->execute()),
-            ];
-            $result['cachedAfterRefusal'] = count($pool->getValues());
-        }
     } catch (\\Throwable $e) {
         $result['error'] = get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine();
     }
@@ -352,75 +298,20 @@ const container = (withAgentBundle) => {
   return runPhp(script);
 };
 
-const TOOLS = {
-  kingdom_read_brief: 'ReadBriefTool',
-  kingdom_list_revisions: 'ListRevisionsTool',
-  kingdom_propose_supplier_note: 'ProposeSupplierNoteTool',
-};
-
-test('AC2: with PimcoreAgentBundle the group kingdom-portal holds exactly kingdom_read_brief and kingdom_list_revisions (readOnly) and kingdom_propose_supplier_note', { skip: vendorSkip }, () => {
-  const result = container(true);
+test('AC4: the bundle boots without PimcoreAgentBundle, and KingdomBriefTools is a service', { skip: vendorSkip }, () => {
+  const result = container();
   assert.equal(result.error, undefined, result.error);
-  assert.deepEqual(Object.keys(result.groups), ['kingdom-portal'], 'our only group');
-  const group = result.groups['kingdom-portal'];
-  assert.deepEqual(Object.keys(group).sort(), Object.keys(TOOLS).sort());
-  for (const [name, cls] of Object.entries(TOOLS)) assert.ok(group[name].class.endsWith(`\\Tools\\${cls}`), name);
-  assert.equal(group.kingdom_read_brief.readOnly, true);
-  assert.equal(group.kingdom_list_revisions.readOnly, true);
-  assert.equal(group.kingdom_propose_supplier_note.readOnly, false);
-});
-
-test('AC2: the agent preset kingdom-brief-check lists no group but kingdom-portal, and PimcoreAgentBundle accepts it', { skip: vendorSkip }, () => {
-  const result = container(true);
-  assert.equal(result.error, undefined, result.error);
-  const { preset } = result;
-  assert.equal(preset.name, 'kingdom-brief-check');
-  assert.deepEqual(preset.toolBundles, ['kingdom-portal']);
-  for (const key of ['pimcoreMcpServers', 'pimcoreMetaGroups', 'mcpServers', 'includeSdkTools', 'skills', 'executionUser']) {
-    assert.ok(!(key in preset) || (Array.isArray(preset[key]) && preset[key].length === 0), `the preset adds no ${key}`);
-  }
-  assert.ok(preset.permissions, 'the preset has a permissions node');
-  const bundle = result.processedToolBundles['kingdom-portal'];
-  assert.deepEqual(bundle.pimcoreMcpServers, ['kingdom-portal']);
-  for (const key of ['pimcoreMetaGroups', 'skills', 'includeSdkTools', 'richChatWidgets']) assert.deepEqual(bundle[key] ?? [], [], `the tool bundle adds no ${key}`);
-  // the preset is found where prepend() points PimcoreAgentBundle
-  const paths = result.agentConfig.flatMap((c) => c.agents?.paths ?? []);
-  assert.ok(paths.some((p) => existsSync(join(p, 'kingdom-brief-check.yaml'))), 'agents.paths holds the preset');
-});
-
-test('AC3: the MCP tools for a caller without a portal user: propose returns an error and stores nothing, the reads return no data', { skip: vendorSkip }, () => {
-  const { calls, cachedAfterRefusal, error } = container(true);
-  assert.equal(error, undefined, error);
-  assert.equal(calls.propose.isError, true);
-  assert.ok(calls.propose.text.error);
-  assert.equal(calls.propose.text.proposalId, undefined);
-  assert.equal(cachedAfterRefusal, 0);
-  assert.equal(calls.brief.isError, true);
-  assert.equal(calls.brief.text.brief, undefined);
-  assert.deepEqual(calls.revisions.text, { revisions: [], count: 0 });
-});
-
-test('AC4: without PimcoreAgentBundle the bundle boots with the group absent, and KingdomBriefTools is still a service', { skip: vendorSkip }, () => {
-  const result = container(false);
-  assert.equal(result.error, undefined, result.error);
-  assert.equal(result.agentConfig, null, 'no pimcore_agent config is prepended');
   assert.deepEqual(result.tagged, [], 'no pimcore.mcp_tool service');
-  assert.equal(Object.keys(result.groups ?? {}).length, 0, 'no group');
   assert.equal(result.briefToolsDefined, true);
 });
 
-test('AC4: config/agent.yaml has no pimcore_agent key, composer.json only suggests the bundle, and KingdomBriefTools needs no class of it', () => {
+test('AC4: config/agent.yaml has no pimcore_agent key, and KingdomBriefTools needs no class of PimcoreAgentBundle', () => {
   assert.doesNotMatch(read(join(enterpriseDir, 'config/agent.yaml')), /^\s*pimcore_agent\s*:/m);
   const composer = JSON.parse(read(join(enterpriseDir, 'composer.json')));
-  assert.ok(composer.suggest?.['pimcore/pimcore-agent-bundle'], 'suggested');
   assert.equal(composer.require['pimcore/pimcore-agent-bundle'], undefined, 'not required');
   for (const file of ['KingdomBriefTools.php', 'PortalUserContext.php', 'ProposalStore.php', 'KingdomSource.php', 'PimcoreKingdomSource.php']) {
     assert.doesNotMatch(read(join(agentSrc, file)), /^use [^;]*(PimcoreAgentBundle|\bMcp\\)|\\Mcp\\|PimcoreAgentBundle\\/m, `${file} uses no PimcoreAgentBundle or MCP class`);
   }
-  // the tools are registered only behind the guard, never by config/*.yaml
-  const extension = read(join(enterpriseDir, 'src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php'));
-  assert.match(extension, /class_exists\(self::AGENT_BUNDLE\)/);
-  assert.match(extension, /hasExtension\('pimcore_agent'\)/);
 });
 
 test('AC4: the fixture coaster the supplier may not see is a valid .coaster file in demo-data/agent-fixtures', () => {

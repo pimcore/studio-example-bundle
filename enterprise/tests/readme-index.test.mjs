@@ -52,9 +52,6 @@ test('AC2: enterprise/README.md lists every extension point with its folder, REA
   const expected = {
     'upload metadata listener': 'src/Coaster',
     'setup command': 'src/Command',
-    'change set': 'src/ChangeControl',
-    'side-by-side': 'assets/studio/js/src/coaster-review/side-by-side',
-    'asset editor tab': 'assets/studio/js/src/coaster-review',
     'portal frontend plugin': 'assets/portal',
     'portal page': 'assets/portal/talk',
   };

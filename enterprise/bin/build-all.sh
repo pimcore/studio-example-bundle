@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Builds every demo frontend of the talk once, on the build machine, so the laptop installs prebuilt files only:
-#   studio                  the enterprise Studio build (enterprise/assets/studio) -> build-<id>.zip
 #   portal-plugin           the Portal Engine plugin (enterprise/assets/portal)     -> portal-plugin.zip
 #   portal-engine-frontend  portal_engine's portal frontend (assets/portal)          -> portal-engine-frontend.zip
 # and enterprise/dist/manifest.json: per zip its part, source repo, commit SHA, size and gzip size.
@@ -20,7 +19,7 @@
 #   BUILD_ALL_WORK      staging folder; node_modules are kept there between runs
 #                                                (default ${XDG_CACHE_HOME:-~/.cache}/portal-talk-build-all)
 #   HEAVY               the queue runner          (default $ORCH_ROOT/bin/heavy.sh)
-#   BUILD_ALL_STUDIO_CMD, BUILD_ALL_PLUGIN_CMD, BUILD_ALL_ENGINE_CMD
+#   BUILD_ALL_PLUGIN_CMD, BUILD_ALL_ENGINE_CMD
 #                       replace a part's build command line (run in the part's staged folder)
 set -euo pipefail
 
@@ -37,7 +36,6 @@ WORK=${BUILD_ALL_WORK:-${XDG_CACHE_HOME:-$HOME/.cache}/portal-talk-build-all}
 HEAVY=${HEAVY:-${ORCH_ROOT:+$ORCH_ROOT/bin/heavy.sh}}
 
 NPM_FLAGS='--no-audit --no-fund'
-STUDIO_CMD=${BUILD_ALL_STUDIO_CMD:-"(cd ../shared/coaster/viewer && npm ci $NPM_FLAGS) && npm install $NPM_FLAGS && npm run build && npm run package-build"}
 # --install-links copies the kit into node_modules (instead of a symlink to the monorepo), so npm installs its peers
 # (antd, dayjs, ...) next to it and the bundler resolves the kit's imports from the plugin's own node_modules
 PLUGIN_CMD=${BUILD_ALL_PLUGIN_CMD:-"npm install --install-links $NPM_FLAGS && npm run build"}
@@ -64,7 +62,7 @@ if [ -n "$(git -C "$REPO" status --porcelain -- enterprise)" ]; then
 fi
 
 # --- stage the sources: fresh from the commits, node_modules kept from the last run ---
-NODE_DIRS=(sb/enterprise/assets/studio/node_modules sb/enterprise/assets/portal/node_modules
+NODE_DIRS=(sb/enterprise/assets/portal/node_modules
            sb/enterprise/assets/shared/coaster/viewer/node_modules pe/assets/portal/node_modules)
 mkdir -p "$WORK"
 KEEP="$WORK/.keep.$$"
@@ -94,10 +92,9 @@ step() {
   [ "$rc" -eq 0 ] || fail "$part" "build exited $rc"
 }
 
-STAGE_STUDIO=$WORK/sb/enterprise
-rm -rf "$STAGE_STUDIO"/build-dist/build-*.zip "$STAGE_STUDIO/public/portal" "$WORK/pe/assets/portal/dist"
-step studio "$STAGE_STUDIO/assets/studio" "$STUDIO_CMD"
-step portal-plugin "$STAGE_STUDIO/assets/portal" "$PLUGIN_CMD"
+STAGE_ENTERPRISE=$WORK/sb/enterprise
+rm -rf "$STAGE_ENTERPRISE/public/portal" "$WORK/pe/assets/portal/dist"
+step portal-plugin "$STAGE_ENTERPRISE/assets/portal" "$PLUGIN_CMD"
 step portal-engine-frontend "$WORK/pe/assets/portal" "$ENGINE_CMD"
 
 # --- the zips ---
@@ -120,22 +117,15 @@ PY
   ) || fail "$part" "could not write $zip"
 }
 
-shopt -s nullglob
-studio_zips=("$STAGE_STUDIO"/build-dist/build-*.zip)
-shopt -u nullglob
-[ "${#studio_zips[@]}" -eq 1 ] || fail studio "expected one build-dist/build-<id>.zip, found ${#studio_zips[@]}"
-STUDIO_ZIP=$(basename "${studio_zips[0]}")
-cp "${studio_zips[0]}" "$OUT/$STUDIO_ZIP"
-zip_dir portal-plugin "$STAGE_STUDIO/public/portal" "$OUT/portal-plugin.zip"
+zip_dir portal-plugin "$STAGE_ENTERPRISE/public/portal" "$OUT/portal-plugin.zip"
 zip_dir portal-engine-frontend "$WORK/pe/assets/portal/dist" "$OUT/portal-engine-frontend.zip"
 
 # --- the manifest, and the checks on it ---
 PARTS=$(printf '%s\n' \
-  "studio	$STUDIO_ZIP	studio_example_bundle	$SB_SHA" \
   "portal-plugin	portal-plugin.zip	studio_example_bundle	$SB_SHA" \
   "portal-engine-frontend	portal-engine-frontend.zip	portal_engine	$PE_SHA")
 rc=0
-node --input-type=module - "$OUT" "$STAGE_STUDIO/public/portal" "$ENTRY_LIMIT_BYTES" "$SB_SHA" "$PE_SHA" "$KIT_SHA" \
+node --input-type=module - "$OUT" "$STAGE_ENTERPRISE/public/portal" "$ENTRY_LIMIT_BYTES" "$SB_SHA" "$PE_SHA" "$KIT_SHA" \
   "$PORTAL_ENGINE_REF" "$PARTS" <<'JS' || rc=$?
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -201,7 +191,6 @@ const manifest = {
     ...(kitSha ? { enterprise_monorepo: kitSha } : {})
   },
   install: {
-    studio: 'copy the build-<id>.zip into the enterprise bundle\'s build-dist/, then bin/console cache:warmup',
     'portal-plugin': 'unzip into the enterprise bundle\'s public/portal/, then bin/console assets:install',
     'portal-engine-frontend': 'empty the portal engine bundle\'s src/Resources/public/portal-frontend/, unzip into it, then bin/console assets:install'
   },

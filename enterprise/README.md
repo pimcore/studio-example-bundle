@@ -1,6 +1,6 @@
 # Pimcore Studio Example Enterprise Bundle
 
-Examples for Pimcore enterprise bundles (Portal Engine, Change Control), kept apart from the public
+Examples for Pimcore enterprise bundles (Portal Engine), kept apart from the public
 [Pimcore Studio Example Bundle](../README.md). This folder is its own Composer package,
 `pimcore/studio-example-enterprise-bundle`, so the public bundle keeps requiring only public packages: its
 `composer.json`, `assets/` build and CI do not change.
@@ -10,10 +10,10 @@ repository.
 
 ## Enterprise access
 
-The package requires `pimcore/portal-engine` and `pimcore/change-control-bundle`. Both are enterprise bundles: your
+The package requires `pimcore/portal-engine`, an enterprise bundle: your
 project needs enterprise access, i.e. a Pimcore enterprise subscription and the credentials for the enterprise Composer
 repository (`https://repo.pimcore.com/...`, configured in your project's `composer.json` and `auth.json`). Without them
-step 2 fails because Composer cannot find these two packages.
+step 2 fails because Composer cannot find this package.
 
 ## Installation
 
@@ -62,18 +62,13 @@ Run these three steps in the root of your Pimcore application, in this order. Th
 - `config/services.yaml`: the services of the examples; an example may add its own `config/<name>.yaml`
 - `config/pimcore/routing.yaml`: the bundle's routes, read by Pimcore from every registered bundle
 - `templates/`: the bundle's Twig templates (`@PimcoreStudioExampleEnterprise/...`)
-- `assets/studio/`: the sub-bundle's own Studio frontend (Module Federation remote `pimcore_studio_example_enterprise_bundle`,
-  plugins in `js/src/plugins.ts`); build it with `npm install && npm run build && npm run package-build` there, which writes
-  `build-dist/build-<id>.zip`
-- `src/Webpack/WebpackEntryPointProvider.php` (registered in `config/studio.yaml`): extracts `build-dist/build*.zip` into
-  `public/build/` on `cache:warmup`, so Studio loads the plugins
 
 ## Prebuilt frontends
 
-`bin/build-all.sh` builds the Studio build, the portal plugin and the Portal Engine frontend once, on a machine with
+`bin/build-all.sh` builds the portal plugin and the Portal Engine frontend once, on a machine with
 vendor access and clones of `portal_engine` and `enterprise_monorepo` (see the comment at its top for the paths). It
 builds from commits only (this repository's `HEAD`, `portal_engine`'s `integration`) and writes to `dist/`:
-`build-<id>.zip`, `portal-plugin.zip`, `portal-engine-frontend.zip` and `manifest.json` (per zip: part, source repo,
+`portal-plugin.zip`, `portal-engine-frontend.zip` and `manifest.json` (per zip: part, source repo,
 commit SHA, size, gzip size; how to install each). A machine that only runs the demo installs these zips and builds
 nothing. The script exits non-zero naming the part that failed, and when the plugin's entry chunk is over 150 KB gzip.
 
@@ -86,16 +81,13 @@ draft, not published yet) that the example backs; "none yet" means that part is 
 | Extension point | Example folder | README | Docs section |
 | --- | --- | --- | --- |
 | Upload metadata listener (asset event listener on `pimcore.asset.preAdd` and `preUpdate`) | `src/Coaster/` | [README](src/Coaster/README.md) | none yet |
-| Demo setup command (Symfony console commands, and the `CoasterDemoResetEvent` for other demo state) | `src/Command/` | [README](src/Command/README.md) | none yet |
-| Change Control change set (the authoring facade, from a console command) | `src/ChangeControl/` | [README](src/ChangeControl/README.md) | Change Control in a portal: "Approval is per field" |
-| Studio asset editor tab (the coaster Review tab on Change Control's review slot) | `assets/studio/js/src/coaster-review/` | [README](assets/studio/js/src/coaster-review/README.md) | Change Control in a portal: "The review slot" |
-| Side-by-side view (live and proposed ride inside the Review tab) | `assets/studio/js/src/coaster-review/side-by-side/` | [README](assets/studio/js/src/coaster-review/side-by-side/README.md) | Change Control in a portal: "The review slot" |
+| Demo setup command (Symfony console commands) | `src/Command/` | [README](src/Command/README.md) | none yet |
 | Portal frontend plugin (plugin provider and Module Federation remote) | `assets/portal/` | [README](assets/portal/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugins") |
 | Portal page (bundle route, portal layout blocks, a link in the portal's footer snippet) | `assets/portal/talk/` | [README](assets/portal/talk/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugins", "Serving your own page") |
 | Portal asset preview stage (the `previewStage` registry name, with `accepts`: the coaster viewer for `.coaster` assets) | `assets/portal/js/src/coaster/preview-stage/` | [README](assets/portal/js/src/coaster/preview-stage/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugin Surfaces"; the preview stage is on our portal-engine integration branch only) |
 | Portal grid tile picture (the `tileRegions.media` registry name: the track outline for `.coaster` tiles) | `assets/portal/js/src/coaster/tile/` | [README](assets/portal/js/src/coaster/tile/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugin Surfaces") |
-| None: the shared coaster viewer the side-by-side view and the portal preview stage host | `assets/shared/coaster/viewer/` | [README](assets/shared/coaster/viewer/README.md) | none |
-| PimcoreAgentBundle MCP tools and agent preset (`#[McpTool]`, tag `pimcore.mcp_tool`, group `kingdom-portal`; registered only when the bundle is installed) | `src/Agent/` | [README](src/Agent/README.md) | none yet |
+| None: the shared coaster viewer the portal preview stage hosts | `assets/shared/coaster/viewer/` | [README](assets/shared/coaster/viewer/README.md) | none |
+| Agent tool services for the portal user (Symfony services the portal's replay route and the confirm route share; no PimcoreAgentBundle needed) | `src/Agent/` | [README](src/Agent/README.md) | none yet |
 | Portal route streaming an agent turn in PimcoreAgentBundle's event format (a recorded turn, `text/event-stream`, JSON 401/403 instead of the login redirect) | `src/Portal/Agent/` | [README](src/Portal/Agent/README.md) | none yet |
 | Portal route writing a confirmed Pimcore note (`Element\Note` of type "Supplier note", `edit` re-checked through the data-pool voter) and its reset console command | `src/Agent/Note/` | [README](src/Agent/Note/README.md) | none yet |
 | Portal header action (the `slots.headerActions` slot: the "Ask the brief" button and its agent panel, loaded on click, reading the chat stream as plain text) | `assets/portal/js/src/agent/` | [README](assets/portal/js/src/agent/README.md) | none yet (Portal Engine documentation: "Portal Frontend Plugins") |

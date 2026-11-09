@@ -3,14 +3,12 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command;
 
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo;
-use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemoResetEvent;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Resets Demo 1 between runs: back to revision 1, or with --all to the state before coaster-demo:setup.
@@ -22,7 +20,6 @@ class CoasterDemoResetCommand extends Command
 
     public function __construct(
         private readonly CoasterDemo $demo,
-        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
         parent::__construct();
     }
@@ -39,7 +36,6 @@ class CoasterDemoResetCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $removeAll = (bool) $input->getOption('all');
 
-        $this->eventDispatcher->dispatch(new CoasterDemoResetEvent($removeAll));
         $changes = $this->demo->reset($removeAll, (string) $input->getOption('domain'));
 
         if ($removeAll) {

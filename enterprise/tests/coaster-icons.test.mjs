@@ -120,8 +120,8 @@ test('AC1: the built start-up chunk is at most 44 KB gzip', (t) => {
 
 // --- AC2 ---
 
-test('AC2: the set has its six own icons plus the Talk entry\'s, each one exported component', () => {
-  assert.deepEqual(icons.map((i) => i.name), ['ApproveIcon', 'RejectIcon', 'ReviewIcon', 'RideIcon', 'SafetyLimitIcon', 'TalkIcon', 'UploadIcon']);
+test('AC2: the set has its own icons plus the Talk entry\'s, each one exported component', () => {
+  assert.deepEqual(icons.map((i) => i.name), ['ReviewIcon', 'RideIcon', 'TalkIcon']);
   for (const icon of icons) assert.equal(typeof icon.component, 'function', `${icon.file} exports ${icon.name}`);
 });
 

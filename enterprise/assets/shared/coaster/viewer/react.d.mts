@@ -36,20 +36,5 @@ export interface CoasterRideProps extends CoasterViewerProps {
   autoplay?: boolean;
 }
 
-export interface RidePairSide {
-  file: CoasterFile;
-  title?: string;
-  marks?: number[];
-}
-
-export interface RidePairProps {
-  left: RidePairSide;
-  right: RidePairSide;
-  speed?: number;
-  colors?: CoasterColors;
-  className?: string;
-}
-
 export function createCoasterViewer(React: ReactModule): ReactNamespace.FunctionComponent<CoasterViewerProps>;
 export function createCoasterRide(React: ReactModule): ReactNamespace.FunctionComponent<CoasterRideProps>;
-export function createRidePair(React: ReactModule): ReactNamespace.FunctionComponent<RidePairProps>;

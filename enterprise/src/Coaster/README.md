@@ -2,7 +2,7 @@
 
 Saving a `.coaster` asset fills five of its metadata entries: `maxHeight`, `length`, `inversions`, `topSpeed` and
 `duration`. The portal shows them in the asset's General card, so a supplier who uploads a ride design sees its key
-figures at once, and Change Control can review them like any other metadata.
+figures at once.
 
 ## What it shows
 

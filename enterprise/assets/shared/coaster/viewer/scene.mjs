@@ -17,7 +17,7 @@ export const DEFAULT_COLORS = Object.freeze({
   rail: '#ffd200',
   steel: '#c9d1d9',
   station: '#00d0ff',
-  mark: '#ff3df2', // the changed elements in a side-by-side review (pair.mjs)
+  mark: '#ff3df2', // the elements given as `marks`
 });
 
 const GAUGE = 1.2; // metres between the rails
