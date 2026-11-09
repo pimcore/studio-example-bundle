@@ -1,9 +1,9 @@
-/// <reference types="node" />
 import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
+import { type IAbstractPlugin } from '@pimcore/studio-ui-bundle'
 
 const registerMainNavItem = jest.fn()
 const registerWidget = jest.fn()
@@ -32,6 +32,8 @@ import { TalkSlidesWidget, TALK_WIDGET_NAME } from '../components/talk-slides-wi
 import { DEFAULT_TALK_URL } from '../config'
 /* eslint-enable import/first */
 
+type StartupContext = Parameters<NonNullable<IAbstractPlugin['onStartup']>>[0]
+
 describe('talk-slides example', () => {
   beforeEach(() => {
     registerMainNavItem.mockClear()
@@ -40,7 +42,7 @@ describe('talk-slides example', () => {
 
   it('AC1: loading the module registers the main-nav entry Talk and its widget', () => {
     const registerModule = jest.fn()
-    TalkSlidesPlugin.onStartup?.({ moduleSystem: { registerModule } } as any)
+    TalkSlidesPlugin.onStartup?.({ moduleSystem: { registerModule } } as unknown as StartupContext)
     expect(registerModule).toHaveBeenCalledWith(TalkSlidesExtension)
 
     TalkSlidesExtension.onInit()
@@ -72,7 +74,7 @@ describe('talk-slides example', () => {
 
   it('AC3: once the iframe has loaded, keyboard focus moves into it', () => {
     render(<TalkSlidesWidget />)
-    const frame = screen.getByTitle('Talk') as HTMLIFrameElement
+    const frame = screen.getByTitle<HTMLIFrameElement>('Talk')
     // jsdom has no window.focus; the stub also shows the viewer's own window gets the focus
     const focusViewer = jest.fn()
     frame.contentWindow!.focus = focusViewer

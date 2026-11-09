@@ -1,7 +1,8 @@
-/// <reference types="node" />
 import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import React from 'react'
 import { render, screen } from '@testing-library/react'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 // F38: the Studio tab tells the viewer it is shown in Studio and passes the active theme's accent (colorPrimary),
 // so the slides take Studio's colour; the standalone talk.html keeps its neutral theme.
@@ -64,8 +65,6 @@ describe('talk-slides theme (F38)', () => {
 
 describe('talk-slides README (F38)', () => {
   it('AC2: the README says the tab passes Studio accent to the viewer', () => {
-    const { readFileSync } = require('fs') as typeof import('fs')
-    const { join } = require('path') as typeof import('path')
     const text = readFileSync(join(__dirname, '..', 'README.md'), 'utf8')
     expect(text).toMatch(/host=studio/)
     expect(text).toMatch(/colorPrimary/)

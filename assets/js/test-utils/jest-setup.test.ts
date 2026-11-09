@@ -1,5 +1,3 @@
-/// <reference types="jest" />
-
 describe('jest setup', () => {
   it('AC1: loads the jest-dom matchers for every test', () => {
     const element = document.createElement('div')
