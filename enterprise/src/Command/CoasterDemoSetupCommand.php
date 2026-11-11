@@ -4,6 +4,7 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command;
 
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ScreamScoreDemo;
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\GuestShares;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,16 +13,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Sets up Demo 1 (see README.md next to this file), then the scream score on it (ScreamScoreDemo, F316). Idempotent:
- * a second run changes nothing.
+ * Sets up Demo 1 (see README.md next to this file), then the scream score on it (ScreamScoreDemo, F316) and a public
+ * share per coaster for its guests (GuestShares, F322). Idempotent: a second run changes nothing.
  */
 #[AsCommand(name: self::NAME, description: 'Sets up the coaster demo: portal, brief, supplier login and revision 1')]
 class CoasterDemoSetupCommand extends Command
 {
     public const NAME = 'coaster-demo:setup';
 
-    public function __construct(private readonly CoasterDemo $demo, private readonly ScreamScoreDemo $screamScore)
-    {
+    public function __construct(
+        private readonly CoasterDemo $demo,
+        private readonly ScreamScoreDemo $screamScore,
+        private readonly GuestShares $guestShares,
+    ) {
         parent::__construct();
     }
 
@@ -34,10 +38,11 @@ class CoasterDemoSetupCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $domain = (string) $input->getOption('domain');
-        // the scream score after the coaster demo: its ratings point at the coaster asset, its staff at the portal
-        $changes = [...$this->demo->setup($domain), ...$this->screamScore->setup()];
+        // the scream score after the coaster demo: its ratings point at the coaster asset, its staff at the portal; the
+        // guests' shares last: they hold the coaster and belong to the park-staff user
+        $changes = [...$this->demo->setup($domain), ...$this->screamScore->setup(), ...$this->guestShares->setup()];
         self::report($io, $changes, 'Nothing to do: the coaster demo is set up already.');
-        self::reportScreamScore($io, $this->screamScore, $domain);
+        self::reportScreamScore($io, $this->screamScore, $this->guestShares);
 
         return Command::SUCCESS;
     }
@@ -49,10 +54,13 @@ class CoasterDemoSetupCommand extends Command
         $io->success(sprintf('Ready. Log in to the portal as %s, password %s.', CoasterDemo::SUPPLIER_EMAIL, CoasterDemo::SUPPLIER_PASSWORD));
     }
 
-    /** The guest link per coaster, the demo passes with their codes and the staff login: what a presenter needs. */
-    public static function reportScreamScore(SymfonyStyle $io, ScreamScoreDemo $screamScore, string $domain): void
+    /**
+     * The guest link per coaster (its public share's coaster page), the demo passes with their codes and the staff
+     * login: what a presenter needs.
+     */
+    public static function reportScreamScore(SymfonyStyle $io, ScreamScoreDemo $screamScore, GuestShares $guestShares): void
     {
-        foreach ($screamScore->guestLinks($domain) as $ride => $link) {
+        foreach ($guestShares->guestLinks() as $ride => $link) {
             $io->writeln(sprintf('Scream score guest link for %s: %s', $ride, $link));
         }
         $io->writeln('Demo annual passes (number: code, the first ones have no rating yet):');

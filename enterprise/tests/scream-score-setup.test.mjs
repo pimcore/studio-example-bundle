@@ -16,7 +16,10 @@ const read = (path) => readFileSync(path, 'utf8');
 const files = ['ScreamScore/GuestFeedback', 'ScreamScore/FeedbackStore', 'ScreamScore/AnnualPasses', 'ScreamScore/FailureCounter',
   'ScreamScore/RatingResult', 'ScreamScore/ScreamScore', 'ScreamScore/InMemory/InMemoryFailureCounter',
   'ScreamScore/CacheFailureCounter', 'ScreamScore/Pimcore/PimcoreFeedbackStore', 'Command/CoasterDemo/ScreamScoreEnvironment',
-  'Command/CoasterDemo/CoasterDemo', 'Command/CoasterDemo/ScreamScoreDemo'];
+  'Command/CoasterDemo/CoasterDemo', 'Command/CoasterDemo/ScreamScoreDemo', 'ScreamScore/Rides', 'ScreamScore/InMemory/InMemoryRides',
+  'ScreamScore/Pimcore/GuestShares'];
+// F322: the guests' public shares run on the stand-ins for the Portal Engine's share service and Pimcore.
+const shareStubs = join(enterpriseDir, 'tests/fixtures/scream-score/public-share-stubs.php');
 
 // The in-memory environment: the whole state is one array, so a test can compare states before and after. What the
 // demo created carries 'demo' => true. 'classFiles' stands for the generated files under var/classes.
@@ -28,6 +31,7 @@ namespace Psr\\Cache {
     interface CacheItemPoolInterface { public function getItem(string $key): CacheItemInterface; public function save(CacheItemInterface $item): bool; }
 }
 namespace {
+    require ${JSON.stringify(shareStubs)};
     foreach (${JSON.stringify(files)} as $file) { require ${JSON.stringify(src)} . '/' . $file . '.php'; }
 
     use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\ScreamScoreDemo;
@@ -157,6 +161,25 @@ namespace {
     $GLOBALS['failures'] = new InMemoryFailureCounter();
     function demo(MemoryEnvironment $env): ScreamScoreDemo { return new ScreamScoreDemo($env, $GLOBALS['failures']); }
     function screamScore(MemoryEnvironment $env): ScreamScore { return new ScreamScore($env, $env, $GLOBALS['failures']); }
+
+    // The guests' shares (F322) on the demo portal's site 3 and its asset pool 110; the staff user and the coaster
+    // assets as the demo left them in $env.
+    $GLOBALS['entities'] = new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\Entity\\EntityManagerService();
+    $GLOBALS['urls'] = new \\Symfony\\Component\\Routing\\Generator\\StubUrlGenerator();
+    \\Pimcore\\Model\\Site::$byRootId[101] = new \\Pimcore\\Model\\Site(3, 101, '/pimcore-kingdom', 'portal.localhost');
+    function shares(MemoryEnvironment $env): \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\Pimcore\\GuestShares {
+        \\Pimcore\\Model\\DataObject\\PortalUser::$byEmail = isset($env->state['users'][ScreamScoreDemo::STAFF_EMAIL])
+            ? [ScreamScoreDemo::STAFF_EMAIL => new \\Pimcore\\Model\\DataObject\\PortalUser(61, ScreamScoreDemo::STAFF_EMAIL)] : [];
+        \\Pimcore\\Model\\Asset::$byId = [];
+        foreach ($env->state['coasters'] as $id) { new \\Pimcore\\Model\\Asset($id); }
+        $pool = new \\Pimcore\\Bundle\\PortalEngineBundle\\Model\\Configuration\\DataPool\\StubDataPoolConfig(
+            new \\Pimcore\\Model\\Document\\Page(110, '/pimcore-kingdom/ride-designs'), 'asset', 'ride-designs');
+        return new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\Pimcore\\GuestShares(
+            new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\PublicShare\\PublicShareService($GLOBALS['entities']), $GLOBALS['entities'],
+            new \\Pimcore\\Bundle\\PortalEngineBundle\\Service\\DataPool\\DataPoolConfigService([3 => [$pool]]), $GLOBALS['urls'], $env,
+            new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\InMemory\\InMemoryRides(['thunder-loop' => 'Thunder Loop']));
+    }
+    function shareHash(): string { return $GLOBALS['entities']->shares()[0]['hash']; }
 }
 `;
 
@@ -168,12 +191,13 @@ const passesFile = JSON.parse(read(join(demoData, 'annual-passes.json')));
 const KEYS = ['thunder-loop-PK-2026-0001', 'thunder-loop-PK-2026-0002', 'thunder-loop-PK-2026-0003'];
 
 test('AC1: setup creates the GuestFeedback class, the 5 hashed passes, the 3 samples (one hidden), the Park staff group and its user', () => {
-  const { changes, state, links, passes, codesValid } = php(`
+  const { changes, state, links, hash, passes, codesValid } = php(`
     $env = new MemoryEnvironment();
     $changes = demo($env)->setup();
+    shares($env)->setup();
     $codesValid = [];
     foreach (\\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\ScreamScoreDemo::DEMO_PASS_CODES as $number => $code) { $codesValid[$number] = password_verify($code, $env->state['passes'][$number]); }
-    echo json_encode(['changes' => $changes, 'state' => $env->state, 'links' => demo($env)->guestLinks('portal.localhost'),
+    echo json_encode(['changes' => $changes, 'state' => $env->state, 'links' => shares($env)->guestLinks(), 'hash' => shareHash(),
       'passes' => demo($env)->demoPasses(), 'codesValid' => $codesValid]);
   `);
 
@@ -217,7 +241,7 @@ test('AC1: setup creates the GuestFeedback class, the 5 hashed passes, the 3 sam
     'Set up the portal user group "Park staff" with access to the portal "Pimcore Kingdom"',
     'Set up the park-staff user Park Staff (staff@pimcore-kingdom.example) in the group "Park staff"',
   ]);
-  assert.deepEqual(links, { 'thunder-loop': 'http://portal.localhost/_scream-score/thunder-loop' });
+  assert.deepEqual(links, { 'thunder-loop': `http://portal.localhost/ride-designs/${hash}/public-share-a~401` });
 });
 
 test('AC1: a second setup changes nothing, and it keeps a guest rating', () => {
@@ -238,19 +262,20 @@ test('AC1: a second setup changes nothing, and it keeps a guest rating', () => {
 
 test('AC1: the setup command prints the guest link per coaster, the demo passes and the staff login after the changes', () => {
   const command = read(join(src, 'Command/CoasterDemoSetupCommand.php'));
-  assert.match(command, /\[\.\.\.\$this->demo->setup\(\$domain\), \.\.\.\$this->screamScore->setup\(\)\]/, 'the scream score after the coaster demo');
-  assert.match(command, /self::reportScreamScore\(\$io, \$this->screamScore, \$domain\);/);
-  assert.match(command, /guestLinks\(\$domain\)/);
+  assert.match(command, /\[\.\.\.\$this->demo->setup\(\$domain\), \.\.\.\$this->screamScore->setup\(\), \.\.\.\$this->guestShares->setup\(\)\]/, 'the scream score after the coaster demo');
+  assert.match(command, /self::reportScreamScore\(\$io, \$this->screamScore, \$this->guestShares\);/);
+  assert.match(command, /guestLinks\(\)/);
   assert.match(command, /demoPasses\(\)/);
   assert.match(command, /ScreamScoreDemo::STAFF_EMAIL, ScreamScoreDemo::STAFF_PASSWORD/);
 });
 
-test('AC2: plain reset after guests rated leaves exactly the samples on the new coaster asset, keeps the links and clears the lockouts', () => {
-  const { samples, state, changes, linksBefore, linksAfter, lockedBefore, rateAfter } = php(`
+test('AC2: plain reset after guests rated leaves exactly the samples on the new coaster asset, gives a new guest link and clears the lockouts', () => {
+  const { samples, state, changes, linksBefore, linksAfter, hashAfter, lockedBefore, rateAfter } = php(`
     $env = new MemoryEnvironment();
     demo($env)->setup();
     $samples = $env->state['ratings'];
-    $linksBefore = demo($env)->guestLinks('portal.localhost');
+    shares($env)->setup();
+    $linksBefore = shares($env)->guestLinks();
     $score = screamScore($env);
     // guests: a new rating, a sample pass rating again, the park showing the hidden one, and a locked-out pass
     $score->rate('thunder-loop', 'PK-2026-0004', 'scream-0004', 10, 'Again!', 'guest-a');
@@ -261,13 +286,15 @@ test('AC2: plain reset after guests rated leaves exactly the samples on the new 
     // the coaster demo's reset uploads revision 1 again: a new asset id
     $env->uploadCoasterAgain();
     $changes = demo($env)->reset();
-    $linksAfter = demo($env)->guestLinks('portal.localhost');
+    shares($env)->reset();
+    $linksAfter = shares($env)->guestLinks();
+    $hashAfter = shareHash();
     $rateAfter = screamScore($env)->rate('thunder-loop', 'PK-2026-0005', 'scream-0005', 6, null, 'guest-c')->toArray();
     $state = $env->state;
     // the live try above is not part of what reset left
     unset($state['ratings']['thunder-loop-PK-2026-0005']);
     echo json_encode(['samples' => $samples, 'state' => $state, 'changes' => $changes, 'linksBefore' => $linksBefore,
-      'linksAfter' => $linksAfter, 'lockedBefore' => $lockedBefore, 'rateAfter' => $rateAfter]);
+      'linksAfter' => $linksAfter, 'hashAfter' => $hashAfter, 'lockedBefore' => $lockedBefore, 'rateAfter' => $rateAfter]);
   `);
   assert.deepEqual(lockedBefore, { pass: 'Too many tries. Try again in 15 minutes.' }, 'the pass was locked before the reset');
 
@@ -279,7 +306,9 @@ test('AC2: plain reset after guests rated leaves exactly the samples on the new 
     assert.equal(oldAsset, 401);
     assert.equal(rideAsset, 900, `${key} points at the newly uploaded coaster`);
   }
-  assert.deepEqual(linksAfter, linksBefore, 'the guest links stay the same');
+  // F322: the guest link is the ride's public share, which reset makes anew: a new hash, the new coaster asset
+  assert.deepEqual(linksAfter, { 'thunder-loop': `http://portal.localhost/ride-designs/${hashAfter}/public-share-a~900` }, 'the new share\'s link');
+  assert.notEqual(linksAfter['thunder-loop'], linksBefore['thunder-loop'], 'the old link is gone after the reset');
   assert.equal(rateAfter.stored, true, 'the locked pass may rate again: the lockouts are cleared');
 
   assert.deepEqual(changes, [
@@ -322,8 +351,8 @@ test('AC2: the cache-backed lockout counter forgets every count on clear(), the 
 
 test('AC2: the reset command resets the coaster demo first, then the scream score, and prints the guest links again', () => {
   const command = read(join(src, 'Command/CoasterDemoResetCommand.php'));
-  assert.match(command, /\[\.\.\.\$this->demo->reset\(false, \$domain\), \.\.\.\$this->screamScore->reset\(\)\]/);
-  assert.match(command, /CoasterDemoSetupCommand::reportScreamScore\(\$io, \$this->screamScore, \$domain\);/);
+  assert.match(command, /\[\.\.\.\$this->demo->reset\(false, \$domain\), \.\.\.\$this->screamScore->reset\(\), \.\.\.\$this->guestShares->reset\(\)\]/);
+  assert.match(command, /CoasterDemoSetupCommand::reportScreamScore\(\$io, \$this->screamScore, \$this->guestShares\);/);
 });
 
 test('AC3: reset --all removes the ratings, the passes, the staff user and its group, and the class with its generated files', () => {
@@ -356,7 +385,7 @@ test('AC3: reset --all removes the ratings, the passes, the staff user and its g
 
 test('AC3: reset --all runs the scream score first; the Pimcore class delete also removes the files under var/classes', () => {
   const command = read(join(src, 'Command/CoasterDemoResetCommand.php'));
-  assert.match(command, /\[\.\.\.\$this->screamScore->reset\(true\), \.\.\.\$this->demo->reset\(true, \$domain\)\]/);
+  assert.match(command, /\[\.\.\.\$this->guestShares->remove\(\), \.\.\.\$this->screamScore->reset\(true\), \.\.\.\$this->demo->reset\(true, \$domain\)\]/);
   const pimcore = read(join(src, 'ScreamScore/Pimcore/PimcoreScreamScoreEnvironment.php'));
   assert.match(pimcore, /\$class->delete\(\);/);
   assert.match(pimcore, /PIMCORE_CLASS_DIRECTORY \. '\/DataObject\/' \. \$className \. '\.php'/);
@@ -366,7 +395,7 @@ test('AC3: reset --all runs the scream score first; the Pimcore class delete als
 test('AC4: the Pimcore-backed scream score lives under src/ScreamScore/Pimcore, where the F315 lint test reaches, and php -l passes', () => {
   const pimcoreDir = join(src, 'ScreamScore/Pimcore');
   const pimcoreFiles = readdirSync(pimcoreDir).filter((f) => f.endsWith('.php')).sort();
-  assert.deepEqual(pimcoreFiles, ['PimcoreAnnualPasses.php', 'PimcoreFeedbackStore.php', 'PimcoreRides.php', 'PimcoreScreamScoreEnvironment.php']);
+  assert.deepEqual(pimcoreFiles, ['GuestShares.php', 'PimcoreAnnualPasses.php', 'PimcoreFeedbackStore.php', 'PimcoreRides.php', 'PimcoreScreamScoreEnvironment.php']);
   const lint = read(join(enterpriseDir, 'tests/scream-score-lint.test.mjs'));
   assert.match(lint, /join\(enterpriseDir, 'src\/ScreamScore'\)/, 'the lint test walks src/ScreamScore');
   assert.match(lint, /if \(entry\.isDirectory\(\)\) return phpFiles\(path\);/, 'and its subfolders');

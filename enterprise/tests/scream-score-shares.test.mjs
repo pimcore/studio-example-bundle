@@ -108,7 +108,7 @@ namespace {
 `;
 
 const php = (body) =>
-  JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-r', `${bootstrap}\nnamespace {\n${body}\n}\n`], { encoding: 'utf8' }));
+  JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-d', 'error_reporting=-1', '-r', `${bootstrap}\nnamespace {\n${body}\n}\n`], { encoding: 'utf8' }));
 
 const byName = (shares) => Object.fromEntries(shares.map((s) => [s.name, s]));
 
@@ -118,7 +118,7 @@ test('AC1: setup makes one public share per coaster, holding only it, owned by P
     try { $GLOBALS['service']->create('x', []); } catch (\\Error $e) { $createFails = true; }
     $changes = shares()->setup();
     echo json_encode(['changes' => $changes, 'shares' => state(), 'indexed' => $GLOBALS['service']->indexed,
-      'siteRequest' => Site::isSiteRequest(), 'createFails' => $createFails]);
+      'siteRequest' => \\Pimcore\\Model\\Site::isSiteRequest(), 'createFails' => $createFails]);
   `);
   assert.equal(createFails, true, 'the stub service cannot create() without a portal user, like the real one in a command');
   assert.equal(siteRequest, false, 'setup ran with no current Site and leaves none');
@@ -151,7 +151,7 @@ test('AC1: setup makes one public share per coaster, holding only it, owned by P
 
 test('AC1: setup stops with a plain message when there is no Park staff user to own the shares', () => {
   const { error, shares } = php(`
-    PortalUser::$byEmail = [];
+    \\Pimcore\\Model\\DataObject\\PortalUser::$byEmail = [];
     $error = null;
     try { shares()->setup(); } catch (\\RuntimeException $e) { $error = $e->getMessage(); }
     echo json_encode(['error' => $error, 'shares' => state()]);
@@ -195,7 +195,7 @@ test('AC2: a second setup keeps each share and its hash and changes nothing; aft
 test('AC2: setup puts back a demo share whose settings were changed in the portal, and keeps its hash', () => {
   const { changes, share, hashBefore } = php(`
     shares()->setup();
-    $share = $GLOBALS['entities']->getManager()->getRepository(PublicShare::class)->findOneBy(['name' => 'Thunder Loop: your scream score']);
+    $share = $GLOBALS['entities']->getManager()->getRepository(\\Pimcore\\Bundle\\PortalEngineBundle\\Entity\\PublicShare::class)->findOneBy(['name' => 'Thunder Loop: your scream score']);
     $hashBefore = $share->getHash();
     $share->setExpiryDate(time() + 3600)->setShowTermsText(true)->setTermsText('Be nice')->setConfigs([['format' => 'original']]);
     $changes = shares()->setup();
@@ -245,7 +245,7 @@ test('AC4: reset removes the demo\'s shares only (by name and owner), makes new 
     $removed = shares()->remove();
     $left = state();
     $again = shares()->remove();
-    PortalUser::$byEmail = [];
+    \\Pimcore\\Model\\DataObject\\PortalUser::$byEmail = [];
     $noOwner = shares()->remove();
     echo json_encode(['removed' => $removed, 'left' => $left, 'again' => $again, 'reset' => $reset, 'before' => $before,
       'after' => $after, 'noOwner' => $noOwner]);

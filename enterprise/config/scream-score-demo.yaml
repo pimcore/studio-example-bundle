@@ -20,6 +20,9 @@ services:
     Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreScreamScoreEnvironment: ~
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ScreamScoreEnvironment:
         alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreScreamScoreEnvironment
+    # One Portal Engine public share per coaster for its guests (src/ScreamScore/Pimcore/GuestShares.php, F322): setup
+    # makes them, reset renews them, and every guest link (the share's coaster page) comes from here.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\GuestShares: ~
 
     # The guest page (src/Portal/ScreamScore/GuestController.php, F317) finds a coaster's name by its ride key.
     Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreRides: ~

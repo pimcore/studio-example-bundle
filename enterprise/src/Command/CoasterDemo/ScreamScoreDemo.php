@@ -61,7 +61,8 @@ class ScreamScoreDemo
 
     /**
      * The guest page of a ride (F317): the portal's domain, this path, the ride key. `_` is Portal Engine's page prefix
-     * of a one-language portal (PrefixService), which the coaster demo's portal is.
+     * of a one-language portal (PrefixService), which the coaster demo's portal is. The link setup prints is the ride's
+     * public share instead (ScreamScore\Pimcore\GuestShares::guestLink(), F322).
      */
     public const GUEST_PATH = '/_scream-score/';
 
@@ -159,21 +160,6 @@ class ScreamScoreDemo
     public function reset(bool $removeAll = false): array
     {
         return $removeAll ? $this->removeAll() : [...$this->backToSamples(), ...$this->setup()];
-    }
-
-    /**
-     * The guest link of each coaster (F317's page), by ride key: it stays the same when reset uploads the coaster again.
-     *
-     * @return array<string, string> ride key => link
-     */
-    public function guestLinks(string $domain): array
-    {
-        $links = [];
-        foreach ($this->environment->rides(PimcoreFeedbackStore::RIDES_FOLDER) as $ride) {
-            $links[$ride] = 'http://' . $domain . self::GUEST_PATH . rawurlencode($ride);
-        }
-
-        return $links;
     }
 
     /**
