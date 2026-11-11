@@ -217,7 +217,7 @@ test('AC1: setup creates the GuestFeedback class, the 5 hashed passes, the 3 sam
     'Set up the portal user group "Park staff" with access to the portal "Pimcore Kingdom"',
     'Set up the park-staff user Park Staff (staff@pimcore-kingdom.example) in the group "Park staff"',
   ]);
-  assert.deepEqual(links, { 'thunder-loop': 'http://portal.localhost/scream-score/thunder-loop' });
+  assert.deepEqual(links, { 'thunder-loop': 'http://portal.localhost/_scream-score/thunder-loop' });
 });
 
 test('AC1: a second setup changes nothing, and it keeps a guest rating', () => {
