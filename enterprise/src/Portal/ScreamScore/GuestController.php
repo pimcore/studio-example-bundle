@@ -170,7 +170,7 @@ class GuestController extends FrontendController
         return [
             'score' => trim($field('score')),
             'comment' => str_replace("\r\n", "\n", $field('comment')),
-            'passNumber' => strtoupper(trim($field('passNumber'))),
+            'passNumber' => trim($field('passNumber')),
             'passCode' => trim($field('passCode')),
         ];
     }
