@@ -1,8 +1,9 @@
 {% extends '@PimcoreStudioExampleEnterprise/portal/scream-score/layout.html.twig' %}
 
 {# The park's overview of the scream scores (ParkController, staff only): one row per coaster with its average, the
-   number of ratings and the guest link to copy. With `refused` set, only that message (403, 404 or 400). No pass
-   numbers, no comments here. #}
+   number of ratings and the guest link to copy, the coaster's public share, with "Open as a guest" in a new tab (or
+   "No guest link yet" without a share). With `refused` set, only that message (403, 404 or 400). No pass numbers, no
+   comments here. #}
 
 {% block title %}{{ refused ?: 'Scream scores' }}{% endblock %}
 
@@ -14,6 +15,7 @@
         .ss-facts { display: flex; flex-wrap: wrap; gap: var(--p-space-xs, 8px) var(--p-space-md, 16px); margin: var(--p-space-xxs, 4px) 0; }
         .ss-average { font-size: var(--p-font-size-h4, 20px); font-weight: var(--p-font-weight-strong, 600); }
         .ss-row input[type=text] { font-size: var(--p-font-size, 14px); }
+        .ss-open { margin: var(--p-space-xxs, 4px) 0 0; }
 {% endblock %}
 
 {% block content %}
@@ -33,8 +35,14 @@
                             <span class="ss-hint">{{ coaster.count }} {{ coaster.count == 1 ? 'rating' : 'ratings' }}</span>
                         {% endif %}
                     </p>
-                    <label class="ss-hint" for="link-{{ coaster.key }}">Guest link</label>
-                    <input type="text" id="link-{{ coaster.key }}" value="{{ coaster.link }}" readonly>
+                    {% if coaster.link %}
+                        <label class="ss-hint" for="link-{{ coaster.key }}">Guest link</label>
+                        <input type="text" id="link-{{ coaster.key }}" value="{{ coaster.link }}" readonly>
+                        <p class="ss-open"><a class="ss-link" href="{{ coaster.link }}" target="_blank" rel="noopener noreferrer">Open as a guest</a></p>
+                    {% else %}
+                        <span class="ss-hint">Guest link</span>
+                        <p class="ss-hint">No guest link yet. Run coaster-demo:setup.</p>
+                    {% endif %}
                 </li>
             {% else %}
                 <li class="ss-row ss-hint">No coasters yet. Run coaster-demo:setup.</li>

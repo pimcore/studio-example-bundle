@@ -2,6 +2,7 @@
 
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore;
 
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\GuestShares;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Rides;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\ScreamScore;
 use Pimcore\Controller\FrontendController;
@@ -13,7 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
  * The park's page of the scream score: what the guests said about each coaster, for the Pimcore Kingdom staff. Three
  * routes of config/pimcore/routing.yaml, all behind the portal login, server-rendered like the guest page:
  * - `/{_portal_engine_prefix}scream-scores`: one row per coaster with its average ("7.4 / 10"), the number of ratings
- *   and the guest link to copy, or "No ratings yet";
+ *   and the guest link to copy (the coaster's public share, GuestShares::guestLink()) with "Open as a guest", or
+ *   "No guest link yet" for a coaster without a share; "No ratings yet" without ratings;
  * - `/{_portal_engine_prefix}scream-scores/{ride key}`: the coaster's 5 newest visible comments with score and date
  *   (never a pass number), each with "Hide"; how many are hidden, and under "Show hidden (n)" each with "Show again";
  * - POST `/{_portal_engine_prefix}scream-scores/{feedback id}/visibility`: hides or shows one comment, then 303 back
@@ -48,6 +50,7 @@ class ParkController extends FrontendController
         private readonly ScreamScore $screamScore,
         private readonly Rides $rides,
         private readonly StaffAccess $staffAccess,
+        private readonly GuestShares $guestShares,
     ) {
     }
 
@@ -77,7 +80,7 @@ class ParkController extends FrontendController
                 'name' => $name,
                 'average' => $summary['average'] === null ? null : number_format($summary['average'], 1, '.', ''),
                 'count' => $summary['count'],
-                'link' => $request->getSchemeAndHttpHost() . self::path($request, 'scream-score/' . rawurlencode($key)),
+                'link' => $this->guestLink($key),
                 'page' => self::path($request, 'scream-scores/' . rawurlencode($key)),
             ];
         }
@@ -126,6 +129,16 @@ class ParkController extends FrontendController
         }
 
         return new RedirectResponse(self::path($request, 'scream-scores/' . rawurlencode($ride)), Response::HTTP_SEE_OTHER);
+    }
+
+    /** The coaster's share link, null without a share, also while the demo portal is not set up. */
+    private function guestLink(string $ride): ?string
+    {
+        try {
+            return $this->guestShares->guestLink($ride);
+        } catch (\RuntimeException) {
+            return null;
+        }
     }
 
     /** A path on this portal: `/_scream-scores` on a one-language portal, `/en/scream-scores` with a language prefix. */
