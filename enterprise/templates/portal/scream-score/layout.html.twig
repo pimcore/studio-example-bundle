@@ -2,7 +2,8 @@
    a phone, with no portal navigation and no plugin JavaScript. The look comes from PortalUiKit's tokens (`--p-*`,
    published by Portal Engine); each token carries its kit value as fallback, so the page reads well without them. #}
 <!DOCTYPE html>
-<html lang="en">
+{# the kit's tokens need the theme class on <html>, as Portal Engine's own layout sets it #}
+<html lang="en" class="pe-theme-studio-default-light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
