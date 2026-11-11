@@ -15,6 +15,7 @@ services:
         tags: ['portal_engine.plugin_provider']
         arguments:
             $agentEnabled: '%studio_example_enterprise.agent.enabled%'
+            $publicShareService: '@Pimcore\Bundle\PortalEngineBundle\Service\PublicShare\PublicShareService'
 
     # The .coaster file of the portal's coaster preview stage, routed by config/pimcore/routing.yaml. The tags are
     # needed without autoconfigure: the action would fail with "has no container set", and the container would not
