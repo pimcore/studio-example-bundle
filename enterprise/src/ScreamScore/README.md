@@ -80,9 +80,20 @@ services.
 The Portal Engine asks for a portal login on every page of a portal site, except its public routes. The guest route,
 `pimcore_studio_example_enterprise_scream_score_guest` in `config/pimcore/routing.yaml`, is added to
 `pimcore_portal_engine.custom_public_routes` by the bundle's extension
-(`PimcoreStudioExampleEnterpriseExtension::prepend()`): exactly this one route name, merged with the app's own list.
+(`PimcoreStudioExampleEnterpriseExtension::prepend()`), with the coaster file's route (a public share's 3D ride) and
+the share's scream score route below: exactly these route names, merged with the app's own list.
 The park's routes stay behind the portal login, and `src/Portal/ScreamScore/StaffAccess.php` lets only members of the
 portal user group "Park staff" in (403 for everyone else). A park adds staff by adding them to that group in Studio.
+
+### On a public share's coaster page: JSON
+
+A guest who opens the coaster's public share rates it through
+`/studio-example-enterprise/scream-score/{share hash}/{asset id}` (`src/Portal/ScreamScore/ShareRatingController.php`,
+route `pimcore_studio_example_enterprise_scream_score_share`, also public). GET answers the coaster's ride key and name
+and a CSRF token; POST takes `{"score", "comment", "passNumber", "passCode", "token"}` as JSON and answers 200, 422 with
+one message per field (`score`, `comment`, `pass`), 429 after too many wrong tries, 400 for an expired token or a
+request from another site (no `Origin` of the portal's own), and 404 for an unknown or expired share or an asset that is
+not the share's coaster. The ride is always found from the share, never sent by the browser; the rules are the same.
 
 ### Why no plugin JavaScript
 
@@ -114,5 +125,5 @@ systems.
 - `Pimcore/`: the interfaces on Pimcore, and `PimcoreScreamScoreEnvironment.php` for setup and reset
 - `InMemory/`: the same in memory, for the tests
 - `../Portal/ScreamScore/GuestController.php`, `ParkController.php`, `StaffAccess.php`: the guest page, the park's page
-  and who is staff
+  and who is staff; `ShareRatingController.php` the JSON endpoint for a public share's coaster page
 - `../Command/CoasterDemo/ScreamScoreDemo.php`: what setup and reset do for the scream score

@@ -77,3 +77,15 @@ pimcore_studio_example_enterprise_scream_score_park_visibility:
     requirements:
         _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
         id: '\d+'
+
+# The scream score for a public share's coaster page, as JSON for its panel, see
+# src/Portal/ScreamScore/ShareRatingController.php. Public like the guest page (the extension adds this route name to
+# custom_public_routes): the share's hash and the coaster asset's id name the ride, never a ride key from the browser.
+# No language prefix: like the coaster file, the share page's script calls it.
+pimcore_studio_example_enterprise_scream_score_share:
+    path: /studio-example-enterprise/scream-score/{hash}/{assetId}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ShareRatingController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET, POST]
+    requirements:
+        assetId: '\d+'
