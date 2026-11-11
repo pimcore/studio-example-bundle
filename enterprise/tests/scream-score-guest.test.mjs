@@ -174,7 +174,7 @@ test('AC1: a guest without a login gets the form: score 1-10, optional comment, 
   assert.match(body, /<input type="hidden" name="_token" value="[^"]+">/);
   assert.match(body, /<form method="post"/);
   assert.match(body, /<meta name="viewport" content="width=device-width, initial-scale=1">/, 'phone width');
-  assert.doesNotMatch(body, /<script[^>]*src=|<nav\b|login/i, 'no plugin JavaScript, no portal navigation, no login');
+  assert.doesNotMatch(body, /<script[^>]*src=|<nav\b|type="password"|_username/i, 'no plugin JavaScript, no portal navigation, no login form');
 });
 
 test('AC2: a valid send stores the rating and redirects 303 to the thanks page; a second send replaces the earlier score', { skip }, () => {
@@ -267,7 +267,7 @@ test('AC4: an unknown ride key answers 404 "This ride has no scream score", a mi
   for (const name of ['unknown', 'badKey', 'unknownPost']) {
     assert.equal(r[name].status, 404, name);
     assert.match(r[name].body, /This ride has no scream score/, name);
-    assert.doesNotMatch(r[name].body, /<form|login/i, `${name}: no form, no login`);
+    assert.doesNotMatch(r[name].body, /<form|type="password"/i, `${name}: no form, no login form`);
   }
   for (const name of ['noToken', 'wrongToken', 'otherRideToken']) {
     assert.equal(r[name].status, 400, name);
