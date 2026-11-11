@@ -26,6 +26,7 @@ const hasPhp = (() => {
 const skip = !hasPhp ? 'no php CLI' : !existsSync(autoload) ? `no Pimcore vendor at ${autoload}` : false;
 
 const PREFIX = 'pimcore_studio_example_enterprise_scream_score_';
+const SHARE_LINK = 'http://portal.localhost/coasters/0123456789abcdef0123456789abcdef/public-share-a~17';
 const CONTROLLER = 'Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\ScreamScore\\ParkController::__invoke';
 
 // Thunder Loop: 8 ratings, one a day from 1 Nov 2026, scores 9 8 7 6 10 5 7 4 (average 7.0); the newest has no comment.
@@ -43,6 +44,7 @@ date_default_timezone_set('UTC');
 use Pimcore\\Bundle\\PortalEngineBundle\\Model\\DataObject\\PortalUserInterface;
 use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\ScreamScore\\{ParkController, StaffAccess};
 use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\{ScreamScore, GuestFeedback};
+use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\Pimcore\\GuestShares;
 use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\InMemory\\{InMemoryFeedbackStore, InMemoryAnnualPasses, InMemoryFailureCounter, InMemoryRides};
 use Symfony\\Component\\HttpFoundation\\{Request, RequestStack};
 use Symfony\\Component\\HttpFoundation\\Session\\Session;
@@ -96,7 +98,12 @@ $container = new class($services) implements \\Psr\\Container\\ContainerInterfac
     public function get(string $id): mixed { return $this->services[$id] ?? throw new \\RuntimeException("no service $id"); }
     public function has(string $id): bool { return isset($this->services[$id]); }
 };
-$controller = new ParkController($service, new InMemoryRides(['wild-mouse' => 'Wild Mouse', 'thunder-loop' => 'Thunder Loop']), $access);
+// F326: the guest link is the coaster's public share (GuestShares::guestLink()); Thunder Loop has one, Wild Mouse not.
+$shares = new class extends GuestShares {
+    public function __construct() {}
+    public function guestLink(string $ride): ?string { return ['thunder-loop' => ${JSON.stringify(SHARE_LINK)}][$ride] ?? null; }
+};
+$controller = new ParkController($service, new InMemoryRides(['wild-mouse' => 'Wild Mouse', 'thunder-loop' => 'Thunder Loop']), $access, $shares);
 $controller->setContainer($container);
 
 /** One request in the same browser session: $path below /_scream-scores, the route's ride or id. */
@@ -159,12 +166,14 @@ test('AC1: staff see per coaster the average to one decimal, the number of ratin
   const thunderRow = before(thunder, 'Wild Mouse');
   assert.match(thunderRow, /7\.0 \/ 10/, 'the average to one decimal, 56 / 8');
   assert.match(thunderRow, /8 ratings/);
-  assert.match(thunderRow, /value="http:\/\/portal\.localhost\/_scream-score\/thunder-loop"/, 'the guest link to copy');
+  assert.ok(thunderRow.includes(`value="${SHARE_LINK}" readonly`), 'the guest link to copy: the coaster\'s share');
+  assert.ok(thunderRow.includes(`<a class="ss-link" href="${SHARE_LINK}" target="_blank" rel="noopener noreferrer">Open as a guest</a>`), 'opened in a new tab');
   assert.doesNotMatch(thunderRow, /No ratings yet/);
   assert.ok(body.indexOf('Thunder Loop') < body.indexOf('Wild Mouse'), 'sorted by name');
   const wild = body.split('Wild Mouse</a>')[1];
   assert.match(wild, /No ratings yet/);
-  assert.match(wild, /value="http:\/\/portal\.localhost\/_scream-score\/wild-mouse"/, 'the link also without ratings');
+  assert.match(wild, /No guest link yet\. Run coaster-demo:setup\./, 'a coaster without a share has no guest link yet');
+  assert.doesNotMatch(wild, /_scream-score\/|Open as a guest/);
   assert.doesNotMatch(wild, /\/ 10|ratings<|0 ratings/);
   assert.match(body, /href="\/_scream-scores\/thunder-loop"/, 'each coaster opens its page');
   assert.doesNotMatch(body, /PK-2026-/, 'no pass numbers');

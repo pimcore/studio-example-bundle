@@ -1,8 +1,9 @@
-// F317: the guest page of the scream score (src/Portal/ScreamScore/GuestController.php and its two templates). An
-// annual-pass guest opens a coaster's link without a portal login and sends a score, a comment, pass number and code.
-// The controller tests run the real controller with Symfony's Request, Twig and CSRF token manager from a Pimcore
-// install's vendor/ (PIMCORE_VENDOR_AUTOLOAD, else /var/www/html/vendor/autoload.php), with the worktree's own classes
-// loaded first and the InMemory store, passes and failure counter; they skip without one (like f91-extension-alias).
+// F317: the guest link of the scream score (src/Portal/ScreamScore/GuestController.php), public, without a portal login.
+// Since F326 (DR-P142) it has no form of its own: it answers 302 to the coaster's public share, or 404 without one
+// (the GET and POST answers in full: scream-score-redirect.test.mjs). The controller tests run the real controller with
+// Symfony's Request and Twig from a Pimcore install's vendor/ (PIMCORE_VENDOR_AUTOLOAD, else
+// /var/www/html/vendor/autoload.php), with the worktree's own classes loaded first and a stand-in GuestShares; they
+// skip without one (like f91-extension-alias).
 // Run: node --test enterprise/tests/scream-score-guest.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +14,6 @@ import { fileURLToPath } from 'node:url';
 
 const enterpriseDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(enterpriseDir, path), 'utf8');
-const passes = JSON.parse(read('tests/fixtures/scream-score/passes.json'));
 const autoload = process.env.PIMCORE_VENDOR_AUTOLOAD || '/var/www/html/vendor/autoload.php';
 const hasPhp = (() => {
   try {
@@ -30,7 +30,7 @@ const ROUTE = 'pimcore_studio_example_enterprise_scream_score_guest';
 const COASTER_FILE_ROUTE = 'pimcore_studio_example_enterprise_coaster_file';
 // F324: the scream score of a public share's coaster, as JSON (src/Portal/ScreamScore/ShareRatingController.php).
 const SHARE_RATING_ROUTE = 'pimcore_studio_example_enterprise_scream_score_share';
-const WRONG_PASS = "We don't know this pass number and code. Check the back of your pass.";
+const SHARE_LINK = 'http://portal.localhost/coasters/0123456789abcdef0123456789abcdef/public-share-a~17';
 
 const bootstrap = `
 require ${JSON.stringify(autoload)};
@@ -44,56 +44,36 @@ spl_autoload_register(static function (string $class): void {
 }, true, true);
 
 use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\ScreamScore\\GuestController;
-use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\ScreamScore;
-use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\InMemory\\{InMemoryFeedbackStore, InMemoryAnnualPasses, InMemoryFailureCounter, InMemoryRides};
-use Symfony\\Component\\HttpFoundation\\{Request, RequestStack};
-use Symfony\\Component\\HttpFoundation\\Session\\Session;
-use Symfony\\Component\\HttpFoundation\\Session\\Storage\\MockArraySessionStorage;
-use Symfony\\Component\\Security\\Csrf\\CsrfTokenManager;
-use Symfony\\Component\\Security\\Csrf\\TokenStorage\\SessionTokenStorage;
+use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\Pimcore\\GuestShares;
+use Symfony\\Component\\HttpFoundation\\Request;
 
-$store = new InMemoryFeedbackStore();
-$service = new ScreamScore($store, InMemoryAnnualPasses::fromCodes(json_decode(${JSON.stringify(JSON.stringify(passes))}, true)), new InMemoryFailureCounter());
-$requestStack = new RequestStack();
-$session = new Session(new MockArraySessionStorage());
 $loader = new \\Twig\\Loader\\FilesystemLoader();
 $loader->addPath(${JSON.stringify(join(enterpriseDir, 'templates'))}, 'PimcoreStudioExampleEnterprise');
 $services = [
     'twig' => new \\Twig\\Environment($loader, ['strict_variables' => true]),
     'pimcore.templating' => new class { public function isDelegate(): bool { return false; } },
-    'security.csrf.token_manager' => new CsrfTokenManager(null, new SessionTokenStorage($requestStack)),
 ];
 $container = new class($services) implements \\Psr\\Container\\ContainerInterface {
     public function __construct(private array $services) {}
     public function get(string $id): mixed { return $this->services[$id] ?? throw new \\RuntimeException("no service $id"); }
     public function has(string $id): bool { return isset($this->services[$id]); }
 };
-$controller = new GuestController($service, new InMemoryRides(['thunder-loop' => 'Thunder Loop', 'wild-mouse' => 'Wild Mouse']));
+// Thunder Loop has a share, Wild Mouse is a coaster without one, any other key is no coaster.
+$shares = new class extends GuestShares {
+    public function __construct() {}
+    public function guestLink(string $ride): ?string { return ['thunder-loop' => ${JSON.stringify(SHARE_LINK)}][$ride] ?? null; }
+};
+$controller = new GuestController($shares);
 $controller->setContainer($container);
 
-/** One request to the guest page of $ride, in the same browser session; returns status, location and body. */
-function page(string $method, string $ride, array $post = [], string $ip = '203.0.113.7'): array {
-    global $controller, $requestStack, $session;
-    $request = Request::create('/_scream-score/' . $ride, $method, $post, [], [], ['REMOTE_ADDR' => $ip]);
-    $request->setSession($session);
+/** One request to the guest link of $ride; returns status, location and body. */
+function page(string $method, string $ride, array $post = []): array {
+    global $controller;
+    $request = Request::create('/_scream-score/' . $ride, $method, $post);
     $request->attributes->set('_route', ${JSON.stringify(ROUTE)});
-    $requestStack->push($request);
-    try {
-        $response = $controller($request, $ride);
-    } finally {
-        $requestStack->pop();
-    }
+    $response = $controller($request, $ride);
     return ['status' => $response->getStatusCode(), 'location' => $response->headers->get('Location'), 'body' => (string) $response->getContent()];
 }
-/** The CSRF token of the form the guest page shows now. */
-function token(string $ride = 'thunder-loop'): string {
-    preg_match('/name="_token" value="([^"]+)"/', page('GET', $ride)['body'], $m);
-    return $m[1] ?? '';
-}
-function send(array $fields, string $ride = 'thunder-loop', string $ip = '203.0.113.7'): array {
-    return page('POST', $ride, $fields + ['_token' => token($ride)], $ip);
-}
-function records(): array { global $store; return array_map(fn ($r) => ['ride' => $r->ride, 'score' => $r->screamScore, 'comment' => $r->comment, 'pass' => $r->passNumber], $store->all()); }
 `;
 
 const php = (body) => {
@@ -101,10 +81,6 @@ const php = (body) => {
   return JSON.parse(out);
 };
 
-const count = (text, needle) => text.split(needle).length - 1;
-const valid = { score: '8', comment: 'My voice is gone <3', passNumber: 'PK-2026-0001', passCode: '4711' };
-// The same fields as a PHP array expression, for the PHP bodies.
-const VALID = `json_decode(${JSON.stringify(JSON.stringify(valid))}, true)`;
 
 test('AC1: the route is GET|POST /{_portal_engine_prefix}scream-score/{ride} with Portal Engine\'s prefix requirement and Class::__invoke', () => {
   const routing = read('config/pimcore/routing.yaml');
@@ -162,133 +138,26 @@ test('AC1: the route matches a one-language portal\'s link /_scream-score/<ride>
   assert.equal(r.link, '/_scream-score/', 'the links coaster-demo:setup prints open this page');
 });
 
-test('AC1: a guest without a login gets the form: score 1-10, optional comment, pass number, pass code, CSRF token, for phone and desktop', { skip }, () => {
-  const { status, body } = php("echo json_encode(page('GET', 'thunder-loop'));");
-  assert.equal(status, 200);
-  assert.match(body, /How loud did you scream on Thunder Loop\?/);
-  for (let score = 1; score <= 10; score++) {
-    assert.match(body, new RegExp(`<input type="radio" name="score" value="${score}"[^>]*>`), `score ${score} is a radio button`);
-  }
-  assert.equal(count(body, 'name="score"'), 10, 'ten score buttons');
-  assert.match(body, /barely a squeak/);
-  assert.match(body, /lost my voice/);
-  assert.match(body, /<textarea[^>]*name="comment"/);
-  assert.doesNotMatch(body, /<textarea[^>]*required/, 'the comment is optional');
-  assert.match(body, /Up to 280 characters/, 'the counter works without JS as plain text');
-  assert.match(body, /<label for="passNumber">Annual-pass number<\/label>/);
-  assert.match(body, /<input[^>]*name="passNumber"/);
-  assert.match(body, /<label for="passCode">Pass code<\/label>/);
-  assert.match(body, /<input[^>]*name="passCode"/);
-  assert.match(body, /<input type="hidden" name="_token" value="[^"]+">/);
-  assert.match(body, /<form method="post"/);
-  assert.match(body, /<meta name="viewport" content="width=device-width, initial-scale=1">/, 'phone width');
-  assert.doesNotMatch(body, /<script[^>]*src=|<nav\b|type="password"|_username/i, 'no plugin JavaScript, no portal navigation, no login form');
+test('AC1: a guest without a login opening a coaster\'s link is sent on to the coaster\'s share (302)', { skip }, () => {
+  const { status, location, body } = php("echo json_encode(page('GET', 'thunder-loop'));");
+  assert.equal(status, 302);
+  assert.equal(location, SHARE_LINK);
+  assert.doesNotMatch(body, /<form|type="password"|_username/i, 'no form, no login form');
 });
 
-test('AC2: a valid send stores the rating and redirects 303 to the thanks page; a second send replaces the earlier score', { skip }, () => {
-  const r = php(`
-    $first = send(['score' => '6', 'comment' => 'Wow', 'passNumber' => 'PK-2026-0001', 'passCode' => '4711']);
-    $afterFirst = records();
-    $thanksFirst = page('GET', 'thunder-loop');
-    $again = page('GET', 'thunder-loop');
-    $second = send(${VALID});
-    $thanksSecond = page('GET', 'thunder-loop');
-    echo json_encode(compact('first', 'afterFirst', 'thanksFirst', 'again', 'second', 'thanksSecond') + ['records' => records()]);
-  `);
-  assert.equal(r.first.status, 303);
-  assert.equal(r.first.location, '/_scream-score/thunder-loop');
-  assert.deepEqual(r.afterFirst, [{ ride: 'thunder-loop', score: 6, comment: 'Wow', pass: 'PK-2026-0001' }]);
-  assert.equal(r.thanksFirst.status, 200);
-  assert.match(r.thanksFirst.body, /Thanks! Your scream score 6 for Thunder Loop is saved\./);
-  assert.doesNotMatch(r.thanksFirst.body, /replaces/);
-  assert.match(r.again.body, /How loud did you scream/, 'the thanks page shows once, then the form again');
-  assert.equal(r.second.status, 303);
-  assert.match(r.thanksSecond.body, /Thanks! Your scream score 8 for Thunder Loop is saved\. It replaces your earlier score 6\./);
-  assert.match(r.thanksSecond.body, /My voice is gone &lt;3/, 'the guest\'s comment, escaped');
-  assert.deepEqual(r.records, [{ ride: 'thunder-loop', score: 8, comment: 'My voice is gone <3', pass: 'PK-2026-0001' }], 'one record, replaced');
-  assert.doesNotMatch(r.thanksSecond.body, /PK-2026-0002|average/i, 'no other guests\' ratings');
-});
-
-test('AC3: a wrong pass or code, a missing score or a long comment show the form again (422) with what was typed and one message per field', { skip }, () => {
-  const r = php(`
-    $wrongCode = send(['passCode' => '0000'] + ${VALID});
-    $wrongPass = send(['passNumber' => 'PK-2026-0999'] + ${VALID});
-    $noScore = send(['score' => '', 'comment' => '<script>alert(1)</script>'] + ${VALID});
-    $longComment = send(['comment' => str_repeat('a', 281), 'score' => '3'] + ${VALID});
-    $allWrong = send(['score' => '11', 'comment' => str_repeat('b', 281), 'passNumber' => 'nope', 'passCode' => ''], 'thunder-loop', '198.51.100.9');
-    echo json_encode(compact('wrongCode', 'wrongPass', 'noScore', 'longComment', 'allWrong') + ['records' => records()]);
-  `);
-  const escapedWrongPass = WRONG_PASS.replace("'", '&#039;');
-  for (const name of ['wrongCode', 'wrongPass']) {
-    const { status, body } = r[name];
-    assert.equal(status, 422, name);
-    assert.equal(count(body, escapedWrongPass), 1, `${name}: the same message, once`);
-    assert.match(body, /<input type="radio" name="score" value="8"[^>]*checked/, `${name}: the score stays chosen`);
-    assert.match(body, /My voice is gone &lt;3<\/textarea>/, `${name}: the comment stays`);
-    assert.match(body, /How loud did you scream on Thunder Loop\?/);
-  }
-  assert.match(r.wrongCode.body, /name="passNumber"[^>]*value="PK-2026-0001"/, 'the pass number stays');
-  assert.match(r.wrongPass.body, /name="passNumber"[^>]*value="PK-2026-0999"/, 'the typed pass number stays');
-
-  assert.equal(r.noScore.status, 422);
-  assert.equal(count(r.noScore.body, 'Choose a score from 1 to 10.'), 1);
-  assert.match(r.noScore.body, /&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/textarea>/, 'the comment stays, escaped');
-  assert.doesNotMatch(r.noScore.body, /<script>alert/);
-  assert.match(r.noScore.body, /name="passNumber"[^>]*value="PK-2026-0001"/);
-  assert.match(r.noScore.body, /name="passCode"[^>]*value="4711"/, 'a right code stays when another field is wrong');
-  assert.doesNotMatch(r.noScore.body, new RegExp(escapedWrongPass), 'no pass message for a right pass');
-
-  assert.equal(r.longComment.status, 422);
-  assert.equal(count(r.longComment.body, 'Keep the comment to 280 characters.'), 1);
-  assert.match(r.longComment.body, new RegExp(`>${'a'.repeat(281)}</textarea>`), 'the long comment stays');
-  assert.match(r.longComment.body, /<input type="radio" name="score" value="3"[^>]*checked/);
-
-  const all = r.allWrong.body;
-  assert.equal(r.allWrong.status, 422);
-  assert.equal(count(all, 'Choose a score from 1 to 10.') + count(all, 'Keep the comment to 280 characters.') + count(all, escapedWrongPass), 3, 'one message per field');
-  assert.doesNotMatch(all, /name="score" value="\d+"[^>]*checked/, 'no score 11 to keep');
-  assert.match(all, /name="passNumber"[^>]*value="nope"/);
-  assert.deepEqual(r.records, [], 'nothing is stored');
-});
-
-test('AC3: after five wrong tries the page answers 429 "Too many tries. Please wait 15 minutes." and stores nothing', { skip }, () => {
-  const r = php(`
-    for ($i = 0; $i < 5; $i++) { send(['passCode' => '0000'] + ${VALID}); }
-    $locked = send(${VALID});
-    echo json_encode(['locked' => $locked, 'records' => records()]);
-  `);
-  assert.equal(r.locked.status, 429);
-  assert.match(r.locked.body, /Too many tries\. Please wait 15 minutes\./);
-  assert.deepEqual(r.records, []);
-});
-
-test('AC4: an unknown ride key answers 404 "This ride has no scream score", a missing or wrong CSRF token 400, and nothing is stored', { skip }, () => {
+test('AC4: an unknown ride key or a ride without a share answers 404 "This ride has no scream score"', { skip }, () => {
   const r = php(`
     $unknown = page('GET', 'ghost-train');
     $badKey = page('GET', 'Thunder%20Loop');
-    $unknownPost = page('POST', 'ghost-train', ['_token' => token()] + ${VALID});
-    $noToken = page('POST', 'thunder-loop', ${VALID});
-    $wrongToken = page('POST', 'thunder-loop', ['_token' => 'forged'] + ${VALID});
-    $otherRideToken = page('POST', 'thunder-loop', ['_token' => token('wild-mouse')] + ${VALID});
-    echo json_encode(compact('unknown', 'badKey', 'unknownPost', 'noToken', 'wrongToken', 'otherRideToken') + ['records' => records()]);
+    $noShare = page('GET', 'wild-mouse');
+    echo json_encode(compact('unknown', 'badKey', 'noShare'));
   `);
-  for (const name of ['unknown', 'badKey', 'unknownPost']) {
+  for (const name of ['unknown', 'badKey', 'noShare']) {
     assert.equal(r[name].status, 404, name);
-    assert.match(r[name].body, /This ride has no scream score/, name);
+    assert.match(r[name].body, /<h1>This ride has no scream score<\/h1>/, name);
+    assert.equal(r[name].location, null, `${name}: no redirect`);
     assert.doesNotMatch(r[name].body, /<form|type="password"/i, `${name}: no form, no login form`);
   }
-  for (const name of ['noToken', 'wrongToken', 'otherRideToken']) {
-    assert.equal(r[name].status, 400, name);
-    assert.match(r[name].body, /This form has expired/, name);
-  }
-  assert.deepEqual(r.records, [], 'nothing is stored');
-});
-
-test('AC4: the templates never print unescaped text and the page opens no data pool', () => {
-  for (const file of ['templates/portal/scream-score/guest.html.twig', 'templates/portal/scream-score/guest-thanks.html.twig']) {
-    assert.doesNotMatch(read(file), /\|\s*raw|autoescape\s+false/, `${file} escapes everything`);
-  }
-  assert.doesNotMatch(read('src/Portal/ScreamScore/GuestController.php'), /DataPool|denyAccessUnlessGranted/);
 });
 
 test('AC1: php -l passes for the guest page classes', () => {
