@@ -26,15 +26,15 @@ test('AC1: the README that was missing exists and the index links it', () => {
   }
 });
 
-test('AC2: the index has twelve rows, ten extension points and two None rows, each with a docs cell', () => {
+test('AC2: the index has thirteen rows, eleven extension points and two None rows, each with a docs cell', () => {
   const all = rows();
-  assert.equal(all.length, 12); // F319 added the scream score; F48 added the portal preview stage, F49 the portal tile picture, F126 the agent tools, F127 the agent chat route, F129 the confirmed Supplier note, F128 the agent panel; F307 removed three Studio rows, F313 the portal page "Talk"
+  assert.equal(all.length, 13); // F325 added the scream-score panel; F319 added the scream score; F48 added the portal preview stage, F49 the portal tile picture, F126 the agent tools, F127 the agent chat route, F129 the confirmed Supplier note, F128 the agent panel; F307 removed three Studio rows, F313 the portal page "Talk"
   assert.equal(all.filter((r) => r.point.startsWith('None:')).length, 2);
   for (const r of all) assert.ok(r.docs, `row "${r.point}" has a docs cell`);
   assert.doesNotMatch(read('README.md'), /^## Examples$/m, 'the old "Examples" list is gone');
 });
 
-test('AC3: each of the twelve READMEs has the exact lines What it shows, How to run and Extension point', () => {
+test('AC3: each of the thirteen READMEs has the exact lines What it shows, How to run and Extension point', () => {
   for (const r of rows()) {
     const lines = read(r.readme).split('\n');
     for (const h of ['## What it shows', '## How to run', '## Extension point']) {
