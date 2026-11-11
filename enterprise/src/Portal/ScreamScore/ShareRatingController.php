@@ -48,7 +48,7 @@ class ShareRatingController extends FrontendController
     {
         $ride = $this->shareRide($hash, $assetId);
         if ($ride === null) {
-            return self::json(['error' => GuestController::NO_RIDE], Response::HTTP_NOT_FOUND);
+            return self::answer(['error' => GuestController::NO_RIDE], Response::HTTP_NOT_FOUND);
         }
         [$key, $name] = $ride;
 
@@ -56,7 +56,7 @@ class ShareRatingController extends FrontendController
             // getToken() stores a new token in the session and so starts it when the share page has none yet
             $token = $this->container->get('security.csrf.token_manager')->getToken(self::tokenId($key))->getValue();
 
-            return self::json(['ride' => ['key' => $key, 'name' => $name], 'token' => $token]);
+            return self::answer(['ride' => ['key' => $key, 'name' => $name], 'token' => $token]);
         }
 
         $body = json_decode($request->getContent(), true);
@@ -65,7 +65,7 @@ class ShareRatingController extends FrontendController
         // a script on another site (or a request without Origin) may not send for the guest, as ChatAccess::deny()
         if ($origin === null || $origin !== $request->getSchemeAndHttpHost()
             || !$this->isCsrfTokenValid(self::tokenId($key), self::text($body['token'] ?? null))) {
-            return self::json(['error' => self::EXPIRED], Response::HTTP_BAD_REQUEST);
+            return self::answer(['error' => self::EXPIRED], Response::HTTP_BAD_REQUEST);
         }
 
         $comment = $body['comment'] ?? null;
@@ -79,7 +79,7 @@ class ShareRatingController extends FrontendController
         );
         if (!$result->stored) {
             if (($result->errors['pass'] ?? null) === ScreamScore::REFUSED_LOCKED) {
-                return self::json(['error' => GuestController::TOO_MANY_TRIES], Response::HTTP_TOO_MANY_REQUESTS);
+                return self::answer(['error' => GuestController::TOO_MANY_TRIES], Response::HTTP_TOO_MANY_REQUESTS);
             }
             $errors = [];
             if (isset($result->errors['score'])) {
@@ -93,10 +93,10 @@ class ShareRatingController extends FrontendController
                 $errors['pass'] = GuestController::WRONG_PASS;
             }
 
-            return self::json(['errors' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return self::answer(['errors' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return self::json(['saved' => true, 'ride' => $name, 'score' => $body['score'], 'replaced' => $result->earlierScore]);
+        return self::answer(['saved' => true, 'ride' => $name, 'score' => $body['score'], 'replaced' => $result->earlierScore]);
     }
 
     /**
@@ -125,7 +125,7 @@ class ShareRatingController extends FrontendController
     }
 
     /** @param array<string, mixed> $data */
-    private static function json(array $data, int $status = Response::HTTP_OK): JsonResponse
+    private static function answer(array $data, int $status = Response::HTTP_OK): JsonResponse
     {
         $response = new JsonResponse($data, $status);
         // a CSRF token or a guest's own rating: never kept by a cache
