@@ -228,7 +228,7 @@ test('AC4: a logged-in portal user is answered as today, a foreign share hash is
 
 // --- the public route list -----------------------------------------------------------------------------------------------
 
-test('AC4: the extension prepends exactly the guest route and the coaster file route, by their constants', () => {
+test('AC4: the extension prepends exactly the guest route, the coaster file route and the share scream score route, by their constants', () => {
   const extension = read('src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php');
   const prepends = [...extension.matchAll(/prependExtensionConfig\(([^;]+)\);/g)].map((m) => m[1]);
   assert.deepEqual(prepends, ["self::PORTAL_ENGINE, ['custom_public_routes' => [GuestController::ROUTE, CoasterFileController::ROUTE, ShareRatingController::ROUTE]]"]);
