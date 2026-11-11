@@ -35,12 +35,15 @@ Two things to know:
 
 The stage reads the file's text from a route of this bundle, `/studio-example-enterprise/coaster-file/{id}`
 (`config/pimcore/routing.yaml`, `src/Portal/Coaster/CoasterFileController.php`): the portal's own media stream serves
-only video and audio, and a portal host does not serve raw asset paths. The route answers on portal sites only and
-makes the checks the portal's own preview stream makes: portal access, the data pool, VIEW on the asset, and for a
-public share that the asset is in the share. It serves `.coaster` files only, so it is no way round the download
-permission. On a public share's page the guest has no portal login: Portal Engine logs in a share's guest only on its
-own routes, so this route is a public route (`custom_public_routes`, set by the bundle's extension) and the controller
-takes the `publicShareHash` itself. An unknown or expired share, or a file outside the share, answers 404.
+only video and audio, and a portal host does not serve raw asset paths. The route answers on portal sites only. For
+a portal user it makes the checks the portal's own preview stream makes: portal access, the data pool and VIEW on the
+asset. It serves `.coaster` files only, so it is no way round the download permission. On a public share's page the
+guest has no portal login: Portal Engine logs in a share's guest only on its own routes, so this route is a public
+route (`custom_public_routes`, set by the bundle's extension) and the controller takes the `publicShareHash` itself,
+with the checks of the portal's own share detail: the share is valid and not expired, the guest may use the data pool,
+the pool is one of the share's, and the file is in the share (`PublicShareService`). It asks no VIEW for the guest:
+that checks the workspaces of the share's maker, which a share's own pages never ask. An unknown or expired share, or a
+file outside the share, answers 404; no share and no login 403, never the login page the fetch would read as the file.
 
 Portal Engine documentation:
 [Portal Frontend Plugins](https://github.com/pimcore/portal-engine/blob/2026.3/doc/15_Development_Documentation/15_Customize_and_Extend_Behavior/16_Portal_Frontend_Plugins.md)

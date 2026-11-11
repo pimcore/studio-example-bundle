@@ -2,6 +2,7 @@
 
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Coaster;
 
+use Pimcore\Bundle\PortalEngineBundle\Entity\PublicShare;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Permission;
 use Pimcore\Bundle\PortalEngineBundle\Exception\PublicShareExpiredException;
 use Pimcore\Bundle\PortalEngineBundle\Service\DataPool\DataPoolConfigService;
@@ -11,8 +12,8 @@ use Pimcore\Controller\FrontendController;
 use Pimcore\Model\Asset;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
 
 /**
  * The text of a .coaster asset, for the portal's coaster preview stage
@@ -25,8 +26,15 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
  *
  * On a public share's page the 3D ride loads its file here too, with `?publicShareHash=`. Portal Engine logs in a
  * share's guest only on its own routes, so this route is public (PimcoreStudioExampleEnterpriseExtension::prepend())
- * and checks the login itself: a portal user as before (a hash is ignored), else a valid share hash sets up the share's
- * guest, else "invalid login" as before. The route never serves a .coaster file that is not in the guest's share.
+ * and checks the login itself:
+ * - a portal user as before: data pool access and VIEW on the asset (a hash is ignored);
+ * - else a share's hash: the portal's own share check, as its public share detail does (PublicShare\AssetController):
+ *   PublicShareService::validateByHash() and setUpPublicShare(), data pool access, the data pool is one of the share's
+ *   and isElementInPublicShare(). No VIEW: for a share's guest it checks the workspaces of the user who made the share
+ *   (PermissionService::getOriginUserForPublicShare()), which the share's own pages never ask, so it refused the
+ *   share's own coaster (F334);
+ * - else 403.
+ * A refusal is always 403 or 404, never the login redirect: the 3D ride fetches the file and reads the answer as JSON.
  */
 class CoasterFileController extends FrontendController
 {
@@ -41,7 +49,7 @@ class CoasterFileController extends FrontendController
 
     public function __invoke(Request $request, int $id): Response
     {
-        $this->logInPortalUserOrShareGuest($request);
+        $guestShare = $this->logInPortalUserOrShareGuest($request);
 
         $asset = Asset::getById($id);
         // only ride designs: this route must not become a way round the portal's download permission
@@ -50,15 +58,19 @@ class CoasterFileController extends FrontendController
         }
 
         $this->dataPoolConfigService->setCurrentDataPoolConfigById($request->query->getInt('dataPoolId'));
-        $this->denyAccessUnlessGranted(Permission::DATA_POOL_ACCESS);
-        $this->denyAccessUnlessGranted(Permission::VIEW, $asset);
+        if ($guestShare !== null) {
+            $this->denyShareGuestUnlessInShare($guestShare, $request->query->getInt('dataPoolId'), $asset);
+        } else {
+            $this->denyAccessUnlessGranted(Permission::DATA_POOL_ACCESS);
+            $this->denyAccessUnlessGranted(Permission::VIEW, $asset);
 
-        // VIEW passes for every asset of the pool for a share recipient; the share decides (as the preview stream does)
-        $user = $this->securityService->getPortalUser();
-        if ($user !== null && $user->isPortalShareUser()) {
-            $publicShare = $this->publicShareService->getCurrentPublicShare();
-            if (!$publicShare || !$this->publicShareService->isElementInPublicShare($publicShare, $asset)) {
-                throw new NotFoundHttpException('Element not in PublicShare.');
+            // VIEW passes for every asset of the pool for a share recipient; the share decides (as the preview stream does)
+            $user = $this->securityService->getPortalUser();
+            if ($user !== null && $user->isPortalShareUser()) {
+                $publicShare = $this->publicShareService->getCurrentPublicShare();
+                if (!$publicShare || !$this->publicShareService->isElementInPublicShare($publicShare, $asset)) {
+                    throw new NotFoundHttpException('Element not in PublicShare.');
+                }
             }
         }
 
@@ -69,20 +81,23 @@ class CoasterFileController extends FrontendController
     }
 
     /**
-     * What Portal Engine does before a portal page, for this public route: a portal login passes, a public share's
-     * hash sets up the share's guest (as on the share's own page), anything else is refused with "invalid login".
+     * What Portal Engine does before a portal page, for this public route: a portal login passes (null), a public
+     * share's hash sets up the share's guest (as on the share's own page) and returns the share, anything else is 403.
      *
-     * @throws AuthenticationException without a portal login and without a share hash
-     * @throws NotFoundHttpException   for an unknown or expired share
+     * @throws AccessDeniedHttpException without a portal login and without a share hash
+     * @return PublicShare|null untyped like PublicShareService::validateByHash()
+     *
+     * @throws NotFoundHttpException     for an unknown or expired share
      */
-    private function logInPortalUserOrShareGuest(Request $request): void
+    private function logInPortalUserOrShareGuest(Request $request): mixed
     {
         if ($this->isGranted(Permission::PORTAL_ACCESS)) {
-            return;
+            return null;
         }
         $hash = $request->query->getString('publicShareHash');
         if ($hash === '') {
-            throw new AuthenticationException('invalid login');
+            // not the portal's "invalid login": its firewall would answer the 3D ride's fetch with the login page
+            throw new AccessDeniedHttpException('No portal login and no public share.');
         }
         try {
             $publicShare = $this->publicShareService->validateByHash($hash);
@@ -91,6 +106,25 @@ class CoasterFileController extends FrontendController
             throw new NotFoundHttpException('PublicShare not found.');
         }
         $this->publicShareService->setUpPublicShare($publicShare);
+
+        return $publicShare;
+    }
+
+    /**
+     * The checks of the portal's own public share detail for the share's guest: access to the data pool, the pool is
+     * one the share holds items of, and the asset is in the share. 403 or 404, never the login redirect.
+     *
+     * @param PublicShare $publicShare
+     */
+    private function denyShareGuestUnlessInShare(mixed $publicShare, int $dataPoolId, Asset $asset): void
+    {
+        if (!$this->isGranted(Permission::DATA_POOL_ACCESS)) {
+            throw new AccessDeniedHttpException('No access to the data pool.');
+        }
+        $sharePools = array_map('intval', $this->publicShareService->getDataPoolConfigIdsByPublicShare($publicShare));
+        if (!in_array($dataPoolId, $sharePools, true) || !$this->publicShareService->isElementInPublicShare($publicShare, $asset)) {
+            throw new NotFoundHttpException('Element not in PublicShare.');
+        }
     }
 
     /** Whether the file name is a ride design's: it ends in `.coaster`, in any case. */
