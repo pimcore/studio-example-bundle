@@ -146,6 +146,12 @@ class ScreamScore
         return array_map($this->shown(...), array_values($hidden));
     }
 
+    /** The ride a rating belongs to, or null when there is no such rating (the park's page answers 404 then). */
+    public function rideOf(int $id): ?string
+    {
+        return $this->store->find($id)?->ride;
+    }
+
     /** Hides a rating's comment from the summary; it still counts in average and count. False when there is no such rating. */
     public function hide(int $id): bool
     {

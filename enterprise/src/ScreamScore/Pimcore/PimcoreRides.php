@@ -4,6 +4,7 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore;
 
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Rides;
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\ScreamScore;
+use Pimcore\Model\Asset;
 
 /**
  * The rides of the running demo: `<ride key>.coaster` under /Pimcore Kingdom/Ride designs (PimcoreFeedbackStore::coaster()).
@@ -29,5 +30,23 @@ class PimcoreRides implements Rides
         $name = is_array($design) ? ($design['meta']['name'] ?? null) : null;
 
         return is_string($name) && trim($name) !== '' ? trim($name) : ucwords(str_replace('-', ' ', $ride));
+    }
+
+    public function all(): array
+    {
+        $folder = PimcoreFeedbackStore::RIDES_FOLDER;
+        $assets = new Asset\Listing();
+        $assets->setCondition('`filename` LIKE ? AND (`path` = ? OR `path` LIKE ?)', ['%.coaster', $folder . '/', $folder . '/%']);
+        $names = [];
+        foreach ($assets->getAssets() as $asset) {
+            $ride = substr((string) $asset->getFilename(), 0, -strlen('.coaster'));
+            $name = $this->name($ride);
+            if ($name !== null) {
+                $names[$ride] = $name;
+            }
+        }
+        asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $names;
     }
 }

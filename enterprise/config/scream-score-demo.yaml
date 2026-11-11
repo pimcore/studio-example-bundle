@@ -27,3 +27,9 @@ services:
     # Tagged like CoasterFileController (config/portal.yaml): the subscriber tag gives it Twig and the CSRF token manager.
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\GuestController:
         tags: ['controller.service_arguments', 'container.service_subscriber']
+
+    # The park's page for the staff (src/Portal/ScreamScore/ParkController.php, F318): StaffAccess reads the signed-in
+    # portal user; the controller is tagged like GuestController.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\StaffAccess: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController:
+        tags: ['controller.service_arguments', 'container.service_subscriber']

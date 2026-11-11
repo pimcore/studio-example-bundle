@@ -16,4 +16,12 @@ class InMemoryRides implements Rides
     {
         return $this->names[$ride] ?? null;
     }
+
+    public function all(): array
+    {
+        $names = $this->names;
+        asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $names;
+    }
 }

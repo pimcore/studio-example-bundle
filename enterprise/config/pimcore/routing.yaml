@@ -46,3 +46,34 @@ pimcore_studio_example_enterprise_scream_score_guest:
     # the same requirement Portal Engine's own routes carry
     requirements:
         _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+
+# The scream score for the park's staff: average, ratings and guest link per coaster, a coaster's newest comments, and
+# hide or show one comment, see src/Portal/ScreamScore/ParkController.php. Not public: Portal Engine asks for the portal
+# login, and the controller lets only the portal user group "Park staff" in (StaffAccess, 403 for everyone else).
+pimcore_studio_example_enterprise_scream_score_park:
+    path: /{_portal_engine_prefix}scream-scores
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+
+# One coaster by its ride key; an unknown key gets 404.
+pimcore_studio_example_enterprise_scream_score_park_ride:
+    path: /{_portal_engine_prefix}scream-scores/{ride}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+        ride: '[a-z0-9]+(?:-[a-z0-9]+)*'
+
+# Hide (visible=0) or show again (visible=1) one comment, by the GuestFeedback object's id; 303 back to its coaster.
+pimcore_studio_example_enterprise_scream_score_park_visibility:
+    path: /{_portal_engine_prefix}scream-scores/{id}/visibility
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [POST]
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+        id: '\d+'
