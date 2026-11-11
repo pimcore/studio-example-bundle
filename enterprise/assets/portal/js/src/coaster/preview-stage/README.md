@@ -38,7 +38,9 @@ The stage reads the file's text from a route of this bundle, `/studio-example-en
 only video and audio, and a portal host does not serve raw asset paths. The route answers on portal sites only and
 makes the checks the portal's own preview stream makes: portal access, the data pool, VIEW on the asset, and for a
 public share that the asset is in the share. It serves `.coaster` files only, so it is no way round the download
-permission.
+permission. On a public share's page the guest has no portal login: Portal Engine logs in a share's guest only on its
+own routes, so this route is a public route (`custom_public_routes`, set by the bundle's extension) and the controller
+takes the `publicShareHash` itself. An unknown or expired share, or a file outside the share, answers 404.
 
 Portal Engine documentation:
 [Portal Frontend Plugins](https://github.com/pimcore/portal-engine/blob/2026.3/doc/15_Development_Documentation/15_Customize_and_Extend_Behavior/16_Portal_Frontend_Plugins.md)
