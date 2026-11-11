@@ -366,7 +366,7 @@ test('AC3: reset --all runs the scream score first; the Pimcore class delete als
 test('AC4: the Pimcore-backed scream score lives under src/ScreamScore/Pimcore, where the F315 lint test reaches, and php -l passes', () => {
   const pimcoreDir = join(src, 'ScreamScore/Pimcore');
   const pimcoreFiles = readdirSync(pimcoreDir).filter((f) => f.endsWith('.php')).sort();
-  assert.deepEqual(pimcoreFiles, ['PimcoreAnnualPasses.php', 'PimcoreFeedbackStore.php', 'PimcoreScreamScoreEnvironment.php']);
+  assert.deepEqual(pimcoreFiles, ['PimcoreAnnualPasses.php', 'PimcoreFeedbackStore.php', 'PimcoreRides.php', 'PimcoreScreamScoreEnvironment.php']);
   const lint = read(join(enterpriseDir, 'tests/scream-score-lint.test.mjs'));
   assert.match(lint, /join\(enterpriseDir, 'src\/ScreamScore'\)/, 'the lint test walks src/ScreamScore');
   assert.match(lint, /if \(entry\.isDirectory\(\)\) return phpFiles\(path\);/, 'and its subfolders');

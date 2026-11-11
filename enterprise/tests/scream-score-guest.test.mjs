@@ -99,6 +99,8 @@ const php = (body) => {
 
 const count = (text, needle) => text.split(needle).length - 1;
 const valid = { score: '8', comment: 'My voice is gone <3', passNumber: 'PK-2026-0001', passCode: '4711' };
+// The same fields as a PHP array expression, for the PHP bodies.
+const VALID = `json_decode(${JSON.stringify(JSON.stringify(valid))}, true)`;
 
 test('AC1: the route is GET|POST /{_portal_engine_prefix}scream-score/{ride} with Portal Engine\'s prefix requirement and Class::__invoke', () => {
   const routing = read('config/pimcore/routing.yaml');
@@ -185,7 +187,7 @@ test('AC2: a valid send stores the rating and redirects 303 to the thanks page; 
     $afterFirst = records();
     $thanksFirst = page('GET', 'thunder-loop');
     $again = page('GET', 'thunder-loop');
-    $second = send(${JSON.stringify(valid)});
+    $second = send(${VALID});
     $thanksSecond = page('GET', 'thunder-loop');
     echo json_encode(compact('first', 'afterFirst', 'thanksFirst', 'again', 'second', 'thanksSecond') + ['records' => records()]);
   `);
@@ -205,10 +207,10 @@ test('AC2: a valid send stores the rating and redirects 303 to the thanks page; 
 
 test('AC3: a wrong pass or code, a missing score or a long comment show the form again (422) with what was typed and one message per field', { skip }, () => {
   const r = php(`
-    $wrongCode = send(['passCode' => '0000'] + ${JSON.stringify(valid)});
-    $wrongPass = send(['passNumber' => 'PK-2026-0999'] + ${JSON.stringify(valid)});
-    $noScore = send(['score' => '', 'comment' => '<script>alert(1)</script>'] + ${JSON.stringify(valid)});
-    $longComment = send(['comment' => str_repeat('a', 281), 'score' => '3'] + ${JSON.stringify(valid)});
+    $wrongCode = send(['passCode' => '0000'] + ${VALID});
+    $wrongPass = send(['passNumber' => 'PK-2026-0999'] + ${VALID});
+    $noScore = send(['score' => '', 'comment' => '<script>alert(1)</script>'] + ${VALID});
+    $longComment = send(['comment' => str_repeat('a', 281), 'score' => '3'] + ${VALID});
     $allWrong = send(['score' => '11', 'comment' => str_repeat('b', 281), 'passNumber' => 'nope', 'passCode' => ''], 'thunder-loop', '198.51.100.9');
     echo json_encode(compact('wrongCode', 'wrongPass', 'noScore', 'longComment', 'allWrong') + ['records' => records()]);
   `);
@@ -247,8 +249,8 @@ test('AC3: a wrong pass or code, a missing score or a long comment show the form
 
 test('AC3: after five wrong tries the page answers 429 "Too many tries. Please wait 15 minutes." and stores nothing', { skip }, () => {
   const r = php(`
-    for ($i = 0; $i < 5; $i++) { send(['passCode' => '0000'] + ${JSON.stringify(valid)}); }
-    $locked = send(${JSON.stringify(valid)});
+    for ($i = 0; $i < 5; $i++) { send(['passCode' => '0000'] + ${VALID}); }
+    $locked = send(${VALID});
     echo json_encode(['locked' => $locked, 'records' => records()]);
   `);
   assert.equal(r.locked.status, 429);
@@ -260,10 +262,10 @@ test('AC4: an unknown ride key answers 404 "This ride has no scream score", a mi
   const r = php(`
     $unknown = page('GET', 'ghost-train');
     $badKey = page('GET', 'Thunder%20Loop');
-    $unknownPost = page('POST', 'ghost-train', ['_token' => token()] + ${JSON.stringify(valid)});
-    $noToken = page('POST', 'thunder-loop', ${JSON.stringify(valid)});
-    $wrongToken = page('POST', 'thunder-loop', ['_token' => 'forged'] + ${JSON.stringify(valid)});
-    $otherRideToken = page('POST', 'thunder-loop', ['_token' => token('wild-mouse')] + ${JSON.stringify(valid)});
+    $unknownPost = page('POST', 'ghost-train', ['_token' => token()] + ${VALID});
+    $noToken = page('POST', 'thunder-loop', ${VALID});
+    $wrongToken = page('POST', 'thunder-loop', ['_token' => 'forged'] + ${VALID});
+    $otherRideToken = page('POST', 'thunder-loop', ['_token' => token('wild-mouse')] + ${VALID});
     echo json_encode(compact('unknown', 'badKey', 'unknownPost', 'noToken', 'wrongToken', 'otherRideToken') + ['records' => records()]);
   `);
   for (const name of ['unknown', 'badKey', 'unknownPost']) {
