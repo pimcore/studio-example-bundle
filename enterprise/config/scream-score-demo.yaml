@@ -20,3 +20,10 @@ services:
     Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreScreamScoreEnvironment: ~
     Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ScreamScoreEnvironment:
         alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreScreamScoreEnvironment
+
+    # The guest page (src/Portal/ScreamScore/GuestController.php, F317) finds a coaster's name by its ride key.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreRides: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Rides: '@Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreRides'
+    # Tagged like CoasterFileController (config/portal.yaml): the subscriber tag gives it Twig and the CSRF token manager.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\GuestController:
+        tags: ['controller.service_arguments', 'container.service_subscriber']

@@ -1,0 +1,12 @@
+{% extends '@PimcoreStudioExampleEnterprise/portal/scream-score/layout.html.twig' %}
+
+{# The thanks page after a send (GuestController, once after the 303): the guest's own score and comment, and the
+   earlier score it replaced. Nothing of other guests. #}
+
+{% block title %}Thanks: {{ coasterName }}{% endblock %}
+
+{% block content %}
+    <h1>{{ message }}</h1>
+    {% if comment %}<p class="ss-hint">Your comment: {{ comment }}</p>{% endif %}
+    <p><a class="ss-link" href="">Change my scream score</a></p>
+{% endblock %}

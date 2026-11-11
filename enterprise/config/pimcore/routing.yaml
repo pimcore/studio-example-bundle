@@ -32,3 +32,17 @@ pimcore_studio_example_enterprise_agent_proposal_confirm:
     methods: [POST]
     requirements:
         id: '[0-9a-f]{32}'
+
+# The scream score's guest page: an annual-pass guest opens a coaster's link on the phone and rates the ride, see
+# src/Portal/ScreamScore/GuestController.php. Public: the extension adds exactly this route name to Portal Engine's
+# custom_public_routes, so no portal login is asked for. {ride} is the ride key, the coaster's file name without
+# .coaster (it stays when the demo reset uploads the coaster again).
+pimcore_studio_example_enterprise_scream_score_guest:
+    # the portal's language/site prefix, like the portal's own pages (`_` on a one-language portal)
+    path: /{_portal_engine_prefix}scream-score/{ride}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\GuestController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET, POST]
+    # the same requirement Portal Engine's own routes carry
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_

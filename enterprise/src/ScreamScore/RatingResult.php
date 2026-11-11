@@ -4,7 +4,8 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore;
 
 /**
  * What ScreamScore::rate() did: stored or not, whether it replaced an earlier score of the same pass, and when
- * refused, one plain message per field (`pass`, `score`, `comment`, `ride`).
+ * refused, one plain message per field (`pass`, `score`, `comment`, `ride`). After a replace, `earlierScore` is the
+ * score it replaced (the guest page says so, F317).
  */
 final class RatingResult
 {
@@ -16,12 +17,14 @@ final class RatingResult
         public readonly bool $replaced,
         public readonly array $errors,
         public readonly ?int $id,
+        public readonly ?int $earlierScore = null,
     ) {
     }
 
-    public static function stored(int $id, bool $replaced): self
+    /** @param int|null $earlierScore the score a replace replaced; null for a first rating */
+    public static function stored(int $id, bool $replaced, ?int $earlierScore = null): self
     {
-        return new self(true, $replaced, [], $id);
+        return new self(true, $replaced, [], $id, $replaced ? $earlierScore : null);
     }
 
     /** @param array<string, string> $errors */

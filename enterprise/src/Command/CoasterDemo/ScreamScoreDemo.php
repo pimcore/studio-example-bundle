@@ -59,8 +59,11 @@ class ScreamScoreDemo
 
     public const STAFF_LASTNAME = 'Staff';
 
-    /** The guest page of a ride (F317): the portal's domain, this path, the ride key. */
-    public const GUEST_PATH = '/scream-score/';
+    /**
+     * The guest page of a ride (F317): the portal's domain, this path, the ride key. `_` is Portal Engine's page prefix
+     * of a one-language portal (PrefixService), which the coaster demo's portal is.
+     */
+    public const GUEST_PATH = '/_scream-score/';
 
     private readonly string $demoDataDir;
 

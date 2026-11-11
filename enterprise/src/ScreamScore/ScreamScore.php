@@ -108,7 +108,7 @@ class ScreamScore
             : new GuestFeedback(null, $ride, $score, $comment, $passNumber, true, $now);
         $saved = $this->store->save($feedback);
 
-        return RatingResult::stored((int) $saved->id, $earlier !== null);
+        return RatingResult::stored((int) $saved->id, $earlier !== null, $earlier?->screamScore);
     }
 
     /**
