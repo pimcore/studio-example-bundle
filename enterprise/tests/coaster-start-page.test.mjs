@@ -33,6 +33,7 @@ const bootstrap = `
 namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
     interface PortalPluginProviderInterface {}
     interface PortalPluginConfigProviderInterface {}
+    interface PublicSharePluginProviderInterface { public function isAvailableForPublicShare(): bool; }
 }
 namespace {
     foreach (['Coaster/CoasterValidator', 'Coaster/CoasterMetadataExtractor', 'Command/CoasterDemo/DemoEnvironment',

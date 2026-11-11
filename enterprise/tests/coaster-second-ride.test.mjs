@@ -118,6 +118,7 @@ namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
     // Stubs of the Portal Engine interfaces the plugin class implements: setup reads its id constant.
     interface PortalPluginProviderInterface {}
     interface PortalPluginConfigProviderInterface {}
+    interface PublicSharePluginProviderInterface { public function isAvailableForPublicShare(): bool; }
 }
 namespace {
     foreach (['Coaster/CoasterValidator', 'Coaster/CoasterMetadataExtractor', 'Command/CoasterDemo/DemoEnvironment',

@@ -66,6 +66,7 @@ function retiredFooter (answer) {
 namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
     interface PortalPluginProviderInterface {}
     interface PortalPluginConfigProviderInterface {}
+    interface PublicSharePluginProviderInterface { public function isAvailableForPublicShare(): bool; }
 }
 namespace {
     foreach (['Command/CoasterDemo/DemoEnvironment', 'Command/CoasterDemo/RetiredFooter', 'Command/CoasterDemo/BriefHtml',

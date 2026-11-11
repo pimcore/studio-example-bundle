@@ -22,7 +22,7 @@ const expectations = () => statement().split('\n').filter((line) => /^- /.test(l
 
 const php = (body) =>
   execFileSync('php', ['-d', 'display_errors=stderr', '-r', `
-    namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin { interface PortalPluginProviderInterface {} interface PortalPluginConfigProviderInterface {} }
+    namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin { interface PortalPluginProviderInterface {} interface PortalPluginConfigProviderInterface {} interface PublicSharePluginProviderInterface { public function isAvailableForPublicShare(): bool; } }
     namespace {
       foreach (['Command/CoasterDemo/DemoEnvironment', 'Command/CoasterDemo/BriefHtml', 'Command/CoasterDemo/CoasterDemo',
                 'Portal/StudioExampleEnterprisePortalPlugin'] as $file) { require ${JSON.stringify(src)} . '/' . $file . '.php'; }

@@ -123,6 +123,7 @@ function frontendConfig ({ agentEnabled, withRoute = true }) {
 namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
     interface PortalPluginProviderInterface {}
     interface PortalPluginConfigProviderInterface {}
+    interface PublicSharePluginProviderInterface { public function isAvailableForPublicShare(): bool; }
 }
 namespace Symfony\\Component\\Routing\\Exception {
     interface ExceptionInterface {}
