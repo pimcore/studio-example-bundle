@@ -53,7 +53,6 @@ test('AC2: enterprise/README.md lists every extension point with its folder, REA
     'upload metadata listener': 'src/Coaster',
     'setup command': 'src/Command',
     'portal frontend plugin': 'assets/portal',
-    'portal page': 'assets/portal/talk',
   };
   for (const [point, folder] of Object.entries(expected)) {
     const row = rows.find((candidate) => candidate.point.toLowerCase().includes(point));

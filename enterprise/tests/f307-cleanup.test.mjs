@@ -39,14 +39,14 @@ test('AC4: the removed code is gone: the change approval demo, the Studio build,
   assert.equal(composer.suggest, undefined, 'no agent-bundle suggest');
 });
 
-test('AC4: the kept code stays: the agent services, the replay, the Confirm card, the night-fury fixture and three icons', () => {
+test('AC4: the kept code stays: the agent services, the replay, the Confirm card, the night-fury fixture and the icons', () => {
   for (const path of [
     'src/Agent/KingdomBriefTools.php', 'src/Agent/KingdomSource.php', 'src/Agent/PimcoreKingdomSource.php',
     'src/Agent/PortalUserContext.php', 'src/Agent/ProposalStore.php', 'src/Agent/Note/ProposalConfirmer.php',
     'src/Agent/Note/ConfirmController.php', 'src/Portal/Agent/ReplayPlayer.php',
     'demo-data/agent/kingdom-brief-check.replay.json', 'demo-data/agent-fixtures/night-fury.coaster',
     'assets/shared/coaster/viewer/ride.mjs', 'assets/shared/coaster/viewer/orbit.mjs',
-    ...['ReviewIcon', 'RideIcon', 'TalkIcon'].map((n) => `assets/portal/js/src/icons/${n}.tsx`),
+    ...['ReviewIcon', 'RideIcon'].map((n) => `assets/portal/js/src/icons/${n}.tsx`),
   ]) assert.ok(existsSync(join(enterpriseDir, path)), `${path} is kept`);
   assert.match(read('assets/shared/coaster/viewer/react.mjs'), /export function createCoasterViewer[\s\S]*export function createCoasterRide/);
   assert.match(read('src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php'), /\$loader->import\(\$configDir \. '\/\*\.yaml'\)/);

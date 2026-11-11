@@ -485,7 +485,7 @@ namespace Pimcore\\Model\\DataObject\\ClassDefinition\\Data {
     class Input extends \\Pimcore\\Model\\DataObject\\ClassDefinition\\Data {}
 }
 namespace {
-    foreach (['DemoEnvironment', 'ContentPages', 'PortalFooter', 'StartPage', 'RideArea', 'RideBriefs', 'CoasterDemo', 'PimcoreDemoEnvironment'] as $file) {
+    foreach (['DemoEnvironment', 'ContentPages', 'RetiredFooter', 'StartPage', 'RideArea', 'RideBriefs', 'CoasterDemo', 'PimcoreDemoEnvironment'] as $file) {
         require_once ${JSON.stringify(src)} . '/Command/CoasterDemo/' . $file . '.php';
     }
     $setters = ['?string' => fn (?string $v) => $v, '?int' => fn (?int $v) => $v, '?float' => fn (?float $v) => $v];

@@ -8,7 +8,7 @@ use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\StudioExampleEnterpriseP
  * Demo 1's state: the Pimcore Kingdom portal with a "Ride designs" asset data pool and the example portal
  * plugin enabled, the park's open ride briefs as data objects in an "Open briefs" data pool (F293; the brief page where an environment has no RideBriefs) and three pages for suppliers (About the park, Working with the Kingdom, Safety
  * first) as content pages in it, each with its navigation icon, the Loopwerk Engineering supplier with a public demo login, and revision 1 of Thunder Loop uploaded with its
- * metadata, and the park's own logo and brand colours on the portal, an English text for the asset tree's first line, and the small "Talk" link at the end of the portal footer (F157), and a start page on the portal root (F208): portal_engine's Feature (the park picture), Hero and large Entry tiles to the brief, the ride designs and the content pages. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
+ * metadata, and the park's own logo and brand colours on the portal, an English text for the asset tree's first line, and a start page on the portal root (F208): portal_engine's Feature (the park picture), Hero and large Entry tiles to the brief, the ride designs and the content pages. setup() creates what is missing and leaves what is there, so a second run changes nothing; reset() goes
  * back to revision 1 (or, with $removeAll, to the state before setup). Both return what they changed, one line each.
  */
 class CoasterDemo
@@ -269,8 +269,8 @@ class CoasterDemo
 
         $changes = [...$changes, ...$this->brand($portalId)];
 
-        if ($env instanceof PortalFooter) {
-            $changes = [...$changes, ...$this->footer($env, $portalId)];
+        if ($env instanceof RetiredFooter) {
+            $changes = [...$changes, ...$this->retiredFooter($env, $portalId)];
         }
 
         if (($env->translation(self::TRANSLATION_DOMAIN, self::ROOT_FOLDER_KEY, self::LANGUAGE) ?? '') === '') {
@@ -328,15 +328,9 @@ class CoasterDemo
                 }
             }
             $portalId = $env->portalId();
-            // the Talk link's block goes first, so the portal's own footer is back as it was before setup
-            if ($portalId !== null && $env instanceof PortalFooter) {
-                $footer = $env->footer($portalId);
-                if ($footer !== null && $footer['demo']) {
-                    $env->removeDemoFooter($portalId);
-                    $changes[] = $footer['wrapsPath'] === null
-                        ? 'Removed the demo\'s portal footer with the Talk link'
-                        : sprintf('Removed the Talk link from the portal footer %s', $footer['wrapsPath']);
-                }
+            // the footer snippet an earlier setup wrote goes first, so the portal's own footer is back as it was
+            if ($portalId !== null && $env instanceof RetiredFooter) {
+                $changes = [...$changes, ...$this->retiredFooter($env, $portalId)];
             }
             // the start page's demo bricks go too, so an editor's bricks there are all that is left of it
             if ($portalId !== null && $env instanceof StartPage) {
@@ -500,22 +494,20 @@ class CoasterDemo
     }
 
     /**
-     * The small "Talk" link in the portal footer (F157): a portal without a footer gets the demo's; one with another
-     * footer keeps it and gets the link at its end, in the demo's marked footer that wraps it; the demo's own stays.
+     * Removes the portal footer snippet an earlier version of the demo wrote (RetiredFooter); nothing when there is none.
      *
      * @return string[] what was changed
      */
-    private function footer(PortalFooter $env, int $portalId): array
+    private function retiredFooter(RetiredFooter $env, int $portalId): array
     {
-        $footer = $env->footer($portalId);
-        if ($footer !== null && $footer['demo']) {
+        $removed = $env->removeDemoFooter($portalId);
+        if ($removed === null) {
             return [];
         }
-        $env->setDemoFooter($portalId, $footer['id'] ?? null);
 
-        return [$footer === null
-            ? 'Set the portal footer with the Talk link'
-            : sprintf('Kept the portal footer %s and added the Talk link at its end', $footer['path'])];
+        return [$removed['wrapsPath'] === null
+            ? 'Removed the demo\'s old portal footer'
+            : sprintf('Removed the demo\'s old portal footer, the portal shows %s again', $removed['wrapsPath'])];
     }
 
     /**

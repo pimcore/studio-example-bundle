@@ -4,18 +4,6 @@
 # Every controller is named Class::__invoke, not the bare invokable class: Portal Engine's SecuritySubscriber reads
 # the controller as [object, method] (getController()[0]) and answers 500 for a bare object (DR-F65-13).
 
-# The portal page "Talk": the slide viewer full-screen, see assets/portal/talk/README.md.
-pimcore_studio_example_enterprise_talk:
-    # the portal's language/site prefix, so the page sits inside the portal
-    path: /{_portal_engine_prefix}talk
-    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkController::__invoke
-    # without it the route answers on every site of the installation
-    condition: "request.attributes.get('isPortalEngineSite')"
-    methods: [GET]
-    # the same requirement Portal Engine's own routes carry
-    requirements:
-        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
-
 # The text of a .coaster asset for the portal's coaster preview stage, see
 # assets/portal/js/src/coaster/preview-stage/README.md. No language prefix: like the portal's own API, it is fetched by
 # the plugin, never opened as a page.

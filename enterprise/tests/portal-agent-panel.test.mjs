@@ -132,9 +132,8 @@ namespace Symfony\\Component\\Routing\\Generator {
     interface UrlGeneratorInterface { public function generate(string $name, array $parameters = [], int $referenceType = 1): string; }
 }
 namespace {
-    require ${JSON.stringify(join(src, 'Portal/Talk/TalkPage.php'))};
     require ${JSON.stringify(join(src, 'Portal/StudioExampleEnterprisePortalPlugin.php'))};
-    $routes = ['pimcore_studio_example_enterprise_talk' => '/en/talk'];
+    $routes = [];
     if (${withRoute ? 'true' : 'false'}) { $routes['pimcore_studio_example_enterprise_agent_chat'] = '/studio-example-enterprise/agent/chat'; }
     $generator = new class($routes) implements Symfony\\Component\\Routing\\Generator\\UrlGeneratorInterface {
         public function __construct(private array $routes) {}
@@ -144,7 +143,7 @@ namespace {
         }
     };
     $plugin = new Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\StudioExampleEnterprisePortalPlugin(
-        new Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Portal\\Talk\\TalkPage($generator), $generator, ${agentEnabled ? 'true' : 'false'});
+        $generator, ${agentEnabled ? 'true' : 'false'});
     echo json_encode($plugin->getFrontendConfig());
 }`;
   return JSON.parse(execFileSync('php', ['-r', php.replace(/^\s*<\?php/, '')], { encoding: 'utf8' }));
@@ -156,7 +155,7 @@ test('AC1: config().agent decides: no agent key or no chatUrl means no button, a
   assert.equal(agentConfig.agentConfigOf(undefined), null);
   assert.equal(agentConfig.agentConfigOf(null), null);
   assert.equal(agentConfig.agentConfigOf({}), null, 'no agent key');
-  assert.equal(agentConfig.agentConfigOf({ talk: { url: '/en/talk', label: 'Talk' } }), null);
+  assert.equal(agentConfig.agentConfigOf({ other: { url: '/en/other' } }), null, 'another key only');
   assert.equal(agentConfig.agentConfigOf({ agent: {} }), null, 'no chatUrl');
   assert.equal(agentConfig.agentConfigOf({ agent: { chatUrl: '' } }), null);
   assert.equal(agentConfig.agentConfigOf({ agent: { chatUrl: 42 } }), null);
@@ -193,10 +192,9 @@ test('AC1: the button is registered on slots.headerActions and loads the panel o
 
 test('AC1: the server hands over agent {chatUrl, label, mode} unless studio_example_enterprise.agent.enabled is false', () => {
   assert.deepEqual(frontendConfig({ agentEnabled: true }), {
-    talk: { url: '/en/talk', label: 'Talk' },
     agent: { chatUrl: '/studio-example-enterprise/agent/chat', label: 'Ask the brief', mode: 'replay' }
   });
-  assert.deepEqual(frontendConfig({ agentEnabled: false }), { talk: { url: '/en/talk', label: 'Talk' } }, 'disabled: no agent key, no button');
+  assert.deepEqual(frontendConfig({ agentEnabled: false }), {}, 'disabled: no agent key, no button');
   assert.equal(frontendConfig({ agentEnabled: true, withRoute: false }).agent, undefined, 'no route: no button');
 
   // the container parameter defaults to true and is the provider's $agentEnabled

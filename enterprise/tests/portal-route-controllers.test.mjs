@@ -20,7 +20,7 @@ function routes () {
 
 test('AC1: every portal route names its controller as Class::method, so Portal Engine\'s SecuritySubscriber can read it', () => {
   const declared = routes();
-  assert.ok(declared.length >= 2, 'the talk and the coaster file routes are declared');
+  assert.ok(declared.length >= 2, 'the coaster file and the agent routes are declared');
   for (const { name, controller } of declared) {
     assert.ok(controller, `${name} names a controller`);
     assert.match(controller, /^Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\[\w\\]+::\w+$/, `${name}: ${controller} is Class::method`);

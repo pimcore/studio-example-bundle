@@ -4,7 +4,6 @@ namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal;
 
 use Pimcore\Bundle\PortalEngineBundle\Service\Plugin\PortalPluginConfigProviderInterface;
 use Pimcore\Bundle\PortalEngineBundle\Service\Plugin\PortalPluginProviderInterface;
-use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkPage;
 use Symfony\Component\Routing\Exception\ExceptionInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -29,7 +28,6 @@ class StudioExampleEnterprisePortalPlugin implements PortalPluginProviderInterfa
      *                           default true): false hides the panel's button
      */
     public function __construct(
-        private readonly TalkPage $talkPage,
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly bool $agentEnabled = true,
     ) {
@@ -59,9 +57,7 @@ class StudioExampleEnterprisePortalPlugin implements PortalPluginProviderInterfa
     }
 
     /**
-     * Read by the plugin as config('studio-example-enterprise'): `talk`, the URL of the portal page "Talk" (its link is
-     * in the portal footer, templates/portal/footer-talk.html.twig; checks read the URL here), and `agent` for the
-     * "Ask the brief" button (assets/portal/js/src/agent/AskBriefButton.tsx). Without `agent` there is no button. `mode` says where the answers come from today; the
+     * Read by the plugin as config('studio-example-enterprise'): `agent` for the "Ask the brief" button (assets/portal/js/src/agent/AskBriefButton.tsx). Without `agent` there is no button. `mode` says where the answers come from today; the
      * "recorded" badge never depends on it, it comes from the stream.
      *
      * @return array<string, mixed>
@@ -69,10 +65,6 @@ class StudioExampleEnterprisePortalPlugin implements PortalPluginProviderInterfa
     public function getFrontendConfig(): array
     {
         $config = [];
-        $talk = $this->talkPage->getNavEntry();
-        if ($talk !== null) {
-            $config['talk'] = $talk;
-        }
         $agent = $this->getAgentConfig();
         if ($agent !== null) {
             $config['agent'] = $agent;

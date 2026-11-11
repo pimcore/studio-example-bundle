@@ -8,8 +8,8 @@ Plugins".
 ## What it shows
 
 "Studio Example Enterprise" in the **Enabled plugins** field of a portal's configuration document, and, once enabled,
-what the examples register: today the **Talk** entry under the portal's navigation rail
-([the portal page "Talk"](talk/README.md)).
+what the examples register: the coaster tile's track outline, the preview stage for `.coaster` assets and the
+"Ask the brief" header action.
 
 ## Extension point
 
@@ -24,11 +24,11 @@ what the examples register: today the **Talk** entry under the portal's navigati
 ### Own icons
 
 `js/src/icons/` holds the plugin's own icons, made for these examples (no third-party art, so no license review):
-Ride, Review and Talk. Each is a React component drawing an inline SVG on a
+Ride and Review. Each is a React component drawing an inline SVG on a
 24 x 24 grid in the surrounding text colour (`currentColor`), through the shared frame `CoasterIcon.tsx`. Without a
 `label` an icon is decorative (`aria-hidden="true"`) and needs visible text beside it; with one it is an image with
-that `aria-label`. Import each icon from its own file, never through a collection: the Talk entry's icon is in the
-start-up chunk, the tile's and the stage's load with their lazy chunks. Used by the Talk entry, the coaster tile's
+that `aria-label`. Import each icon from its own file, never through a collection: the tile's and the stage's icons load
+with their lazy chunks, none is in the start-up chunk. Used by the coaster tile's
 "Ride design" tag and the preview stage's Orbit and Ride buttons (`enterprise/tests/coaster-icons.test.mjs`).
 
 ## Only with vendor access

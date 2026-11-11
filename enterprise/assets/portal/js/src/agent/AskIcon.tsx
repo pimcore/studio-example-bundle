@@ -3,7 +3,7 @@ import { CoasterIcon, type CoasterIconProps } from '../icons/CoasterIcon'
 
 /**
  * Ask: a speech bubble with a question mark (the header button "Ask the brief", AskBriefButton.tsx). It lives here,
- * not in ../icons/: that folder is the coaster set, of which only the Talk entry's icon is in the start-up chunk.
+ * not in ../icons/: that folder is the coaster set, whose icons load with the tile's and the stage's lazy chunks.
  */
 export function AskIcon (props: CoasterIconProps): React.JSX.Element {
   return (

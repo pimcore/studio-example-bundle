@@ -218,7 +218,7 @@ test('AC1: the start page text is in demo-data/start-page.md, and on Pimcore it 
   assert.match(save, /self::AREABLOCK, 'areablock'/);
   assert.match(save, /self::START_BRICKS/, 'remembers which bricks are the demo\'s');
   const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
-  assert.match(pimcore, /implements DemoEnvironment, ContentPages, PortalFooter, StartPage/);
+  assert.match(pimcore, /implements DemoEnvironment, ContentPages, RetiredFooter, StartPage/);
   for (const type of ['portal-engine-feature', 'portal-engine-hero', 'portal-engine-entry-tiles']) {
     assert.ok(read(join(src, 'Command/CoasterDemo/CoasterDemo.php')).includes(`'${type}'`), `CoasterDemo names ${type}`);
   }

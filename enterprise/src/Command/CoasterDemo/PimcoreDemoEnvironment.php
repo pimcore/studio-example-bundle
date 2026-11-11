@@ -11,7 +11,6 @@ use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\ContentConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Document\Editables\PortalConfig;
 use Pimcore\Bundle\PortalEngineBundle\Enum\Wizard;
 use Pimcore\Bundle\PortalEngineBundle\Service\Wizard\WizardService;
-use Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Talk\TalkFooterController;
 use Pimcore\Cache;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject;
@@ -31,7 +30,7 @@ use Pimcore\Model\Translation;
  * asset created like an upload, so the coaster listener fills its metadata. Every element the demo creates gets the
  * property "coaster-demo", and only elements with it are found as the demo's or deleted.
  */
-class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFooter, StartPage, RideArea, RideBriefs
+class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, RetiredFooter, StartPage, RideArea, RideBriefs
 {
     public const MARK = 'coaster-demo';
 
@@ -44,10 +43,8 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
     // A demo content page whose key an editor's page already had (F155) gets the next free key and keeps its own here.
     public const PAGE_KEY = 'coaster-demo-page';
 
-    // The demo's footer snippet (F157): its key, and the property naming the portal footer it shows before the Talk link
-    // (read by templates/portal/footer-snippet.html.twig).
-    public const FOOTER_KEY = 'coaster-demo-footer';
-
+    // The property of the footer snippet earlier versions of the demo wrote, naming the portal footer it showed first
+    // (RetiredFooter: setup gives the portal that footer back).
     public const FOOTER_WRAPS = 'coaster-demo-footer-wraps';
 
     // The start page (F208): the keys of the portal root's content bricks the demo wrote, comma-separated. A brick with
@@ -866,67 +863,26 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         $translation->save();
     }
 
-    public function footer(int $portalId): ?array
-    {
-        $snippet = $this->portalFooter($portalId);
-        if (!$snippet) {
-            return null;
-        }
-        $demo = (bool) $snippet->getProperty(self::MARK);
-        $wraps = $demo ? $snippet->getProperty(self::FOOTER_WRAPS) : null;
-        $wraps = $wraps instanceof Document ? $wraps : null;
-
-        return ['id' => $snippet->getId(), 'path' => $snippet->getRealFullPath(), 'demo' => $demo,
-            'wraps' => $wraps?->getId(), 'wrapsPath' => $wraps?->getRealFullPath()];
-    }
-
-    /** As the Portal Engine wizard sets the footer: a relation to the snippet; the cache holds the portal's config. */
-    public function setDemoFooter(int $portalId, ?int $wraps): void
-    {
-        $portal = Document\Page::getById($portalId, ['force' => true])
-            ?? throw new \RuntimeException(sprintf('The demo portal (document %d) is gone.', $portalId));
-        $wrapped = $wraps === null ? null : Document::getById($wraps);
-        $snippet = $this->demoFooter($portal);
-        if (!$snippet) {
-            $snippet = new Document\Snippet();
-            $snippet->setKey(self::FOOTER_KEY);
-            // beside the footer it wraps (the wizard's snippets folder), so the localized include finds both alike
-            $snippet->setParent($wrapped?->getParent() ?? Document::getByPath($portal->getRealFullPath() . '/snippets') ?? $portal);
-            $snippet->setKey(Document\Service::getUniqueKey($snippet));
-            $snippet->setPublished(true);
-            $snippet->setProperty(self::MARK, 'bool', true, false, false);
-        }
-        $snippet->setController(TalkFooterController::class . '::footerAction');
-        if ($wrapped) {
-            $snippet->setProperty(self::FOOTER_WRAPS, 'document', $wrapped, false, false);
-        } else {
-            $snippet->removeProperty(self::FOOTER_WRAPS);
-        }
-        $snippet->save();
-
-        $portal->getEditables(); // keeps the other settings, as in enablePlugin()
-        $portal->setRawEditable(PortalConfig::FOOTER_SNIPPET, 'relation', ['id' => $snippet->getId(), 'type' => 'document', 'subtype' => 'snippet']);
-        $portal->save();
-        Cache::clearAll();
-    }
-
-    public function removeDemoFooter(int $portalId): void
+    public function removeDemoFooter(int $portalId): ?array
     {
         $portal = Document\Page::getById($portalId, ['force' => true]);
         $snippet = $portal ? $this->demoFooter($portal) : null;
         if (!$snippet) {
-            return;
+            return null;
         }
+        $wrapped = $snippet->getProperty(self::FOOTER_WRAPS);
+        $wrapped = $wrapped instanceof Document ? $wrapped : null;
         if ($this->portalFooter($portalId)?->getId() === $snippet->getId()) {
-            $wrapped = $snippet->getProperty(self::FOOTER_WRAPS);
-            $portal->getEditables();
-            $portal->setRawEditable(PortalConfig::FOOTER_SNIPPET, 'relation', $wrapped instanceof Document
+            $portal->getEditables(); // keeps the other settings, as in enablePlugin()
+            $portal->setRawEditable(PortalConfig::FOOTER_SNIPPET, 'relation', $wrapped
                 ? ['id' => $wrapped->getId(), 'type' => 'document', 'subtype' => 'snippet']
                 : ['id' => null, 'type' => null, 'subtype' => null]);
             $portal->save();
         }
         $snippet->delete();
         Cache::clearAll();
+
+        return ['wrapsPath' => $wrapped?->getRealFullPath()];
     }
 
     public function startPageBricks(int $portalId): array
@@ -1160,7 +1116,7 @@ class PimcoreDemoEnvironment implements DemoEnvironment, ContentPages, PortalFoo
         return $snippet instanceof Document\Snippet ? $snippet : null;
     }
 
-    /** The demo's own footer snippet in the portal's tree (marked), or null. */
+    /** The footer snippet an earlier demo wrote in the portal's tree (a marked snippet), or null. */
     private function demoFooter(Document\Page $portal): ?Document\Snippet
     {
         $list = new Document\Listing();
