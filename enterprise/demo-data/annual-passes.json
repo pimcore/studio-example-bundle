@@ -1,0 +1,25 @@
+{
+    "about": "The five fictional annual passes of the coaster demo (F316). Codes are kept only as password_hash() hashes; the plain demo codes are public demo defaults, listed in src/ScreamScore/README.md.",
+    "passes": [
+        {
+            "passNumber": "PK-2026-0001",
+            "codeHash": "$2y$12$5HPOmgkxMxuacxRLsXJeBOam.7OCszJJnX9sMwhwrd47B5XAw1tdm"
+        },
+        {
+            "passNumber": "PK-2026-0002",
+            "codeHash": "$2y$12$oi9dZ6kCmnKzelecy1vDmebCBnSCMa7ygsaK3aKGYekuJE6LmXlSm"
+        },
+        {
+            "passNumber": "PK-2026-0003",
+            "codeHash": "$2y$12$Qk198p51bTYDSsTgLc0mVe67irvkJB/z0BZnrxQ0QeQPLDdZtfQYy"
+        },
+        {
+            "passNumber": "PK-2026-0004",
+            "codeHash": "$2y$12$MzCr23n6/EKisD5nvooBAeAUJQcXtGqLFMjO7SpM8HpZU5XfKKRFq"
+        },
+        {
+            "passNumber": "PK-2026-0005",
+            "codeHash": "$2y$12$IinioYCMl4VwkzwITUrm5OMPX6xmyffmaYZ6/f215KK74.TeZZj7C"
+        }
+    ]
+}

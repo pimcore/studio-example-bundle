@@ -1,0 +1,29 @@
+{
+    "about": "The sample scream scores the coaster demo sets up (F316): one per pass on Thunder Loop from passes 0001-0003, one of them hidden by the park. Passes 0004 and 0005 stay free for a live try. Reset puts exactly these back.",
+    "ratings": [
+        {
+            "ride": "thunder-loop",
+            "passNumber": "PK-2026-0001",
+            "screamScore": 9,
+            "comment": "The first drop took my breath away. Riding it again after lunch!",
+            "visible": true,
+            "createdAt": "2026-11-02T10:15:00+01:00"
+        },
+        {
+            "ride": "thunder-loop",
+            "passNumber": "PK-2026-0002",
+            "screamScore": 7,
+            "comment": "Great loops, but the queue was long.",
+            "visible": true,
+            "createdAt": "2026-11-03T14:40:00+01:00"
+        },
+        {
+            "ride": "thunder-loop",
+            "passNumber": "PK-2026-0003",
+            "screamScore": 4,
+            "comment": "BORING!!! visit my channel for real coasters",
+            "visible": false,
+            "createdAt": "2026-11-04T16:05:00+01:00"
+        }
+    ]
+}

@@ -30,4 +30,9 @@ class InMemoryFailureCounter implements FailureCounter
     {
         $this->counts[$key] = ['count' => $this->failures($key) + 1, 'expiresAt' => ($this->now)() + $seconds];
     }
+
+    public function clear(): void
+    {
+        $this->counts = [];
+    }
 }

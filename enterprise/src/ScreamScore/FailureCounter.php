@@ -13,4 +13,7 @@ interface FailureCounter
 
     /** Counts one more failure; the key's count expires $seconds after its latest failure. */
     public function recordFailure(string $key, int $seconds): void;
+
+    /** Forgets every count, so no key is refused any more: the coaster demo's reset (F316). */
+    public function clear(): void;
 }

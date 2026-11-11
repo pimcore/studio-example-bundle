@@ -3,6 +3,7 @@
 namespace Pimcore\Bundle\StudioExampleEnterpriseBundle\Command;
 
 use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo;
+use Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ScreamScoreDemo;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,14 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Sets up Demo 1 (see README.md next to this file). Idempotent: a second run changes nothing.
+ * Sets up Demo 1 (see README.md next to this file), then the scream score on it (ScreamScoreDemo, F316). Idempotent:
+ * a second run changes nothing.
  */
 #[AsCommand(name: self::NAME, description: 'Sets up the coaster demo: portal, brief, supplier login and revision 1')]
 class CoasterDemoSetupCommand extends Command
 {
     public const NAME = 'coaster-demo:setup';
 
-    public function __construct(private readonly CoasterDemo $demo)
+    public function __construct(private readonly CoasterDemo $demo, private readonly ScreamScoreDemo $screamScore)
     {
         parent::__construct();
     }
@@ -31,8 +33,11 @@ class CoasterDemoSetupCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $changes = $this->demo->setup((string) $input->getOption('domain'));
+        $domain = (string) $input->getOption('domain');
+        // the scream score after the coaster demo: its ratings point at the coaster asset, its staff at the portal
+        $changes = [...$this->demo->setup($domain), ...$this->screamScore->setup()];
         self::report($io, $changes, 'Nothing to do: the coaster demo is set up already.');
+        self::reportScreamScore($io, $this->screamScore, $domain);
 
         return Command::SUCCESS;
     }
@@ -42,5 +47,17 @@ class CoasterDemoSetupCommand extends Command
     {
         $changes === [] ? $io->writeln($nothing) : $io->listing($changes);
         $io->success(sprintf('Ready. Log in to the portal as %s, password %s.', CoasterDemo::SUPPLIER_EMAIL, CoasterDemo::SUPPLIER_PASSWORD));
+    }
+
+    /** The guest link per coaster, the demo passes with their codes and the staff login: what a presenter needs. */
+    public static function reportScreamScore(SymfonyStyle $io, ScreamScoreDemo $screamScore, string $domain): void
+    {
+        foreach ($screamScore->guestLinks($domain) as $ride => $link) {
+            $io->writeln(sprintf('Scream score guest link for %s: %s', $ride, $link));
+        }
+        $io->writeln('Demo annual passes (number: code, the first ones have no rating yet):');
+        $passes = $screamScore->demoPasses();
+        $io->listing(array_map(static fn (string $number, string $code): string => $number . ': ' . $code, array_keys($passes), $passes));
+        $io->writeln(sprintf('Park staff: log in to the portal as %s, password %s.', ScreamScoreDemo::STAFF_EMAIL, ScreamScoreDemo::STAFF_PASSWORD));
     }
 }

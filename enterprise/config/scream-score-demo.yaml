@@ -1,0 +1,22 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # The scream score on Pimcore (F316): the ratings as GuestFeedback objects, the demo passes' code hashes in the
+    # settings store. The rules (ScreamScore) take them through their interfaces; a real park swaps AnnualPasses for
+    # its ticket system.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreFeedbackStore: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreAnnualPasses: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\FeedbackStore: '@Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreFeedbackStore'
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\AnnualPasses: '@Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreAnnualPasses'
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\ScreamScore: ~
+
+    # coaster-demo:setup and coaster-demo:reset run these after the coaster demo (src/Command/CoasterDemo/ScreamScoreDemo.php):
+    # the GuestFeedback class, the demo passes, the sample ratings and the park-staff user. The tests use an in-memory
+    # ScreamScoreEnvironment instead.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ScreamScoreDemo: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreScreamScoreEnvironment: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\ScreamScoreEnvironment:
+        alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\Pimcore\PimcoreScreamScoreEnvironment

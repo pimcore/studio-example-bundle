@@ -10,5 +10,5 @@ services:
             $cache: '@cache.app'
     Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\FailureCounter: '@Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\CacheFailureCounter'
 
-    # The ScreamScore service itself is registered with the Pimcore-backed FeedbackStore and AnnualPasses (F316); the
-    # InMemory versions are for the tests only and are never services.
+    # The ScreamScore service itself, with the Pimcore-backed FeedbackStore and AnnualPasses, is in
+    # config/scream-score-demo.yaml (F316); the InMemory versions are for the tests only and are never services.
