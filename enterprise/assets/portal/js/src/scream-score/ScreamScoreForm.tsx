@@ -106,8 +106,8 @@ export default function ScreamScoreForm ({ hash, assetId }: { hash: string, asse
           help={ state.errors.score ?? `${SCORE_CHOICES[0].value} ${SCORE_CHOICES[0].label ?? ''} · ${SCORE_CHOICES[SCORE_CHOICES.length - 1].value} ${SCORE_CHOICES[SCORE_CHOICES.length - 1].label ?? ''}` }
         >
           <Segmented
-            block
-            // the small size keeps all ten readable at phone width (390 px): "10" fits, no "1…"
+            // small and as wide as its numbers (not block, which gives every item the same width): all ten stay
+            // readable at phone width (390 px), "10" too
             size="small"
             aria-label={ SCORE_LABEL }
             options={ SCORE_OPTIONS }
