@@ -9,7 +9,10 @@
 # manifest are exactly what was built. Each build step runs through the tooling queue (bin/heavy.sh), one at a time.
 # Exits non-zero naming the part that failed, and when the plugin's entry chunk is over 150 KB gzip.
 #
-# Usage: enterprise/bin/build-all.sh
+# Usage: enterprise/bin/build-all.sh [--types]
+#   --types   types only (F325): stage the portal plugin alone from HEAD, install its packages through
+#             $ORCH_ROOT/bin/deps.sh (kept in BUILD_ALL_WORK) and run its `npm run check-types`; no portal_engine, no
+#             build, no zips. Run by enterprise/tests/portal-plugin-types.test.mjs.
 # Environment (all optional):
 #   PORTAL_ENGINE_REPO  portal_engine clone      (default $ORCH_WORK/portal-talk/repos/portal_engine)
 #   PORTAL_ENGINE_REF   its commit or branch     (default integration)
@@ -19,9 +22,16 @@
 #   BUILD_ALL_WORK      staging folder; node_modules are kept there between runs
 #                                                (default ${XDG_CACHE_HOME:-~/.cache}/portal-talk-build-all)
 #   HEAVY               the queue runner          (default $ORCH_ROOT/bin/heavy.sh)
-#   BUILD_ALL_PLUGIN_CMD, BUILD_ALL_ENGINE_CMD
-#                       replace a part's build command line (run in the part's staged folder)
+#   BUILD_ALL_PLUGIN_CMD, BUILD_ALL_ENGINE_CMD, BUILD_ALL_TYPES_CMD
+#                       replace a part's build (or --types' check) command line (run in the part's staged folder)
 set -euo pipefail
+
+TYPES_ONLY=0
+case "${1:-}" in
+  '') ;;
+  --types) TYPES_ONLY=1 ;;
+  *) printf 'build-all: usage: %s [--types]\n' "$0" >&2; exit 2 ;;
+esac
 
 ENTRY_LIMIT_BYTES=$((150 * 1024))   # the plugin's entry chunk, gzip
 
@@ -40,6 +50,10 @@ NPM_FLAGS='--no-audit --no-fund'
 # (antd, dayjs, ...) next to it and the bundler resolves the kit's imports from the plugin's own node_modules
 PLUGIN_CMD=${BUILD_ALL_PLUGIN_CMD:-"npm install --install-links $NPM_FLAGS && npm run build"}
 ENGINE_CMD=${BUILD_ALL_ENGINE_CMD:-"npm ci $NPM_FLAGS && npm run build"}
+# --types: deps.sh installs only when package.json or the kit's changed (it stamps node_modules and queues the install
+# itself); then the type check, queued
+DEPS=${ORCH_ROOT:+$ORCH_ROOT/bin/deps.sh}
+TYPES_CMD=${BUILD_ALL_TYPES_CMD:-"\"$DEPS\" node_modules package.json ../../../portal-ui-kit/frontend/portal-ui-kit/package.json -- npm install --install-links $NPM_FLAGS && \"$HEAVY\" npm run check-types"}
 
 say() { printf 'build-all: %s\n' "$*" >&2; }
 # fail <part> <reason>: the one way out on an error, naming the part
@@ -48,39 +62,66 @@ fail() { say "FAILED: $1: $2"; exit 1; }
 [ -n "$HEAVY" ] && [ -x "$HEAVY" ] || fail setup "no queue runner: set ORCH_ROOT (bin/heavy.sh) or HEAVY"
 command -v python3 >/dev/null || fail setup "python3 is needed to write the zips"
 command -v node >/dev/null || fail setup "node is needed to write the manifest"
-git -C "$PORTAL_ENGINE_REPO" rev-parse --git-dir >/dev/null 2>&1 \
-  || fail portal-engine-frontend "no portal_engine clone at $PORTAL_ENGINE_REPO (set PORTAL_ENGINE_REPO)"
+if [ "$TYPES_ONLY" -eq 1 ]; then
+  [ -n "${BUILD_ALL_TYPES_CMD:-}" ] || { [ -n "$DEPS" ] && [ -x "$DEPS" ]; } \
+    || fail portal-plugin-types "no install runner: set ORCH_ROOT (bin/deps.sh) or BUILD_ALL_TYPES_CMD"
+else
+  git -C "$PORTAL_ENGINE_REPO" rev-parse --git-dir >/dev/null 2>&1 \
+    || fail portal-engine-frontend "no portal_engine clone at $PORTAL_ENGINE_REPO (set PORTAL_ENGINE_REPO)"
+fi
 [ -d "$PORTAL_UI_KIT/frontend/portal-ui-kit/dist" ] \
   || fail portal-ui-kit "no built kit at $PORTAL_UI_KIT/frontend/portal-ui-kit/dist (set PORTAL_UI_KIT)"
 
 SB_SHA=$(git -C "$REPO" rev-parse HEAD)
-PE_SHA=$(git -C "$PORTAL_ENGINE_REPO" rev-parse --verify "$PORTAL_ENGINE_REF^{commit}" 2>/dev/null) \
-  || fail portal-engine-frontend "$PORTAL_ENGINE_REF is no commit in $PORTAL_ENGINE_REPO"
+if [ "$TYPES_ONLY" -eq 0 ]; then
+  PE_SHA=$(git -C "$PORTAL_ENGINE_REPO" rev-parse --verify "$PORTAL_ENGINE_REF^{commit}" 2>/dev/null) \
+    || fail portal-engine-frontend "$PORTAL_ENGINE_REF is no commit in $PORTAL_ENGINE_REPO"
+fi
 KIT_SHA=$(git -C "$PORTAL_UI_KIT" rev-parse HEAD 2>/dev/null || true)
 if [ -n "$(git -C "$REPO" status --porcelain -- enterprise)" ]; then
   say "note: uncommitted changes under enterprise/ are not built (sources come from HEAD $SB_SHA)"
 fi
 
 # --- stage the sources: fresh from the commits, node_modules kept from the last run ---
-NODE_DIRS=(sb/enterprise/assets/portal/node_modules
-           sb/enterprise/assets/shared/coaster/viewer/node_modules pe/assets/portal/node_modules)
 mkdir -p "$WORK"
+# one run at a time per staging folder: a build and a type check share its sources and node_modules
+if command -v flock >/dev/null; then
+  exec 9>"$WORK/.lock"
+  flock 9
+fi
+NODE_DIRS=(sb/enterprise/assets/portal/node_modules sb/enterprise/assets/shared/coaster/viewer/node_modules)
+STAGED=(sb)
+if [ "$TYPES_ONLY" -eq 0 ]; then NODE_DIRS+=(pe/assets/portal/node_modules); STAGED+=(pe); fi
 KEEP="$WORK/.keep.$$"
 rm -rf "$WORK"/.keep.*
 mkdir -p "$KEEP"
 for d in "${NODE_DIRS[@]}"; do
   if [ -d "$WORK/$d" ]; then mkdir -p "$KEEP/$(dirname "$d")"; mv "$WORK/$d" "$KEEP/$d"; fi
 done
-rm -rf "$WORK/sb" "$WORK/pe"
-mkdir -p "$WORK/sb" "$WORK/pe/vendor/pimcore"
+for s in "${STAGED[@]}"; do rm -rf "${WORK:?}/$s"; done
+mkdir -p "$WORK/sb"
 git -C "$REPO" archive --format=tar HEAD enterprise | tar -x -C "$WORK/sb"
-git -C "$PORTAL_ENGINE_REPO" archive --format=tar "$PE_SHA" assets/portal | tar -x -C "$WORK/pe"
+if [ "$TYPES_ONLY" -eq 0 ]; then
+  mkdir -p "$WORK/pe/vendor/pimcore"
+  git -C "$PORTAL_ENGINE_REPO" archive --format=tar "$PE_SHA" assets/portal | tar -x -C "$WORK/pe"
+fi
 for d in "${NODE_DIRS[@]}"; do
   if [ -d "$KEEP/$d" ]; then mkdir -p "$WORK/$(dirname "$d")"; mv "$KEEP/$d" "$WORK/$d"; fi
 done
 rm -rf "$KEEP"
 # where each package.json's file: dependency on the kit points
 ln -s "$PORTAL_UI_KIT" "$WORK/sb/portal-ui-kit"                      # enterprise/assets/portal: ../../../portal-ui-kit
+STAGE_ENTERPRISE=$WORK/sb/enterprise
+
+# --- --types: the plugin's check-types in its staged folder, and nothing else ---
+if [ "$TYPES_ONLY" -eq 1 ]; then
+  say "type-checking portal-plugin $SB_SHA (in $STAGE_ENTERPRISE/assets/portal)"
+  rc=0
+  (cd "$STAGE_ENTERPRISE/assets/portal" && bash -c "$TYPES_CMD") || rc=$?
+  [ "$rc" -eq 0 ] || fail portal-plugin-types "check-types exited $rc"
+  say "portal-plugin-types: check-types passed ($SB_SHA)"
+  exit 0
+fi
 ln -s "$PORTAL_UI_KIT" "$WORK/pe/vendor/pimcore/portal-ui-kit"       # assets/portal: ../../vendor/pimcore/portal-ui-kit
 
 # --- build, one part after the other, each through the queue ---
@@ -92,7 +133,6 @@ step() {
   [ "$rc" -eq 0 ] || fail "$part" "build exited $rc"
 }
 
-STAGE_ENTERPRISE=$WORK/sb/enterprise
 rm -rf "$STAGE_ENTERPRISE/public/portal" "$WORK/pe/assets/portal/dist"
 step portal-plugin "$STAGE_ENTERPRISE/assets/portal" "$PLUGIN_CMD"
 step portal-engine-frontend "$WORK/pe/assets/portal" "$ENGINE_CMD"

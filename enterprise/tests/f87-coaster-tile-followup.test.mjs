@@ -24,7 +24,7 @@ const model = await import(join(tileDir, 'coaster-tile-model.ts'));
 
 // The stand-ins: the kit's Icon, and the SDK names plugin.tsx registers under.
 const Icon = (props) => React.createElement('i', { 'data-kit-icon': props.value, 'data-width': props.options?.width });
-const sdkNames = { tileRegions: { media: 'tileRegions.media', meta: 'tileRegions.meta' }, previewStage: 'previewStage', slots: { navEntries: 'navEntries', headerActions: 'headerActions' } };
+const sdkNames = { tileRegions: { media: 'tileRegions.media', meta: 'tileRegions.meta' }, previewStage: 'previewStage', slots: { navEntries: 'navEntries', headerActions: 'headerActions', detailPanels: 'detailPanels' } };
 
 /** A .tsx file transpiled to CommonJS and run with the given modules for its imports. */
 function loadTsx (path, modules) {
@@ -77,7 +77,9 @@ function registrations () {
     // F128: the header's "Ask the brief" button (agent/README.md)
     './agent/AskBriefButton': { AskBriefButton: () => null },
     './coaster/preview-stage/CoasterPreviewStage': { CoasterPreviewStage: () => null },
-    './coaster/tile/CoasterTileMedia': mediaModule()
+    './coaster/tile/CoasterTileMedia': mediaModule(),
+    // F325: the scream-score panel under a share's coaster detail (scream-score/README.md)
+    './scream-score/ScreamScorePanel': { ScreamScorePanel: () => null }
   });
   studioExampleEnterprisePlugin.onStartup({ moduleSystem: { registerModule: (module) => module.onInit() } });
   return registered;

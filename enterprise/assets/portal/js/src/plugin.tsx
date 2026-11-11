@@ -2,6 +2,7 @@ import { componentRegistry, pluginSystem, previewStage, slots, tileRegions, type
 import { AskBriefButton } from './agent/AskBriefButton'
 import { CoasterPreviewStage } from './coaster/preview-stage/CoasterPreviewStage'
 import { CoasterTileMedia } from './coaster/tile/CoasterTileMedia'
+import { ScreamScorePanel } from './scream-score/ScreamScorePanel'
 
 // The enterprise examples' portal plugin. Each example registers its extension points (slots, action surfaces) in
 // the module's onInit below.
@@ -20,6 +21,9 @@ export const studioExampleEnterprisePlugin: IAbstractPlugin = pluginSystem.defin
         // the "Ask the brief" button in the header of every signed-in page (agent/README.md); it renders nothing
         // without config().agent, and its panel loads on the first click
         componentRegistry.registerToSlot(slots.headerActions, { name: 'studio-example-enterprise/ask-brief', component: AskBriefButton })
+        // the scream-score panel under a public share's coaster detail (scream-score/README.md); it renders nothing for
+        // a signed-in user, another asset or a page without a share hash, and its form loads in its own chunk
+        componentRegistry.registerToSlot(slots.detailPanels, { name: 'studio-example-enterprise/scream-score', component: ScreamScorePanel })
       }
     })
   }
