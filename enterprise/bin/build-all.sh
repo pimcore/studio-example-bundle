@@ -10,9 +10,10 @@
 # Exits non-zero naming the part that failed, and when the plugin's entry chunk is over 150 KB gzip.
 #
 # Usage: enterprise/bin/build-all.sh [--types]
-#   --types   types only (F325): stage the portal plugin alone from HEAD, install its packages through
-#             $ORCH_ROOT/bin/deps.sh (kept in BUILD_ALL_WORK) and run its `npm run check-types`; no portal_engine, no
-#             build, no zips. Run by enterprise/tests/portal-plugin-types.test.mjs.
+#   --types   types only (F325): stage the portal plugin from HEAD, install its packages through
+#             $ORCH_ROOT/bin/deps.sh (kept in BUILD_ALL_WORK), put the plugin SDK's types of the portal_engine clone's
+#             PORTAL_ENGINE_REF (assets/plugin-sdk) over the npm package (which lags behind: no previewStage), and run
+#             its `npm run check-types`; no build, no zips. Run by enterprise/tests/portal-plugin-types.test.mjs.
 # Environment (all optional):
 #   PORTAL_ENGINE_REPO  portal_engine clone      (default $ORCH_WORK/portal-talk/repos/portal_engine)
 #   PORTAL_ENGINE_REF   its commit or branch     (default integration)
@@ -51,9 +52,10 @@ NPM_FLAGS='--no-audit --no-fund'
 PLUGIN_CMD=${BUILD_ALL_PLUGIN_CMD:-"npm install --install-links $NPM_FLAGS && npm run build"}
 ENGINE_CMD=${BUILD_ALL_ENGINE_CMD:-"npm ci $NPM_FLAGS && npm run build"}
 # --types: deps.sh installs only when package.json or the kit's changed (it stamps node_modules and queues the install
-# itself); then the type check, queued
+# itself); then portal_engine's SDK types over the npm package ($SDK_DIR, staged below), then the type check, queued.
+# (A full build's `npm install` puts the npm SDK back: the copy's version 0.0.0-local does not satisfy package.json.)
 DEPS=${ORCH_ROOT:+$ORCH_ROOT/bin/deps.sh}
-TYPES_CMD=${BUILD_ALL_TYPES_CMD:-"\"$DEPS\" node_modules package.json ../../../portal-ui-kit/frontend/portal-ui-kit/package.json -- npm install --install-links $NPM_FLAGS && \"$HEAVY\" npm run check-types"}
+TYPES_CMD=${BUILD_ALL_TYPES_CMD:-"\"$DEPS\" node_modules package.json ../../../portal-ui-kit/frontend/portal-ui-kit/package.json -- npm install --install-links $NPM_FLAGS && rm -rf node_modules/@pimcore/portal-plugin-sdk && cp -R \"\$SDK_DIR\" node_modules/@pimcore/portal-plugin-sdk && \"$HEAVY\" npm run check-types"}
 
 say() { printf 'build-all: %s\n' "$*" >&2; }
 # fail <part> <reason>: the one way out on an error, naming the part
@@ -65,18 +67,15 @@ command -v node >/dev/null || fail setup "node is needed to write the manifest"
 if [ "$TYPES_ONLY" -eq 1 ]; then
   [ -n "${BUILD_ALL_TYPES_CMD:-}" ] || { [ -n "$DEPS" ] && [ -x "$DEPS" ]; } \
     || fail portal-plugin-types "no install runner: set ORCH_ROOT (bin/deps.sh) or BUILD_ALL_TYPES_CMD"
-else
-  git -C "$PORTAL_ENGINE_REPO" rev-parse --git-dir >/dev/null 2>&1 \
-    || fail portal-engine-frontend "no portal_engine clone at $PORTAL_ENGINE_REPO (set PORTAL_ENGINE_REPO)"
 fi
+git -C "$PORTAL_ENGINE_REPO" rev-parse --git-dir >/dev/null 2>&1 \
+  || fail portal-engine-frontend "no portal_engine clone at $PORTAL_ENGINE_REPO (set PORTAL_ENGINE_REPO)"
 [ -d "$PORTAL_UI_KIT/frontend/portal-ui-kit/dist" ] \
   || fail portal-ui-kit "no built kit at $PORTAL_UI_KIT/frontend/portal-ui-kit/dist (set PORTAL_UI_KIT)"
 
 SB_SHA=$(git -C "$REPO" rev-parse HEAD)
-if [ "$TYPES_ONLY" -eq 0 ]; then
-  PE_SHA=$(git -C "$PORTAL_ENGINE_REPO" rev-parse --verify "$PORTAL_ENGINE_REF^{commit}" 2>/dev/null) \
-    || fail portal-engine-frontend "$PORTAL_ENGINE_REF is no commit in $PORTAL_ENGINE_REPO"
-fi
+PE_SHA=$(git -C "$PORTAL_ENGINE_REPO" rev-parse --verify "$PORTAL_ENGINE_REF^{commit}" 2>/dev/null) \
+  || fail portal-engine-frontend "$PORTAL_ENGINE_REF is no commit in $PORTAL_ENGINE_REPO"
 KIT_SHA=$(git -C "$PORTAL_UI_KIT" rev-parse HEAD 2>/dev/null || true)
 if [ -n "$(git -C "$REPO" status --porcelain -- enterprise)" ]; then
   say "note: uncommitted changes under enterprise/ are not built (sources come from HEAD $SB_SHA)"
@@ -91,7 +90,7 @@ if command -v flock >/dev/null; then
 fi
 NODE_DIRS=(sb/enterprise/assets/portal/node_modules sb/enterprise/assets/shared/coaster/viewer/node_modules)
 STAGED=(sb)
-if [ "$TYPES_ONLY" -eq 0 ]; then NODE_DIRS+=(pe/assets/portal/node_modules); STAGED+=(pe); fi
+if [ "$TYPES_ONLY" -eq 0 ]; then NODE_DIRS+=(pe/assets/portal/node_modules); STAGED+=(pe); else STAGED+=(sdk); fi
 KEEP="$WORK/.keep.$$"
 rm -rf "$WORK"/.keep.*
 mkdir -p "$KEEP"
@@ -104,6 +103,9 @@ git -C "$REPO" archive --format=tar HEAD enterprise | tar -x -C "$WORK/sb"
 if [ "$TYPES_ONLY" -eq 0 ]; then
   mkdir -p "$WORK/pe/vendor/pimcore"
   git -C "$PORTAL_ENGINE_REPO" archive --format=tar "$PE_SHA" assets/portal | tar -x -C "$WORK/pe"
+else
+  mkdir -p "$WORK/sdk"
+  git -C "$PORTAL_ENGINE_REPO" archive --format=tar "$PE_SHA" assets/plugin-sdk | tar -x -C "$WORK/sdk"
 fi
 for d in "${NODE_DIRS[@]}"; do
   if [ -d "$KEEP/$d" ]; then mkdir -p "$WORK/$(dirname "$d")"; mv "$KEEP/$d" "$WORK/$d"; fi
@@ -115,9 +117,9 @@ STAGE_ENTERPRISE=$WORK/sb/enterprise
 
 # --- --types: the plugin's check-types in its staged folder, and nothing else ---
 if [ "$TYPES_ONLY" -eq 1 ]; then
-  say "type-checking portal-plugin $SB_SHA (in $STAGE_ENTERPRISE/assets/portal)"
+  say "type-checking portal-plugin $SB_SHA with the plugin SDK of portal_engine $PE_SHA (in $STAGE_ENTERPRISE/assets/portal)"
   rc=0
-  (cd "$STAGE_ENTERPRISE/assets/portal" && bash -c "$TYPES_CMD") || rc=$?
+  (cd "$STAGE_ENTERPRISE/assets/portal" && SDK_DIR="$WORK/sdk/assets/plugin-sdk" bash -c "$TYPES_CMD") || rc=$?
   [ "$rc" -eq 0 ] || fail portal-plugin-types "check-types exited $rc"
   say "portal-plugin-types: check-types passed ($SB_SHA)"
   exit 0
