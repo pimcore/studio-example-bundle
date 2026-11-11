@@ -16,6 +16,8 @@ park's brief for the portal demo. All names are fictional.
 | `expected-metadata.json` | The golden key figures of revisions 1 to 3 (`revisions`) and of the Twister (`variants`), which the TypeScript and the PHP metadata extraction must both give. |
 | `agent-fixtures/night-fury.coaster` | A ride design by another supplier, for the agent tools ([`src/Agent/README.md`](../src/Agent/README.md)): the Loopwerk supplier may not see it, so its revisions must never be listed for it. |
 | `agent/kingdom-brief-check.replay.json` | The recorded turn the portal's agent chat replays ([`src/Portal/Agent/README.md`](../src/Portal/Agent/README.md)): its text only, with placeholders the live tool results fill in. |
+| `annual-passes.json` | The five fictional annual passes of the scream score, `PK-2026-0001` to `PK-2026-0005`, which `coaster-demo:setup` stores; only their codes' hashes are here, the plain demo codes are listed in [`src/ScreamScore/README.md`](../src/ScreamScore/README.md). |
+| `scream-score-samples.json` | The sample scream scores that `coaster-demo:setup` writes and `coaster-demo:reset` puts back: three ratings of Thunder Loop from passes 0001 to 0003, one of them hidden by the park; passes 0004 and 0005 stay free for a live try. |
 | `pages/*.md` | The park's content pages for suppliers that `coaster-demo:setup` makes in the portal, each with its navigation icon (F155): "About the park", "Working with the Kingdom" and "Safety first". Same Markdown as the brief. |
 | `branding/` | The park's own-made logo (SVG and PNG) that `coaster-demo:setup` sets on the portal with its brand colours; what it is and its license (CC0): [branding/LICENSE.md](branding/LICENSE.md). |
 
