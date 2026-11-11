@@ -28,6 +28,8 @@ const skip = !hasPhp ? 'no php CLI' : !existsSync(autoload) ? `no Pimcore vendor
 const ROUTE = 'pimcore_studio_example_enterprise_scream_score_guest';
 // F323: the coaster file is public too, for a public share's 3D ride (src/Portal/Coaster/CoasterFileController.php).
 const COASTER_FILE_ROUTE = 'pimcore_studio_example_enterprise_coaster_file';
+// F324: the scream score of a public share's coaster, as JSON (src/Portal/ScreamScore/ShareRatingController.php).
+const SHARE_RATING_ROUTE = 'pimcore_studio_example_enterprise_scream_score_share';
 const WRONG_PASS = "We don't know this pass number and code. Check the back of your pass.";
 
 const bootstrap = `
@@ -114,7 +116,7 @@ test('AC1: the route is GET|POST /{_portal_engine_prefix}scream-score/{ride} wit
   assert.match(block, /^ {4}condition: "request\.attributes\.get\('isPortalEngineSite'\)"$/m);
   assert.match(block, /^ {8}_portal_engine_prefix: \(\?!\\_\)\[\^\\\/\]\+\(\?:\\\/\[\^\\\/\]\+\)\*\\\/\|\\_$/m);
   const extension = read('src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php');
-  assert.match(extension, /prependExtensionConfig\(self::PORTAL_ENGINE, \['custom_public_routes' => \[GuestController::ROUTE, CoasterFileController::ROUTE\]\]\)/,
+  assert.match(extension, /prependExtensionConfig\(self::PORTAL_ENGINE, \['custom_public_routes' => \[GuestController::ROUTE, CoasterFileController::ROUTE, ShareRatingController::ROUTE\]\]\)/,
     'the extension names exactly the route, no pattern');
   assert.doesNotMatch(extension, /data_?pool/i, 'and opens no data pool');
 });
@@ -137,9 +139,9 @@ test('AC1: the merged public-route list is the app\'s list plus exactly the gues
     echo json_encode(['app' => $merged(['app_press_kit', 'app_imprint']), 'none' => $merged([]), 'withoutPortalEngine' => $without->getExtensionConfig('pimcore_portal_engine'),
       'routeConst' => GuestController::ROUTE]);
   `);
-  assert.deepEqual([...r.app].sort(), ['app_imprint', 'app_press_kit', ROUTE, COASTER_FILE_ROUTE].sort(), 'the app\'s routes stay, the guest route is added');
-  assert.equal(r.app.length, 4);
-  assert.deepEqual(r.none, [ROUTE, COASTER_FILE_ROUTE]);
+  assert.deepEqual([...r.app].sort(), ['app_imprint', 'app_press_kit', ROUTE, COASTER_FILE_ROUTE, SHARE_RATING_ROUTE].sort(), 'the app\'s routes stay, the guest route is added');
+  assert.equal(r.app.length, 5);
+  assert.deepEqual(r.none, [ROUTE, COASTER_FILE_ROUTE, SHARE_RATING_ROUTE]);
   assert.deepEqual(r.withoutPortalEngine, [], 'nothing is prepended without Portal Engine');
   assert.equal(r.routeConst, ROUTE);
 });

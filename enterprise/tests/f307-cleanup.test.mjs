@@ -35,7 +35,7 @@ test('AC4: the removed code is gone: the change approval demo, the Studio build,
   assert.doesNotMatch(extension, /AGENT_|Agent\\Tools/);
   // F317: prepend() is back for the scream score's public guest route only, never for an agent config.
   const prepends = [...extension.matchAll(/prependExtensionConfig\(([^;]+)\);/g)].map((m) => m[1]);
-  assert.deepEqual(prepends, ["self::PORTAL_ENGINE, ['custom_public_routes' => [GuestController::ROUTE, CoasterFileController::ROUTE]]"]);
+  assert.deepEqual(prepends, ["self::PORTAL_ENGINE, ['custom_public_routes' => [GuestController::ROUTE, CoasterFileController::ROUTE, ShareRatingController::ROUTE]]"]);
   assert.doesNotMatch(read('src/Command/CoasterDemoResetCommand.php'), /CoasterDemoResetEvent|dispatch\(/);
   const composer = JSON.parse(read('composer.json'));
   assert.equal(composer.require[`pimcore/${ccKebab}-bundle`], undefined);

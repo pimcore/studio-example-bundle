@@ -20,6 +20,8 @@ const vendorSkip = existsSync(autoload) ? false : `no Pimcore vendor at ${autolo
 
 const GUEST_ROUTE = 'pimcore_studio_example_enterprise_scream_score_guest';
 const COASTER_FILE_ROUTE = 'pimcore_studio_example_enterprise_coaster_file';
+// F324: the scream score of a share's coaster joins the list.
+const SHARE_RATING_ROUTE = 'pimcore_studio_example_enterprise_scream_score_share';
 
 const runPhp = (script) => JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-r', script], { encoding: 'utf8' }));
 
@@ -229,7 +231,7 @@ test('AC4: a logged-in portal user is answered as today, a foreign share hash is
 test('AC4: the extension prepends exactly the guest route and the coaster file route, by their constants', () => {
   const extension = read('src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php');
   const prepends = [...extension.matchAll(/prependExtensionConfig\(([^;]+)\);/g)].map((m) => m[1]);
-  assert.deepEqual(prepends, ["self::PORTAL_ENGINE, ['custom_public_routes' => [GuestController::ROUTE, CoasterFileController::ROUTE]]"]);
+  assert.deepEqual(prepends, ["self::PORTAL_ENGINE, ['custom_public_routes' => [GuestController::ROUTE, CoasterFileController::ROUTE, ShareRatingController::ROUTE]]"]);
   assert.match(read('src/Portal/Coaster/CoasterFileController.php'), new RegExp(`public const ROUTE = '${COASTER_FILE_ROUTE}';`));
   assert.match(read('config/pimcore/routing.yaml'), new RegExp(`^${COASTER_FILE_ROUTE}:\\n {4}path: /studio-example-enterprise/coaster-file/\\{id\\}$`, 'm'));
 });
@@ -257,7 +259,7 @@ test('AC4: the merged public route list is the app\'s list plus the guest route 
     };
     echo json_encode(['app' => $merged(['app_press_kit', 'app_imprint']), 'none' => $merged([])]);
   `);
-  assert.deepEqual([...r.app].sort(), ['app_imprint', 'app_press_kit', GUEST_ROUTE, COASTER_FILE_ROUTE].sort());
-  assert.equal(r.app.length, 4);
-  assert.deepEqual(r.none, [GUEST_ROUTE, COASTER_FILE_ROUTE]);
+  assert.deepEqual([...r.app].sort(), ['app_imprint', 'app_press_kit', GUEST_ROUTE, COASTER_FILE_ROUTE, SHARE_RATING_ROUTE].sort());
+  assert.equal(r.app.length, 5);
+  assert.deepEqual(r.none, [GUEST_ROUTE, COASTER_FILE_ROUTE, SHARE_RATING_ROUTE]);
 });
