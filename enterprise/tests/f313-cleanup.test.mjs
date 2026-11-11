@@ -25,7 +25,7 @@ test('AC1: git grep on enterprise/ and assets/js/src finds no talk page, footer 
     `pimcore_studio_example_enterprise_${t}`, `studioExampleEnterprise_${t}`, `/${t}/${t}.html`, `portal-${t}.yaml`,
     `assets/portal/${t}`, `${t}\\.url`, `implements[^{]*PortalFooter`, `PortalFooter;`, `coaster-demo-footer'`,
   ].join('\\|');
-  const r = spawnSync('git', ['-C', repoDir, 'grep', '-n', '-i', pattern, '--', 'enterprise', 'assets/js/src'], { encoding: 'utf8' });
+  const r = spawnSync('git', ['-C', repoDir, 'grep', '-n', '-i', pattern, '--', 'enterprise', 'assets/js/src', ':(exclude)enterprise/tests/f313-cleanup.test.mjs'], { encoding: 'utf8' });
   assert.equal(r.status, 1, `git grep hits:\n${r.stdout}${r.stderr}`);
 });
 

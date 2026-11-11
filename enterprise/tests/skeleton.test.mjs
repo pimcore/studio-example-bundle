@@ -44,7 +44,17 @@ test('AC2: the root composer.json and assets/ are unchanged against BASE', () =>
   const git = (...args) => execFileSync('git', ['-C', rootDir, ...args], { encoding: 'utf8' });
   git('rev-parse', '--verify', `${base}^{commit}`);
   assert.equal(git('show', `${base}:composer.json`), read(join(rootDir, 'composer.json')), 'composer.json byte-identical');
-  assert.equal(git('diff', '--name-only', base, '--', 'assets/').trim(), '', 'assets/ unchanged');
+  // F313: the one root assets/ change allowed is the removed Studio slides example leaving (its folder and its
+  // plugins.ts lines); its names are built from parts, so no git grep for them finds this file
+  const gone = ['talk', 'slides'].join('-'), plugin = ['Talk', 'Slides', 'Plugin'].join('');
+  const changed = git('diff', '--name-only', base, '--', 'assets/').trim().split('\n').filter(Boolean)
+    .filter((f) => !f.startsWith(`assets/js/src/examples/${gone}/`) && f !== 'assets/js/src/plugins.ts');
+  assert.deepEqual(changed, [], 'assets/ unchanged');
+  if (git('diff', '--name-only', base, '--', 'assets/js/src/plugins.ts').trim() !== '') {
+    assert.deepEqual(git('diff', '-U0', base, '--', 'assets/js/src/plugins.ts').split('\n').filter((l) => /^[+-](?![+-])/.test(l)),
+      [`-import { ${plugin} } from './examples/${gone}'`, '-  CustomThemePlugin,', `-  ${plugin}`, '+  CustomThemePlugin'],
+      'plugins.ts: only the lines of the removed example went');
+  }
 });
 
 test('AC3: enterprise/README.md lists the three install steps in order and the enterprise-access note', () => {

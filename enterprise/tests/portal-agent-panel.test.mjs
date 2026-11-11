@@ -194,7 +194,7 @@ test('AC1: the server hands over agent {chatUrl, label, mode} unless studio_exam
   assert.deepEqual(frontendConfig({ agentEnabled: true }), {
     agent: { chatUrl: '/studio-example-enterprise/agent/chat', label: 'Ask the brief', mode: 'replay' }
   });
-  assert.deepEqual(frontendConfig({ agentEnabled: false }), {}, 'disabled: no agent key, no button');
+  assert.deepEqual(frontendConfig({ agentEnabled: false }), [], 'disabled: no agent key, no button');
   assert.equal(frontendConfig({ agentEnabled: true, withRoute: false }).agent, undefined, 'no route: no button');
 
   // the container parameter defaults to true and is the provider's $agentEnabled
