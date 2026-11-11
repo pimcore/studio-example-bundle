@@ -32,7 +32,7 @@
         </div>
         <div class="ss-field">
             <label for="passCode">Pass code</label>
-            <input type="text" id="passCode" name="passCode" value="{{ typed.passCode }}" inputmode="numeric" autocomplete="off"{% if errors.pass is defined %} aria-describedby="pass-error"{% endif %}>
+            <input type="text" id="passCode" name="passCode" value="{{ typed.passCode }}" autocomplete="off" autocapitalize="none" spellcheck="false"{% if errors.pass is defined %} aria-describedby="pass-error"{% endif %}>
             <p class="ss-hint">Number and code are on the back of your pass.</p>
             {% if errors.pass is defined %}<p class="ss-error" id="pass-error">{{ errors.pass }}</p>{% endif %}
         </div>
