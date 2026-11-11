@@ -100,7 +100,10 @@ namespace Symfony\\Component\\HttpFoundation {
         public function __construct(public string $content, public int $status, public array $headers) {}
     }
 }
-namespace Symfony\\Component\\HttpKernel\\Exception { class NotFoundHttpException extends \\RuntimeException {} }
+namespace Symfony\\Component\\HttpKernel\\Exception {
+    class NotFoundHttpException extends \\RuntimeException {}
+    class AccessDeniedHttpException extends \\RuntimeException {}
+}
 namespace Symfony\\Component\\Security\\Core\\Exception {
     class AuthenticationException extends \\RuntimeException {}
     class AccessDeniedException extends \\RuntimeException {}
@@ -143,6 +146,8 @@ namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\PublicShare {
         }
         public function setUpPublicShare(string $share): void { $this->security->user = new PortalUser(true); $this->current = $share; }
         public function getCurrentPublicShare(): ?string { return $this->current; }
+        // F334: the share guest's pool must be one of the share's; every share here holds items of pool 3
+        public function getDataPoolConfigIdsByPublicShare(string $share): array { return [3]; }
         public function isElementInPublicShare(string $share, \\Pimcore\\Model\\Asset $asset): bool { return in_array($asset->id, $this->shares[$share]['assets'], true); }
     }
 }
@@ -209,10 +214,11 @@ test('AC3: an unknown or expired hash, or a coaster outside the share, gets 404'
   assert.equal(outside.body, undefined);
 });
 
-test('AC4: with neither a portal login nor a share hash the route is refused as before', () => {
+// F334: 403 instead of Portal Engine's "invalid login", whose login redirect the 3D ride's fetch read as the file
+test('AC4: with neither a portal login nor a share hash the route is refused with 403', () => {
   const [r] = coasterFile([[null, 1, {}]]);
-  assert.equal(r.error, 'AuthenticationException');
-  assert.equal(r.message, 'invalid login', 'the answer Portal Engine gives a non-public route');
+  assert.equal(r.error, 'AccessDeniedHttpException');
+  assert.equal(r.message, 'No portal login and no public share.');
   assert.deepEqual(r.assetLoads, [], 'refused before the asset is looked up');
   assert.deepEqual(r.validated, []);
 });
