@@ -109,8 +109,10 @@ test('AC1: the route is GET|POST /{_portal_engine_prefix}scream-score/{ride} wit
   assert.match(block, /^ {4}methods: \[GET, POST\]$/m);
   assert.match(block, /^ {4}condition: "request\.attributes\.get\('isPortalEngineSite'\)"$/m);
   assert.match(block, /^ {8}_portal_engine_prefix: \(\?!\\_\)\[\^\\\/\]\+\(\?:\\\/\[\^\\\/\]\+\)\*\\\/\|\\_$/m);
-  assert.doesNotMatch(read('src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php'), /\*|scream-score\/|data_?pool/i,
-    'the extension names the route, no pattern and no data pool');
+  const extension = read('src/DependencyInjection/PimcoreStudioExampleEnterpriseExtension.php');
+  assert.match(extension, /prependExtensionConfig\(self::PORTAL_ENGINE, \['custom_public_routes' => \[GuestController::ROUTE\]\]\)/,
+    'the extension names exactly the route, no pattern');
+  assert.doesNotMatch(extension, /data_?pool/i, 'and opens no data pool');
 });
 
 test('AC1: the merged public-route list is the app\'s list plus exactly the guest route', { skip }, () => {

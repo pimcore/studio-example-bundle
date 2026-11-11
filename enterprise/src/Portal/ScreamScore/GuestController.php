@@ -80,7 +80,7 @@ class GuestController extends FrontendController
 
         $result = $this->screamScore->rate(
             $ride,
-            $typed['passNumber'],
+            strtoupper($typed['passNumber']),
             $typed['passCode'],
             self::score($typed['score']),
             $typed['comment'],
@@ -158,8 +158,8 @@ class GuestController extends FrontendController
     }
 
     /**
-     * The form's fields as typed: trimmed, the pass number in capitals, the comment's line breaks as browsers count
-     * them on screen (a textarea sends "\r\n", which would count twice against the 280 characters).
+     * The form's fields as typed, trimmed, the comment's line breaks as browsers count them on screen (a textarea
+     * sends "\r\n", which would count twice against the 280 characters). The pass number is checked in capitals.
      *
      * @return array{score: string, comment: string, passNumber: string, passCode: string}
      */
