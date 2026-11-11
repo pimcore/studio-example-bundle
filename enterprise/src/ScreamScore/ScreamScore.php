@@ -36,10 +36,10 @@ class ScreamScore
     /** How long a pass or client is refused after MAX_FAILURES failed tries: 15 minutes. */
     public const LOCK_SECONDS = 900;
 
-    public const PASS_NUMBER_PATTERN = '/^PK-\d{4}-\d{4}$/';
+    public const PASS_NUMBER_PATTERN = '/^PK-\d{4}-\d{4}$/D';
 
     /** A ride's stable key: the coaster's file name without `.coaster`, e.g. `thunder-loop`. */
-    public const RIDE_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
+    public const RIDE_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/D';
 
     /** Checked when a pass is unknown, so that takes as long as a wrong code. No code matches it. */
     public const DUMMY_HASH = '$2y$10$tDdodfU5wJReZ7QG6nShYOs/sDWPEFpMVuO0AWfQKF7tyPB.n.D/q';

@@ -15,6 +15,10 @@ const passes = JSON.parse(readFileSync(join(enterpriseDir, 'tests/fixtures/screa
 const files = ['GuestFeedback', 'FeedbackStore', 'AnnualPasses', 'FailureCounter', 'RatingResult', 'ScreamScore',
   'InMemory/InMemoryFeedbackStore', 'InMemory/InMemoryAnnualPasses', 'InMemory/InMemoryFailureCounter'];
 
+const uses = `
+    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\{ScreamScore, FeedbackStore, AnnualPasses, GuestFeedback};
+    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\InMemory\\{InMemoryFeedbackStore, InMemoryAnnualPasses, InMemoryFailureCounter};`;
+
 const bootstrap = `
 namespace Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore {
     // Unqualified calls in ScreamScore resolve to this first: it logs the hash, then asks the real one.
@@ -25,8 +29,7 @@ namespace Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore {
 }
 namespace {
 ${files.map((f) => `    require ${JSON.stringify(join(src, `${f}.php`))};`).join('\n')}
-    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\{ScreamScore, FeedbackStore, AnnualPasses, GuestFeedback};
-    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\ScreamScore\\InMemory\\{InMemoryFeedbackStore, InMemoryAnnualPasses, InMemoryFailureCounter};
+${uses}
     $GLOBALS['calls'] = [];
     $GLOBALS['now'] = new \\DateTimeImmutable('2026-11-11T10:00:00+00:00');
     class SpyStore implements FeedbackStore {
@@ -44,14 +47,14 @@ ${files.map((f) => `    require ${JSON.stringify(join(src, `${f}.php`))};`).join
     $store = new SpyStore(new InMemoryFeedbackStore());
     $service = new ScreamScore($store, $passes, new InMemoryFailureCounter(fn () => $GLOBALS['now']->getTimestamp()), fn () => $GLOBALS['now']);
     function later(string $by): void { $GLOBALS['now'] = $GLOBALS['now']->modify($by); }
-    function records(): array { global $store; return array_map(fn ($r) => (array) $r + ['createdAt' => $r->createdAt->format(DATE_ATOM)], $store->inner->all()); }
+    function records(): array { global $store; return array_map(fn ($r) => ['createdAt' => $r->createdAt->format(DATE_ATOM)] + (array) $r, $store->inner->all()); }
     function calls(): array { $c = $GLOBALS['calls']; $GLOBALS['calls'] = []; return $c; }
 }
 `;
 
 // Runs the PHP body after the bootstrap ($service, $store, later(), records(), calls()) and parses what it echoes.
 const php = (body) => {
-  const out = execFileSync('php', ['-d', 'display_errors=stderr', '-r', `${bootstrap}\nnamespace {\n${body}\n}\n`], { encoding: 'utf8' });
+  const out = execFileSync('php', ['-d', 'display_errors=stderr', '-r', `${bootstrap}\nnamespace {\n${uses}\n${body}\n}\n`], { encoding: 'utf8' });
   return JSON.parse(out);
 };
 
@@ -70,10 +73,10 @@ test('AC1: a valid pass, score and comment store one rating; the same pass again
     echo json_encode(['first' => $first->toArray(), 'afterFirst' => $afterFirst, 'second' => $second->toArray(),
       'other' => $other->toArray(), 'otherRide' => $otherRide->toArray(), 'records' => records()]);
   `);
-  assert.deepEqual(r.first, { stored: true, replaced: false, errors: {}, id: 1 });
+  assert.deepEqual(r.first, { stored: true, replaced: false, errors: [], id: 1 }, 'no errors (an empty PHP array)');
   assert.deepEqual(r.afterFirst, [{ id: 1, ride: 'thunder-loop', screamScore: 9, comment: 'Screamed the whole way <3',
     passNumber: 'PK-2026-0001', visible: true, createdAt: '2026-11-11T10:00:00+00:00' }], 'stored as typed, visible');
-  assert.deepEqual(r.second, { stored: true, replaced: true, errors: {}, id: 1 });
+  assert.deepEqual(r.second, { stored: true, replaced: true, errors: [], id: 1 });
   assert.equal(r.other.replaced, false, 'another pass is another rating');
   assert.equal(r.otherRide.replaced, false, 'another ride is another rating');
   const thunder = r.records.filter((rec) => rec.ride === 'thunder-loop' && rec.passNumber === 'PK-2026-0001');
