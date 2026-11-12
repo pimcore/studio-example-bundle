@@ -1,0 +1,11 @@
+{% extends '@PimcoreStudioExampleEnterprise/portal/scream-score/layout.html.twig' %}
+
+{# An old guest link of a coaster without a share, or one that names no coaster (GuestController answers 404): a plain
+   page instead of the portal login or error page. #}
+
+{% block title %}{{ message }}{% endblock %}
+
+{% block content %}
+    <h1>{{ message }}</h1>
+    <p class="ss-hint">Check the link on the sign at the ride.</p>
+{% endblock %}

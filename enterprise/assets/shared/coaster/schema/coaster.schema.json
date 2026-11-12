@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pimcore.com/schemas/studio-example-bundle/coaster-design-1.json",
+  "title": "Coaster design (.coaster), version 1",
+  "description": "A rollercoaster design as a sequence of track elements. See FORMAT.md next to this folder.",
+  "type": "object",
+  "required": ["format", "version", "meta", "train", "track"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": "coaster-design", "description": "Marks the file as a coaster design." },
+    "version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$",
+      "description": "Format version, \"<major>.<minor>\". This schema reads major version 1."
+    },
+    "meta": { "$ref": "#/$defs/meta" },
+    "train": { "$ref": "#/$defs/train" },
+    "track": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The track elements in ride order, starting at the station.",
+      "items": { "$ref": "#/$defs/element" }
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "required": ["name", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "Name of the ride." },
+        "designer": { "type": "string", "minLength": 1, "description": "Who designed it." },
+        "park": { "type": "string", "minLength": 1, "description": "The park it is built for." },
+        "revision": { "type": "integer", "minimum": 1, "description": "Revision of this design, counting from 1." }
+      }
+    },
+    "train": {
+      "type": "object",
+      "required": ["cars", "seatsPerCar"],
+      "additionalProperties": false,
+      "properties": {
+        "cars": { "type": "integer", "minimum": 1, "maximum": 20, "description": "Cars per train." },
+        "seatsPerCar": { "type": "integer", "minimum": 1, "maximum": 12, "description": "Seats in each car." }
+      }
+    },
+    "length": { "type": "number", "minimum": 0, "description": "Length in metres." },
+    "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 200, "description": "Height in metres." },
+    "angle": { "type": "number", "exclusiveMinimum": 0, "maximum": 90, "description": "Slope in degrees from the horizontal." },
+    "radius": { "type": "number", "minimum": 6, "maximum": 100, "description": "Radius in metres." },
+    "bank": { "type": "number", "minimum": 0, "maximum": 90, "description": "Bank angle in degrees, 0 = flat." },
+    "direction": { "enum": ["left", "right"], "description": "Which way it curves, seen from the front seat." },
+    "label": { "type": "string", "minLength": 1, "description": "Optional name of the element, e.g. for the diff view." },
+    "element": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["station", "liftHill", "drop", "loop", "airtimeHill", "helix", "turn", "brakeRun"] }
+      },
+      "allOf": [
+        { "if": { "required": ["type"], "properties": { "type": { "const": "station" } } }, "then": { "$ref": "#/$defs/station" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "liftHill" } } }, "then": { "$ref": "#/$defs/liftHill" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "drop" } } }, "then": { "$ref": "#/$defs/drop" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "loop" } } }, "then": { "$ref": "#/$defs/loop" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "airtimeHill" } } }, "then": { "$ref": "#/$defs/airtimeHill" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "helix" } } }, "then": { "$ref": "#/$defs/helix" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "turn" } } }, "then": { "$ref": "#/$defs/turn" } },
+        { "if": { "required": ["type"], "properties": { "type": { "const": "brakeRun" } } }, "then": { "$ref": "#/$defs/brakeRun" } }
+      ]
+    },
+    "station": {
+      "required": ["length"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "station" },
+        "label": { "$ref": "#/$defs/label" },
+        "length": { "$ref": "#/$defs/length" }
+      }
+    },
+    "liftHill": {
+      "required": ["height", "angle"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "liftHill" },
+        "label": { "$ref": "#/$defs/label" },
+        "height": { "$ref": "#/$defs/height" },
+        "angle": { "$ref": "#/$defs/angle" }
+      }
+    },
+    "drop": {
+      "required": ["height", "angle"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "drop" },
+        "label": { "$ref": "#/$defs/label" },
+        "height": { "$ref": "#/$defs/height" },
+        "angle": { "$ref": "#/$defs/angle" }
+      }
+    },
+    "loop": {
+      "required": ["diameter"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "loop" },
+        "label": { "$ref": "#/$defs/label" },
+        "diameter": { "type": "number", "minimum": 8, "maximum": 60, "description": "Loop diameter in metres." }
+      }
+    },
+    "airtimeHill": {
+      "required": ["height"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "airtimeHill" },
+        "label": { "$ref": "#/$defs/label" },
+        "height": { "$ref": "#/$defs/height" }
+      }
+    },
+    "helix": {
+      "required": ["turns", "radius"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "helix" },
+        "label": { "$ref": "#/$defs/label" },
+        "turns": { "type": "number", "exclusiveMinimum": 0, "maximum": 5, "description": "Full turns, 1.5 = 540 degrees." },
+        "radius": { "$ref": "#/$defs/radius" },
+        "bank": { "$ref": "#/$defs/bank" },
+        "direction": { "$ref": "#/$defs/direction" }
+      }
+    },
+    "turn": {
+      "required": ["angle", "radius"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "turn" },
+        "label": { "$ref": "#/$defs/label" },
+        "angle": { "type": "number", "exclusiveMinimum": 0, "maximum": 360, "description": "How far it turns, in degrees." },
+        "radius": { "$ref": "#/$defs/radius" },
+        "bank": { "$ref": "#/$defs/bank" },
+        "direction": { "$ref": "#/$defs/direction" }
+      }
+    },
+    "brakeRun": {
+      "required": ["length"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "brakeRun" },
+        "label": { "$ref": "#/$defs/label" },
+        "length": { "$ref": "#/$defs/length" }
+      }
+    }
+  }
+}

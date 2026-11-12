@@ -1,0 +1,76 @@
+{% extends '@PimcoreStudioExampleEnterprise/portal/scream-score/layout.html.twig' %}
+
+{# One coaster for the park's staff (ParkController): average and count over all ratings (hidden ones count), the 5
+   newest visible comments with score and date and a "Hide" button each, and the hidden ones under "Show hidden (n)"
+   with "Show again". Never a pass number. Each button is a small POST form with the CSRF token. #}
+
+{% block title %}Scream scores: {{ coasterName }}{% endblock %}
+
+{% block styles %}
+        .ss-list { margin: 0; padding: 0; list-style: none; }
+        .ss-row { display: flex; gap: var(--p-space-sm, 12px); align-items: flex-start; padding: var(--p-space-sm, 12px) 0; border-top: 1px solid var(--p-border-secondary, #f0f0f0); }
+        .ss-row:first-child { border-top: 0; }
+        .ss-row > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+        .ss-row p { margin: 0; }
+        .ss-row form { margin: 0; }
+        {# the kit's button as a row action: its own width, not the form's #}
+        .ss-row .p-login-cta { width: auto; margin: 0; padding: 0 var(--p-space-md, 16px); }
+        .ss-average { font-size: var(--p-font-size-h4, 20px); font-weight: var(--p-font-weight-strong, 600); }
+        .ss-hidden summary { cursor: pointer; color: var(--p-primary, #722ed1); margin: var(--p-space-md, 16px) 0 0; }
+{% endblock %}
+
+{% macro visibility(actionBase, id, visible, label, token) %}
+    <form method="post" action="{{ actionBase ~ id ~ '/visibility' }}">
+        <input type="hidden" name="_token" value="{{ token }}">
+        <input type="hidden" name="visible" value="{{ visible }}">
+        <button type="submit" class="p-login-cta">{{ label }}</button>
+    </form>
+{% endmacro %}
+
+{% block content %}
+    <p><a class="ss-link" href="{{ overview }}">All coasters</a></p>
+    <h1>{{ coasterName }}</h1>
+    <p>
+        {% if count == 0 %}
+            <span class="ss-hint">No ratings yet</span>
+        {% else %}
+            <span class="ss-average">{{ average }} / 10</span>
+            <span class="ss-hint">{{ count }} {{ count == 1 ? 'rating' : 'ratings' }}</span>
+        {% endif %}
+    </p>
+    {% if hidden|length > 0 %}
+        <p class="ss-hint">{{ hidden|length }} {{ hidden|length == 1 ? 'comment' : 'comments' }} hidden</p>
+    {% endif %}
+
+    <h2>Newest comments</h2>
+    <ul class="ss-list">
+        {% for comment in comments %}
+            <li class="ss-row">
+                <div>
+                    <p><strong>{{ comment.score }} / 10</strong> <span class="ss-hint">{{ comment.date|date('j M Y, H:i') }}</span></p>
+                    <p>{{ comment.comment }}</p>
+                </div>
+                {{ _self.visibility(actionBase, comment.id, '0', 'Hide', token) }}
+            </li>
+        {% else %}
+            <li class="ss-row ss-hint">No comments yet</li>
+        {% endfor %}
+    </ul>
+
+    {% if hidden|length > 0 %}
+        <details class="ss-hidden">
+            <summary>Show hidden ({{ hidden|length }})</summary>
+            <ul class="ss-list">
+                {% for comment in hidden %}
+                    <li class="ss-row">
+                        <div>
+                            <p><strong>{{ comment.score }} / 10</strong> <span class="ss-hint">{{ comment.date|date('j M Y, H:i') }}</span></p>
+                            {% if comment.comment %}<p>{{ comment.comment }}</p>{% endif %}
+                        </div>
+                        {{ _self.visibility(actionBase, comment.id, '1', 'Show again', token) }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </details>
+    {% endif %}
+{% endblock %}

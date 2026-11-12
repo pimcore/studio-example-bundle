@@ -1,0 +1,22 @@
+{
+  "format": "coaster-design",
+  "version": "1.0",
+  "meta": {
+    "name": "Thunder Loop",
+    "designer": "Loopwerk Engineering",
+    "park": "Pimcore Kingdom",
+    "revision": 1
+  },
+  "train": { "cars": 6, "seatsPerCar": 4 },
+  "track": [
+    { "type": "station", "length": 30 },
+    { "type": "liftHill", "height": 40, "angle": 40 },
+    { "type": "drop", "height": 38, "angle": 75 },
+    { "type": "loop", "diameter": 24 },
+    { "type": "airtimeHill", "height": 15 },
+    { "type": "turn", "angle": 180, "radius": 15, "direction": "right", "bank": 45 },
+    { "type": "loop", "diameter": 18 },
+    { "type": "brakeRun", "length": 25 },
+    { "type": "station", "length": 0 }
+  ]
+}

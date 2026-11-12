@@ -11,6 +11,16 @@ use Symfony\Component\DependencyInjection\Loader;
 
 class PimcoreStudioExampleExtension extends Extension implements PrependExtensionInterface
 {
+    /**
+     * The bundle's config key is Configuration::ROOT_NODE (`pimcore_studio_example_bundle`), not Symfony's default
+     * `pimcore_studio_example`: users write that key, and prependWidgetConfigs() reads the extension by it.
+     * PimcoreStudioExampleBundle::getContainerExtension() accepts this non-default alias.
+     */
+    public function getAlias(): string
+    {
+        return Configuration::ROOT_NODE;
+    }
+
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();

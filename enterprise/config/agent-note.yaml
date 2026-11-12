@@ -1,0 +1,23 @@
+# The agent demo's confirmed write (src/Agent/Note/README.md): the confirm route, routed by config/pimcore/routing.yaml,
+# and coaster-demo:agent-reset. Needs only the Portal Engine and F126's ProposalStore (config/agent.yaml), so it is
+# loaded on every boot, with or without PimcoreAgentBundle; no `pimcore_agent:` key may ever go here.
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: false
+        public: false
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\PimcoreSupplierNoteBackend: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\SupplierNoteBackend:
+        alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\PimcoreSupplierNoteBackend
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\ProposalConfirmer: ~
+
+    # A plain invokable controller (no AbstractController), so only its own tag is needed.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\ConfirmController:
+        public: true
+        tags: ['controller.service_arguments']
+
+    # coaster-demo:agent-reset (its name comes from #[AsCommand]).
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\ResetCommand:
+        autoconfigure: true

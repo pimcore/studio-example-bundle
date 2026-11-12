@@ -1,0 +1,30 @@
+import { componentRegistry, pluginSystem, previewStage, slots, tileRegions, type IAbstractPlugin } from '@pimcore/portal-plugin-sdk'
+import { AskBriefButton } from './agent/AskBriefButton'
+import { CoasterPreviewStage } from './coaster/preview-stage/CoasterPreviewStage'
+import { CoasterTileMedia } from './coaster/tile/CoasterTileMedia'
+import { ScreamScorePanel } from './scream-score/ScreamScorePanel'
+
+// The enterprise examples' portal plugin. Each example registers its extension points (slots, action surfaces) in
+// the module's onInit below.
+export const studioExampleEnterprisePlugin: IAbstractPlugin = pluginSystem.definePlugin({
+  name: 'studio-example-enterprise',
+
+  onStartup ({ moduleSystem }) {
+    moduleSystem.registerModule({
+      onInit () {
+        // the asset detail's preview stage for .coaster files (coaster/preview-stage/README.md); every other asset
+        // keeps the portal's own stage, because CoasterPreviewStage.accepts declines it
+        componentRegistry.register({ name: previewStage, component: CoasterPreviewStage })
+        // the picture of the grid and rail tiles (coaster/tile/README.md): the track outline for .coaster files; the
+        // region takes every tile's picture, so CoasterTileMedia draws the kit's default for all others
+        componentRegistry.register({ name: tileRegions.media, component: CoasterTileMedia })
+        // the "Ask the brief" button in the header of every signed-in page (agent/README.md); it renders nothing
+        // without config().agent, and its panel loads on the first click
+        componentRegistry.registerToSlot(slots.headerActions, { name: 'studio-example-enterprise/ask-brief', component: AskBriefButton })
+        // the scream-score panel under a public share's coaster detail (scream-score/README.md); it renders nothing for
+        // a signed-in user, another asset or a page without a share hash, and its form loads in its own chunk
+        componentRegistry.registerToSlot(slots.detailPanels, { name: 'studio-example-enterprise/scream-score', component: ScreamScorePanel })
+      }
+    })
+  }
+})

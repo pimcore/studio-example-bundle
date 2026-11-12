@@ -1,0 +1,43 @@
+{# The frame of the scream score's guest pages (src/Portal/ScreamScore/GuestController.php): a page of its own, made for
+   a phone, with no portal navigation and no plugin JavaScript. The look comes from PortalUiKit's tokens (`--p-*`,
+   published by Portal Engine); each token carries its kit value as fallback, so the page reads well without them. #}
+<!DOCTYPE html>
+{# the kit's tokens need the theme class on <html>, as Portal Engine's own layout sets it #}
+<html lang="en" class="pe-theme-studio-default-light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>{% block title %}Scream score{% endblock %}</title>
+    <link rel="stylesheet" href="/bundles/pimcoreportalengine/portal-ui-kit/tokens/index.css">
+    {# the kit's server-rendered primary button, `.p-login-cta`, as on the portal's own login page #}
+    <link rel="stylesheet" href="/bundles/pimcoreportalengine/portal-ui-kit/login/login.css">
+    <style>
+        body { margin: 0; background: var(--p-bg-layout, #f5f5f5); color: var(--p-text, rgba(0, 0, 0, 0.88)); font-family: var(--p-font-family, 'Lato', system-ui, sans-serif); font-size: var(--p-font-size-lg, 16px); line-height: 1.5; }
+        .ss-card { box-sizing: border-box; max-width: 40rem; margin: var(--p-space-md, 16px) auto; padding: var(--p-space-lg, 24px); background: var(--p-bg-container, #fff); border-radius: var(--p-radius-lg, 12px); box-shadow: var(--p-elevation-tile, 0 1px 2px rgba(0, 0, 0, 0.06)); }
+        .ss-card h1 { margin: 0 0 var(--p-space-lg, 24px); font-size: var(--p-font-size-h4, 20px); font-weight: var(--p-font-weight-strong, 600); }
+        .ss-field { margin: 0 0 var(--p-space-lg, 24px); }
+        .ss-field > label, .ss-legend { display: block; margin: 0 0 var(--p-space-xs, 8px); font-weight: var(--p-font-weight-strong, 600); }
+        .ss-hint { margin: var(--p-space-xxs, 4px) 0 0; color: var(--p-text-secondary, rgba(0, 0, 0, 0.65)); font-size: var(--p-font-size, 14px); }
+        .ss-error { margin: var(--p-space-xxs, 4px) 0 0; color: var(--p-error, #ff4d4f); font-size: var(--p-font-size, 14px); }
+        .ss-notice { margin: 0 0 var(--p-space-lg, 24px); padding: var(--p-space-sm, 12px); border-radius: var(--p-radius, 8px); background: var(--p-primary-bg, #f9f0ff); }
+        .ss-scores { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--p-space-xs, 8px); }
+        .ss-score input { position: absolute; opacity: 0; }
+        .ss-score span { display: flex; align-items: center; justify-content: center; min-height: 48px; border: 1px solid var(--p-border, #d9d9d9); border-radius: var(--p-radius, 8px); font-size: var(--p-font-size-h4, 20px); font-weight: var(--p-font-weight-strong, 600); cursor: pointer; }
+        .ss-score input:checked + span { background: var(--p-primary, #722ed1); border-color: var(--p-primary, #722ed1); color: var(--p-bg-container, #fff); }
+        .ss-score input:focus-visible + span { outline: 2px solid var(--p-primary-hover, #9254de); outline-offset: 2px; }
+        .ss-ends { display: flex; justify-content: space-between; }
+        .ss-card input[type=text], .ss-card textarea { box-sizing: border-box; width: 100%; padding: var(--p-space-xs, 8px) var(--p-space-sm, 12px); border: 1px solid var(--p-border, #d9d9d9); border-radius: var(--p-radius, 8px); font: inherit; }
+        .ss-card textarea { min-height: 6rem; resize: vertical; }
+        {# the kit's button is 32px high; a thumb on a phone needs 48 #}
+        .ss-card .p-login-cta { height: 48px; font-size: var(--p-font-size-lg, 16px); }
+        .ss-link { color: var(--p-primary, #722ed1); }
+        {% block styles %}{% endblock %}
+    </style>
+</head>
+<body>
+<main class="ss-card">
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

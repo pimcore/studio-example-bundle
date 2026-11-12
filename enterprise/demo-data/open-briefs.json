@@ -1,0 +1,38 @@
+{
+  "about": "The park's open ride briefs (F293): coaster-demo:setup writes each as a \"Ride brief\" data object in /Pimcore Kingdom/Open briefs, listed by the portal's \"Open briefs\" data pool. Thunder Loop states the facts of brief.md unchanged; the other two are fictional like the rest of the park.",
+  "briefs": [
+    {
+      "key": "Thunder Loop",
+      "title": "Thunder Loop",
+      "rideType": "Family thrill coaster",
+      "maxHeight": 45,
+      "maxLength": 600,
+      "inversionsAllowed": 2,
+      "targetOpening": "Summer 2028",
+      "status": "open",
+      "description": "A family thrill coaster for the park's new Storm Valley area, for riders from 10 years up (minimum height 1.20 m). One or two vertical loops, the first one visible from the area's main path; one train of 6 cars with 4 seats each, about 600 riders per hour. No point of the track may be higher than 45 m above the station: the Storm Valley building permit allows no more. The approved baseline is revision 2."
+    },
+    {
+      "key": "Splash Canyon",
+      "title": "Splash Canyon",
+      "rideType": "Water ride",
+      "maxHeight": 18,
+      "maxLength": 450,
+      "inversionsAllowed": 0,
+      "targetOpening": "Summer 2028",
+      "status": "open",
+      "description": "A log flume through a rocky canyon at the edge of Storm Valley, with two drops, the last one ending in a splash beside the area's main path. Boats for 5 riders, minimum height 1.00 m; guests get wet, never soaked."
+    },
+    {
+      "key": "Little Thunder",
+      "title": "Little Thunder",
+      "rideType": "Kids' coaster",
+      "maxHeight": 8,
+      "maxLength": 200,
+      "inversionsAllowed": 0,
+      "targetOpening": "Spring 2029",
+      "status": "open",
+      "description": "A first coaster for guests from 4 years up, next to Thunder Loop, so families can ride side by side. Gentle hills and turns only, minimum height 0.95 m, an adult may ride along in every car."
+    }
+  ]
+}

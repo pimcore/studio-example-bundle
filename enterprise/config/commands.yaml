@@ -1,0 +1,16 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # The coaster demo's setup and reset commands (src/Command/README.md): coaster-demo:setup, coaster-demo:reset.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemoSetupCommand: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemoResetCommand: ~
+
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\CoasterDemo: ~
+
+    # Pimcore and the Portal Engine behind the demo; the tests use an in-memory one instead.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\PimcoreDemoEnvironment: ~
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\DemoEnvironment:
+        alias: Pimcore\Bundle\StudioExampleEnterpriseBundle\Command\CoasterDemo\PimcoreDemoEnvironment

@@ -1,0 +1,153 @@
+// The ride page (enterprise/assets/shared/coaster/viewer/ride.html) in headless Chromium, for coaster-ride.test.mjs and
+// the frame rate measurement in coaster-ride.perf.mjs (CHROMIUM, else chromium on the PATH): serve() serves the
+// enterprise folder, launchChromium() starts a browser with a DevTools protocol session, closeAll() ends them all.
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, existsSync, statSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { dirname, extname, join, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { setTimeout as sleep } from 'node:timers/promises';
+
+const enterpriseDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const TYPES = { '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json' };
+let server;
+let port;
+const browsers = []; // { process, profile, session }
+
+// Serves the enterprise folder, so the ride page reaches the geometry, the schema and the demo data.
+export const serve = () =>
+  new Promise((resolve) => {
+    server = createServer((req, res) => {
+      const path = normalize(join(enterpriseDir, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
+      if (!path.startsWith(enterpriseDir) || !existsSync(path) || !statSync(path).isFile()) {
+        res.writeHead(404).end();
+        return;
+      }
+      res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' });
+      res.end(readFileSync(path));
+    });
+    server.listen(0, '127.0.0.1', () => resolve((port = server.address().port)));
+  });
+
+// A DevTools protocol session on a new headless Chromium's first page, over Node's built-in WebSocket.
+// Headless Chromium paces frames by a virtual display that, with software WebGL (SwiftShader), holds even a page that
+// only clears a 1280x720 canvas near 20 frames per second and this ride near 2. `unlimited` turns that limiter off
+// (--disable-gpu-vsync, --disable-frame-rate-limit), so the frame rate is what the ride itself draws, as on a real
+// screen up to its refresh; such a browser answers slowly while a page draws flat out, so only the measurement uses it.
+export async function launchChromium({ unlimited = false } = {}) {
+  const profile = mkdtempSync(join(tmpdir(), 'coaster-ride-'));
+  const binary = process.env.CHROMIUM ?? 'chromium';
+  const child = spawn(binary, [
+    '--headless=new', '--no-sandbox', '--no-first-run', '--disable-gpu-sandbox', '--use-angle=swiftshader',
+    '--enable-unsafe-swiftshader', ...(unlimited ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []),
+    '--window-size=1280,800', '--hide-scrollbars', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
+    'about:blank',
+  ], { stdio: 'ignore' });
+  const entry = { process: child, profile };
+  browsers.push(entry);
+  const portFile = join(profile, 'DevToolsActivePort');
+  // Up to 60 s: under the tooling queue (nice, ionice) on a loaded machine Chromium can take well over 10 s to start.
+  for (let i = 0; i < 600 && !existsSync(portFile) && child.exitCode === null; i++) await sleep(100);
+  assert.ok(existsSync(portFile), `${binary} started with its DevTools port (exit code ${child.exitCode})`);
+  // Chromium creates the file before it writes the port into it (an empty read went to port 80, F80): wait for it.
+  const readPort = () => readFileSync(portFile, 'utf8').split('\n')[0].trim();
+  for (let i = 0; i < 100 && !readPort() && child.exitCode === null; i++) await sleep(100);
+  const devtools = readPort();
+  assert.ok(devtools, `${binary} wrote its DevTools port into ${portFile}`);
+  const targets = await (await fetch(`http://127.0.0.1:${devtools}/json/list`)).json();
+  const socket = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
+  await new Promise((resolve, reject) => {
+    socket.onopen = resolve;
+    socket.onerror = reject;
+  });
+  let id = 0;
+  const pending = new Map();
+  const errors = [];
+  socket.onmessage = ({ data }) => {
+    const message = JSON.parse(data);
+    if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails);
+    const call = pending.get(message.id);
+    if (!call) return;
+    pending.delete(message.id);
+    message.error ? call.reject(new Error(message.error.message)) : call.resolve(message.result);
+  };
+  const send = (method, params = {}) =>
+    new Promise((resolve, reject) => {
+      pending.set(++id, { resolve, reject });
+      socket.send(JSON.stringify({ id, method, params }));
+    });
+  const evaluate = async (expression) => {
+    const { result, exceptionDetails } = await send('Runtime.evaluate', {
+      expression, awaitPromise: true, returnByValue: true,
+    });
+    if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
+    return result.value;
+  };
+  await send('Runtime.enable');
+  await send('Page.enable');
+  // The page itself 1280x800 (the window's frame takes some of --window-size), so the 720 high ride and its buttons fit.
+  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+
+  const session = { send, evaluate, errors, close: () => socket.close() };
+  session.open = async (query) => {
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/assets/shared/coaster/viewer/ride.html?${query}` });
+    await sleep(200);
+    for (let i = 0; i < 300; i++) {
+      if (await evaluate('document.body?.dataset.ready === "true"').catch(() => false)) return;
+      await sleep(100);
+    }
+    assert.fail(`the ride page never got ready: ${JSON.stringify(errors.map((e) => e.exception?.description))}`);
+  };
+  // A real mouse click on a ride button, at its place on the screen.
+  session.click = async (name) => {
+    const { x, y } = await evaluate(`(() => {
+      const r = document.querySelector('.coaster-ride-controls button[name=${name}]').getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    })()`);
+    for (const type of ['mousePressed', 'mouseReleased']) {
+      await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
+    }
+  };
+  // F136: where the progress label and Restart sit, and how high a line of the label's text is.
+  session.progressLayout = () =>
+    evaluate(`(() => {
+      const bar = document.querySelector('.coaster-ride-controls');
+      const label = bar.querySelector('.coaster-ride-progress');
+      const box = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, height: r.height }; };
+      const style = getComputedStyle(label);
+      return {
+        text: label.textContent, label: box(label), restart: box(bar.querySelector('button[name=restart]')),
+        lines: label.getClientRects().length, lineHeight: parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2,
+        paddingY: parseFloat(style.paddingTop) + parseFloat(style.paddingBottom),
+        whiteSpace: style.whiteSpace, background: style.backgroundColor, viewport: innerWidth,
+      };
+    })()`);
+  // F136 AC2: the label is one line high and does not overlap Restart (it sits right of it).
+  session.assertProgressOneLine = async () => {
+    const layout = await session.progressLayout();
+    assert.ok(layout.label.height - layout.paddingY <= layout.lineHeight * 1.5,
+      `"${layout.text}" is one line high at ${layout.viewport} px: ${JSON.stringify(layout)}`);
+    assert.ok(layout.label.left >= layout.restart.right,
+      `"${layout.text}" sits right of Restart, not over it: ${JSON.stringify(layout)}`);
+    return layout;
+  };
+  entry.session = session;
+  return session;
+}
+
+// Closes every browser launchChromium started, removes their profiles and stops the server.
+export async function closeAll() {
+  for (const { process: child, profile, session } of browsers) {
+    session?.close();
+    if (child.exitCode === null) {
+      const exited = new Promise((resolve) => child.once('exit', resolve));
+      child.kill();
+      await exited;
+    }
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
+  }
+  server?.close();
+}

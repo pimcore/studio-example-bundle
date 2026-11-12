@@ -6,6 +6,12 @@ The Pimcore Studio Example Bundle was created to help developers quickly get sta
 
 For further information, visit the [Pimcore Studio UI Plugin Development Examples documentation](https://github.com/pimcore/studio-ui-bundle/blob/2026.x/doc/04_Extending/02_Plugin_Development_Examples/README.md).
 
+## Enterprise examples
+
+Examples for Pimcore enterprise bundles (Portal Engine) live in `enterprise/`, a separate Composer
+package that needs enterprise access. This bundle itself requires only public packages. See
+[the enterprise examples' README](enterprise/README.md) for the three install steps.
+
 ## Frontend build
 
 The compiled frontend is shipped as a single committed archive, `build-dist/build-<id>.zip`,

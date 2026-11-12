@@ -1,0 +1,14 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # The scream score's failed pass checks, in the app cache: after 5 per pass or client, 15 minutes of refusals.
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\CacheFailureCounter:
+        arguments:
+            $cache: '@cache.app'
+    Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\FailureCounter: '@Pimcore\Bundle\StudioExampleEnterpriseBundle\ScreamScore\CacheFailureCounter'
+
+    # The ScreamScore service itself, with the Pimcore-backed FeedbackStore and AnnualPasses, is in
+    # config/scream-score-demo.yaml (F316); the InMemory versions are for the tests only and are never services.

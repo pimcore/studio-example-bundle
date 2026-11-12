@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- The orbit view on its own: serve the enterprise folder over HTTP (README.md) and open
+     /assets/shared/coaster/viewer/demo.html. ?file=<url of a .coaster file>&width=<px>&height=<px> -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coaster viewer</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0d1117; color: #f0f6fc; font: 16px system-ui, sans-serif; }
+      #viewer { width: 100vw; height: 100vh; }
+      #viewer.sized { width: auto; height: auto; display: inline-block; max-width: 100%; }
+      /* a fixed size wider than the screen (a phone) shrinks to fit instead of scrolling sideways */
+      #viewer.sized canvas { max-width: 100%; height: auto !important; }
+      .coaster-viewer-error { margin: 2rem; }
+    </style>
+  </head>
+  <body>
+    <div id="viewer"></div>
+    <script type="module">
+      import { mountCoasterViewer } from './index.mjs';
+
+      const query = new URLSearchParams(location.search);
+      const url = query.get('file') ?? '../../../../demo-data/thunder-loop-rev3.coaster';
+      const width = Number(query.get('width'));
+      const height = Number(query.get('height'));
+      const size = width && height ? { width, height } : undefined;
+      const element = document.getElementById('viewer');
+      if (size) element.classList.add('sized');
+      const file = await (await fetch(url)).text();
+      window.coasterViewer = mountCoasterViewer(element, { file, size });
+      document.body.dataset.ready = 'true';
+    </script>
+  </body>
+</html>

@@ -1,0 +1,91 @@
+# Read by Pimcore's BundleRoutingLoader from every registered bundle: the application's config/routes.yaml never has
+# to know this bundle (Portal Engine docs, "Portal Frontend Plugins", "Serving your own page"). Not under config/*.yaml
+# on purpose: the extension loads those as service files.
+# Every controller is named Class::__invoke, not the bare invokable class: Portal Engine's SecuritySubscriber reads
+# the controller as [object, method] (getController()[0]) and answers 500 for a bare object (DR-F65-13).
+
+# The text of a .coaster asset for the portal's coaster preview stage, see
+# assets/portal/js/src/coaster/preview-stage/README.md. No language prefix: like the portal's own API, it is fetched by
+# the plugin, never opened as a page.
+pimcore_studio_example_enterprise_coaster_file:
+    path: /studio-example-enterprise/coaster-file/{id}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Coaster\CoasterFileController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    requirements:
+        id: '\d+'
+
+# The portal's agent chat: a recorded turn as an event stream, see src/Portal/Agent/README.md. No language prefix:
+# the portal's chat calls it like its own API. JSON 401/403 instead of a login redirect (the controller checks access).
+pimcore_studio_example_enterprise_agent_chat:
+    path: /studio-example-enterprise/agent/chat
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\Agent\AgentChatController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [POST]
+
+# The agent demo's confirmed write: the portal user confirms a stored Supplier-note proposal by its id, see
+# src/Agent/Note/README.md. JSON 401/403/404/409 like the chat route; the id is F126's random 32-hex proposal id.
+pimcore_studio_example_enterprise_agent_proposal_confirm:
+    path: /studio-example-enterprise/agent/proposal/{id}/confirm
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Agent\Note\ConfirmController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [POST]
+    requirements:
+        id: '[0-9a-f]{32}'
+
+# The scream score's old guest link: GET and POST answer 302 to the coaster's public share, where guests rate (F326),
+# or 404 without one, see src/Portal/ScreamScore/GuestController.php. Public: the extension adds exactly this route name to Portal Engine's
+# custom_public_routes, so no portal login is asked for. {ride} is the ride key, the coaster's file name without
+# .coaster (it stays when the demo reset uploads the coaster again).
+pimcore_studio_example_enterprise_scream_score_guest:
+    # the portal's language/site prefix, like the portal's own pages (`_` on a one-language portal)
+    path: /{_portal_engine_prefix}scream-score/{ride}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\GuestController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET, POST]
+    # the same requirement Portal Engine's own routes carry
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+
+# The scream score for the park's staff: average, ratings and guest link per coaster, a coaster's newest comments, and
+# hide or show one comment, see src/Portal/ScreamScore/ParkController.php. Not public: Portal Engine asks for the portal
+# login, and the controller lets only the portal user group "Park staff" in (StaffAccess, 403 for everyone else).
+pimcore_studio_example_enterprise_scream_score_park:
+    path: /{_portal_engine_prefix}scream-scores
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+
+# One coaster by its ride key; an unknown key gets 404.
+pimcore_studio_example_enterprise_scream_score_park_ride:
+    path: /{_portal_engine_prefix}scream-scores/{ride}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET]
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+        ride: '[a-z0-9]+(?:-[a-z0-9]+)*'
+
+# Hide (visible=0) or show again (visible=1) one comment, by the GuestFeedback object's id; 303 back to its coaster.
+pimcore_studio_example_enterprise_scream_score_park_visibility:
+    path: /{_portal_engine_prefix}scream-scores/{id}/visibility
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ParkController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [POST]
+    requirements:
+        _portal_engine_prefix: (?!\_)[^\/]+(?:\/[^\/]+)*\/|\_
+        id: '\d+'
+
+# The scream score for a public share's coaster page, as JSON for its panel, see
+# src/Portal/ScreamScore/ShareRatingController.php. Public like the guest page (the extension adds this route name to
+# custom_public_routes): the share's hash and the coaster asset's id name the ride, never a ride key from the browser.
+# No language prefix: like the coaster file, the share page's script calls it.
+pimcore_studio_example_enterprise_scream_score_share:
+    path: /studio-example-enterprise/scream-score/{hash}/{assetId}
+    controller: Pimcore\Bundle\StudioExampleEnterpriseBundle\Portal\ScreamScore\ShareRatingController::__invoke
+    condition: "request.attributes.get('isPortalEngineSite')"
+    methods: [GET, POST]
+    requirements:
+        assetId: '\d+'

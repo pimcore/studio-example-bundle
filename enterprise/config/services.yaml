@@ -1,0 +1,7 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # The enterprise examples register their services here, or in their own config/*.yaml next to this file.

@@ -1,0 +1,467 @@
+// F51: the coaster demo's setup and reset commands (src/Command/). Needs the php CLI (8.1+). The demo logic runs
+// against an in-memory DemoEnvironment that stands for Pimcore and the Portal Engine (it runs the real coaster
+// metadata extraction on upload, as the listener does), so no Pimcore install is needed.
+// Run (node 24 needs the glob): node --test 'enterprise/tests/*.test.mjs'
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const enterpriseDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+const demoData = join(enterpriseDir, 'demo-data');
+const src = join(enterpriseDir, 'src');
+const read = (path) => readFileSync(path, 'utf8');
+
+// The in-memory environment: the whole state is one array, so a test can compare states before and after. Elements
+// carry 'demo' => true when the demo created them, as PimcoreDemoEnvironment marks them with a property.
+const bootstrap = `
+namespace Pimcore\\Bundle\\PortalEngineBundle\\Service\\Plugin {
+    // Stubs of the Portal Engine interfaces the plugin class implements: setup reads its id constant.
+    interface PortalPluginProviderInterface {}
+    interface PortalPluginConfigProviderInterface {}
+    interface PublicSharePluginProviderInterface { public function isAvailableForPublicShare(): bool; }
+}
+namespace {
+    foreach (['Coaster/CoasterValidator', 'Coaster/CoasterMetadataExtractor', 'Command/CoasterDemo/DemoEnvironment',
+              'Command/CoasterDemo/BriefHtml', 'Command/CoasterDemo/CoasterDemo', 'Portal/StudioExampleEnterprisePortalPlugin'] as $file) {
+        require ${JSON.stringify(src)} . '/' . $file . '.php';
+    }
+
+    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Coaster\\CoasterMetadataExtractor;
+    use Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\DemoEnvironment;
+
+    class MemoryEnvironment implements DemoEnvironment {
+        public int $writes = 0;
+        private int $nextId = 100;
+        public array $state = [
+            'portals' => [7 => ['name' => 'Existing portal', 'domain' => 'other.localhost', 'demo' => false, 'dataPools' => [], 'brief' => null]],
+            'users' => ['buyer@park.example' => ['firstname' => 'Park', 'lastname' => 'Buyer', 'password' => 'secret', 'permissions' => ['portal-access___7' => 'allow'], 'assetWorkspaces' => [], 'demo' => false]],
+            'folders' => ['/Marketing' => false],
+            'assets' => ['/Marketing/poster.jpg' => ['content' => 'jpeg', 'metadata' => [], 'demo' => false]],
+        ];
+
+        public function portalId(): ?int {
+            foreach ($this->state['portals'] as $id => $portal) { if ($portal['demo']) { return $id; } }
+            return null;
+        }
+        public function createPortal(string $name, string $domain, string $language, string $dataPoolName): int {
+            $this->writes++;
+            $id = $this->nextId++;
+            $this->state['portals'][$id] = ['name' => $name, 'domain' => $domain, 'language' => $language, 'demo' => true,
+                'dataPools' => [$dataPoolName => $this->nextId++], 'brief' => null];
+            return $id;
+        }
+        public function dataPoolId(int $portalId, string $dataPoolName): ?int { return $this->state['portals'][$portalId]['dataPools'][$dataPoolName] ?? null; }
+        public function deletePortal(int $portalId): void { $this->writes++; unset($this->state['portals'][$portalId]); }
+        public function portalName(int $portalId): ?string { return $this->state['portals'][$portalId]['name'] ?? null; }
+        public function renamePortal(int $portalId, string $name): void { $this->writes++; $this->state['portals'][$portalId]['name'] = $name; }
+        // As in Pimcore, a workspace points at the folder itself, so it follows the rename.
+        public function renameFolder(string $folder, string $name): void {
+            $this->writes++;
+            $to = dirname($folder) === '/' ? '/' . $name : dirname($folder) . '/' . $name;
+            $move = fn (string $path) => $path === $folder || str_starts_with($path, $folder . '/') ? $to . substr($path, strlen($folder)) : $path;
+            foreach (['folders', 'assets'] as $kind) {
+                $this->state[$kind] = array_combine(array_map($move, array_keys($this->state[$kind])), $this->state[$kind]);
+            }
+            foreach ($this->state['users'] as $email => $user) {
+                $this->state['users'][$email]['assetWorkspaces'] = array_combine(array_map($move, array_keys($user['assetWorkspaces'])), $user['assetWorkspaces']);
+            }
+        }
+        public function enabledPlugins(int $portalId): array { return $this->state['portals'][$portalId]['plugins'] ?? []; }
+        public function enablePlugin(int $portalId, string $pluginId): void {
+            $this->writes++;
+            $this->state['portals'][$portalId]['plugins'] = [...$this->enabledPlugins($portalId), $pluginId];
+        }
+        public function briefHtml(int $portalId): ?string { return $this->state['portals'][$portalId]['brief']['html'] ?? null; }
+        public function saveBrief(int $portalId, string $title, string $html): void {
+            $this->writes++;
+            $this->state['portals'][$portalId]['brief'] = ['title' => $title, 'html' => $html];
+        }
+        public function supplier(string $email, string $password): ?array {
+            $user = $this->state['users'][$email] ?? null;
+            if ($user === null) { return null; }
+            return ['email' => $email, 'firstname' => $user['firstname'], 'lastname' => $user['lastname'],
+                'passwordValid' => $user['password'] === $password, 'permissions' => $user['permissions'], 'assetWorkspaces' => $user['assetWorkspaces']];
+        }
+        public function saveSupplier(array $supplier): void {
+            $this->writes++;
+            $old = $this->state['users'][$supplier['email']] ?? ['permissions' => [], 'demo' => true];
+            $this->state['users'][$supplier['email']] = ['firstname' => $supplier['firstname'], 'lastname' => $supplier['lastname'],
+                'password' => $supplier['password'], 'permissions' => [...$old['permissions'], ...$supplier['permissions']],
+                'assetWorkspaces' => $supplier['assetWorkspaces'], 'demo' => $old['demo']];
+        }
+        public function deleteSupplier(string $email): void {
+            if ($this->state['users'][$email]['demo'] ?? false) { $this->writes++; unset($this->state['users'][$email]); }
+        }
+        public function assets(string $folder): array {
+            $assets = [];
+            foreach ($this->state['assets'] as $path => $asset) {
+                if (dirname($path) === $folder) { $assets[basename($path)] = self::load($asset['content']); }
+            }
+            return $assets;
+        }
+        // An upload: the coaster listener fills the metadata of a valid .coaster file.
+        public function createAsset(string $folder, string $filename, string $content): void {
+            $this->writes++;
+            for ($path = $folder; $path !== '/'; $path = dirname($path)) {
+                if (!array_key_exists($path, $this->state['folders'])) { $this->state['folders'][$path] = true; }
+            }
+            $metadata = [];
+            if (str_ends_with($filename, '.coaster')) {
+                foreach ((new CoasterMetadataExtractor())->extract(json_decode($content)) as $name => $value) { $metadata[$name] = (string) $value; }
+            }
+            $this->state['assets'][$folder . '/' . $filename] = ['content' => self::store($content), 'metadata' => $metadata, 'demo' => true];
+        }
+        // Binary content (the PNG logo, F101) is kept base64-tagged, so the state stays JSON.
+        public static function store(string $content): string { return mb_check_encoding($content, 'UTF-8') ? $content : 'base64:' . base64_encode($content); }
+        public static function load(string $content): string { return str_starts_with($content, 'base64:') ? base64_decode(substr($content, 7)) : $content; }
+        // The portal's logo and brand colours (F101).
+        public function portalBranding(int $portalId): array {
+            return $this->state['portals'][$portalId]['branding'] ?? ['logo' => null, 'brand_primary' => null, 'brand_accent' => null];
+        }
+        public function setPortalBranding(int $portalId, string $logo, string $brandPrimary, string $brandAccent): void {
+            $this->writes++;
+            $this->state['portals'][$portalId]['branding'] = ['logo' => $logo, 'brand_primary' => $brandPrimary, 'brand_accent' => $brandAccent];
+        }
+        public function deleteAsset(string $folder, string $filename): void { $this->writes++; unset($this->state['assets'][$folder . '/' . $filename]); }
+        public function assetMetadata(string $folder, string $filename): array { return $this->state['assets'][$folder . '/' . $filename]['metadata'] ?? []; }
+        public function folderExists(string $folder): bool { return $this->state['folders'][$folder] ?? false; }
+        // Pimcore translations (F135): kept beside the state, as reset --all leaves the text setup added.
+        public array $translations = [];
+        public function translation(string $domain, string $key, string $language): ?string { return $this->translations[$domain][$key][$language] ?? null; }
+        public function saveTranslation(string $domain, string $key, string $language, string $text): void { $this->writes++; $this->translations[$domain][$key][$language] = $text; }
+        public function deleteFolder(string $folder): void {
+            if (!$this->folderExists($folder)) { return; }
+            $this->writes++;
+            foreach (['folders', 'assets'] as $kind) {
+                foreach (array_keys($this->state[$kind]) as $path) {
+                    if ($path === $folder || str_starts_with($path, $folder . '/')) { unset($this->state[$kind][$path]); }
+                }
+            }
+        }
+    }
+
+    function demo(MemoryEnvironment $env): \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo {
+        return new \\Pimcore\\Bundle\\StudioExampleEnterpriseBundle\\Command\\CoasterDemo\\CoasterDemo($env);
+    }
+    // The demo in its middle: revision 2 uploaded over revision 1, and a second design next to it.
+    function playDemo(MemoryEnvironment $env): void {
+        $folder = '/Pimcore Kingdom/Ride designs/Thunder Loop';
+        $env->deleteAsset($folder, 'thunder-loop.coaster');
+        $env->createAsset($folder, 'thunder-loop.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev2.coaster'));
+        $env->createAsset($folder, 'thunder-loop-rev3.coaster', file_get_contents(${JSON.stringify(demoData)} . '/thunder-loop-rev3.coaster'));
+    }
+}
+`;
+
+// Runs the PHP snippet after the bootstrap and returns what it echoes, parsed as JSON.
+const php = (body) =>
+  JSON.parse(execFileSync('php', ['-d', 'display_errors=stderr', '-r', `${bootstrap}\nnamespace {\n${body}\n}\n`], { encoding: 'utf8' }));
+
+const golden = JSON.parse(read(join(demoData, 'expected-metadata.json')));
+const rev1 = read(join(demoData, 'thunder-loop-rev1.coaster'));
+const COASTER = '/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster';
+
+test('AC1: setup creates the portal, the supplier with a demo login, the brief and revision 1 with its metadata', () => {
+  const { changes, state, html } = php(`
+    $env = new MemoryEnvironment();
+    $changes = demo($env)->setup();
+    echo json_encode(['changes' => $changes, 'state' => $env->state, 'html' => demo($env)->briefHtml()]);
+  `);
+  assert.equal(changes.length, 7, changes.join('\n'));
+  // F101: the two branding lines come after the supplier and before the coaster upload.
+  assert.match(changes[3], /^Uploaded the logo files pimcore-kingdom-logo.svg, pimcore-kingdom-logo.png to \/Pimcore Kingdom\/Branding$/);
+  assert.match(changes[4], /^Set the logo and the brand colours /);
+
+  const [portalId, portal] = Object.entries(state.portals).find(([, p]) => p.demo);
+  assert.equal(portal.name, 'Pimcore Kingdom');
+  assert.equal(portal.domain, 'portal.localhost');
+  assert.equal(portal.language, 'en');
+  assert.deepEqual(portal.plugins, ['studio-example-enterprise'], 'the example portal plugin is enabled');
+  assert.match(changes[0], /^Created the portal "Pimcore Kingdom" on portal\.localhost with the data pool "Ride designs"$/);
+  assert.equal(state.portals[7].plugins, undefined, 'the other portal is untouched');
+  assert.equal(state.portals[7].name, 'Existing portal');
+  const dataPoolId = portal.dataPools['Ride designs'];
+  assert.ok(dataPoolId, 'has the asset data pool "Ride designs"');
+
+  assert.equal(portal.brief.title, 'Brief: Thunder Loop');
+  assert.equal(portal.brief.html, html);
+  assert.match(html, /<h1>Design brief: Thunder Loop<\/h1>/);
+  assert.match(html, /<li><strong>Maximum height: 45 m\.<\/strong> No point of the track/);
+  assert.match(html, /<h2>Target audience<\/h2>\n<p>Families and teenagers/);
+
+  const supplier = state.users['supplier@loopwerk.example'];
+  assert.ok(supplier, 'the supplier user exists');
+  assert.equal(`${supplier.firstname} ${supplier.lastname}`, 'Loopwerk Engineering');
+  assert.equal(supplier.password, 'thunder-loop');
+  assert.deepEqual(supplier.permissions, { [`portal-access___${portalId}`]: 'allow', [`data-pool-access___${dataPoolId}`]: 'allow',
+    [`asset-upload-folder-reviewing___${dataPoolId}`]: 'allow' });
+  assert.deepEqual(Object.keys(supplier.assetWorkspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop']);
+  assert.ok(supplier.assetWorkspaces['/Pimcore Kingdom/Ride designs/Thunder Loop'].includes('create'), 'may upload');
+
+  const coaster = state.assets[COASTER];
+  assert.equal(coaster.content, rev1, 'revision 1 uploaded');
+  const values = Object.fromEntries(Object.entries(coaster.metadata).map(([name, value]) => [name, Number(value)]));
+  assert.deepEqual(values, golden.revisions['thunder-loop-rev1.coaster']);
+});
+
+test('AC1: setup stops with an error when the uploaded coaster gets no metadata', () => {
+  const { error } = php(`
+    $env = new class extends MemoryEnvironment { public function assetMetadata(string $folder, string $filename): array { return []; } };
+    try { demo($env)->setup(); echo json_encode(['error' => null]); } catch (\\RuntimeException $e) { echo json_encode(['error' => $e->getMessage()]); }
+  `);
+  assert.match(error ?? '', /no metadata maxHeight, length, inversions, topSpeed, duration.*coaster listener/);
+});
+
+test('AC1: config/commands.yaml registers coaster-demo:setup and coaster-demo:reset on Pimcore and the Portal Engine', () => {
+  const yaml = read(join(enterpriseDir, 'config/commands.yaml'));
+  const ns = 'Pimcore\\\\Bundle\\\\StudioExampleEnterpriseBundle\\\\Command\\\\';
+  for (const service of ['CoasterDemoSetupCommand', 'CoasterDemoResetCommand', 'CoasterDemo\\\\CoasterDemo', 'CoasterDemo\\\\PimcoreDemoEnvironment']) {
+    assert.match(yaml, new RegExp(`^ {4}${ns}${service}:`, 'm'), service);
+  }
+  assert.match(yaml, new RegExp(`${ns}CoasterDemo\\\\DemoEnvironment:\\s*\\n\\s+alias: ${ns}CoasterDemo\\\\PimcoreDemoEnvironment`));
+  assert.match(yaml, /autoconfigure: true/, 'the commands get their console.command tag');
+
+  assert.match(read(join(src, 'Command/CoasterDemoSetupCommand.php')), /NAME = 'coaster-demo:setup'/);
+  assert.match(read(join(src, 'Command/CoasterDemoResetCommand.php')), /NAME = 'coaster-demo:reset'/);
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  assert.match(pimcore, /implements DemoEnvironment/);
+  assert.match(pimcore, /\$this->wizardService->createPortal\(\$key\)/, 'creates the portal through the Portal Engine wizard');
+  assert.match(pimcore, /new PortalUser\(\)/);
+  assert.match(pimcore, /Asset::create\(/);
+});
+
+test('AC2: a second setup changes nothing', () => {
+  const { changes, writes, before, after } = php(`
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $before = $env->state; $writes = $env->writes;
+    $changes = demo($env)->setup();
+    echo json_encode(['changes' => $changes, 'writes' => $env->writes - $writes, 'before' => $before, 'after' => $env->state]);
+  `);
+  assert.deepEqual(changes, []);
+  assert.equal(writes, 0, 'no write at all');
+  assert.deepEqual(after, before);
+});
+
+test('AC2: setup repairs what is missing and leaves the uploaded design alone', () => {
+  const { changes, state } = php(`
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    playDemo($env);
+    $env->state['users']['supplier@loopwerk.example']['password'] = 'changed';
+    $changes = demo($env)->setup();
+    echo json_encode(['changes' => $changes, 'state' => $env->state]);
+  `);
+  assert.equal(changes.length, 1, changes.join('\n'));
+  assert.match(changes[0], /supplier/);
+  assert.equal(state.users['supplier@loopwerk.example'].password, 'thunder-loop');
+  assert.notEqual(state.assets[COASTER].content, rev1, 'setup does not overwrite the demo upload');
+});
+
+test('AC3: reset returns to revision 1 from the middle of the demo, three times in a row', () => {
+  const { setupState, resets } = php(`
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $setupState = $env->state;
+    $resets = [];
+    for ($run = 0; $run < 3; $run++) {
+        playDemo($env);
+        $changes = demo($env)->reset();
+        $resets[] = ['changes' => $changes, 'state' => $env->state];
+    }
+    $writes = $env->writes;
+    $again = demo($env)->reset();
+    $resets[] = ['changes' => $again, 'state' => $env->state, 'writes' => $env->writes - $writes];
+    echo json_encode(['setupState' => $setupState, 'resets' => $resets]);
+  `);
+  for (const [run, reset] of resets.slice(0, 3).entries()) {
+    assert.deepEqual(reset.state, setupState, `run ${run + 1}: the state after setup`);
+    assert.equal(reset.state.assets[COASTER].content, rev1);
+    assert.ok(reset.changes.some((line) => /thunder-loop-rev3\.coaster/.test(line)), 'removes the extra upload');
+    assert.ok(reset.changes.some((line) => /Uploaded revision 1/.test(line)), 'uploads revision 1 again');
+  }
+  const last = resets[3];
+  assert.deepEqual(last.changes, [], 'a reset at revision 1 changes nothing');
+  assert.equal(last.writes, 0);
+});
+
+test('AC3: reset --all returns to the state before setup and keeps what the demo did not create', () => {
+  const { before, after, changes, again } = php(`
+    $env = new MemoryEnvironment();
+    $before = $env->state;
+    demo($env)->setup();
+    playDemo($env);
+    $changes = demo($env)->reset(true);
+    $after = $env->state;
+    $again = demo($env)->reset(true);
+    echo json_encode(['before' => $before, 'after' => $after, 'changes' => $changes, 'again' => $again]);
+  `);
+  assert.deepEqual(after, before);
+  assert.equal(changes.length, 3, changes.join('\n'));
+  assert.deepEqual(again, [], 'nothing left to remove');
+});
+
+test('AC3: the reset command resets the demo, with the --all option for the state before setup', () => {
+  const command = read(join(src, 'Command/CoasterDemoResetCommand.php'));
+  assert.ok(command.indexOf('$this->demo->reset(') > 0, 'resets the demo');
+  assert.match(command, /addOption\('all'/);
+});
+
+// F99: the park was "Theme Park of Tomorrow" before DR-P22. A laptop set up then has the marked portal and the marked
+// asset folder under that name (and the old brief and revision 1 with it): the same state with the old name.
+const LEGACY = 'Theme Park of Tomorrow';
+const legacySetup = `
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $env->state = json_decode(str_replace('Pimcore Kingdom', '${LEGACY}', json_encode($env->state)), true);
+`;
+
+test('AC1: setup on an empty instance creates one portal "Pimcore Kingdom" with the coaster under /Pimcore Kingdom', () => {
+  const { state } = php(`
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    echo json_encode(['state' => $env->state]);
+  `);
+  const portals = Object.values(state.portals).filter((portal) => portal.demo);
+  assert.deepEqual(portals.map((portal) => portal.name), ['Pimcore Kingdom']);
+  assert.ok(state.assets['/Pimcore Kingdom/Ride designs/Thunder Loop/thunder-loop.coaster'], 'the coaster asset');
+  assert.equal(Object.keys(state.folders).some((path) => path.includes(LEGACY)), false);
+});
+
+test('AC2 AC4: setup renames a legacy-named marked portal and folder in place, one change each, then changes nothing', () => {
+  const { legacy, changes, state, again, writes } = php(`
+    ${legacySetup}
+    $legacy = $env->state;
+    $changes = demo($env)->setup();
+    $state = $env->state; $writes = $env->writes;
+    $again = demo($env)->setup();
+    echo json_encode(['legacy' => $legacy, 'changes' => $changes, 'state' => $state, 'again' => $again, 'writes' => $env->writes - $writes]);
+  `);
+  assert.ok(legacy.folders[`/${LEGACY}`], 'the fixture has the legacy folder');
+  assert.equal(Object.values(legacy.portals).find((portal) => portal.demo).name, LEGACY, 'the fixture has the legacy portal');
+
+  assert.ok(changes.includes(`Renamed the portal "${LEGACY}" to "Pimcore Kingdom"`), changes.join('\n'));
+  assert.ok(changes.includes(`Renamed the folder /${LEGACY} to /Pimcore Kingdom`), changes.join('\n'));
+  assert.ok(!changes.some((line) => /^Created the portal/.test(line)), 'no second portal');
+  const portals = Object.entries(state.portals).filter(([, portal]) => portal.demo);
+  assert.equal(portals.length, 1, 'one demo portal');
+  assert.equal(portals[0][0], Object.entries(legacy.portals).find(([, portal]) => portal.demo)[0], 'the same portal, renamed');
+  assert.equal(portals[0][1].name, 'Pimcore Kingdom');
+  assert.equal(Object.keys(state.folders).some((path) => path.includes(LEGACY)), false, 'no old folder');
+  assert.equal(Object.keys(state.assets).some((path) => path.includes(LEGACY)), false, 'no asset under the old name');
+  assert.ok(state.assets[COASTER], 'the coaster moved with the folder');
+  assert.deepEqual(Object.keys(state.users['supplier@loopwerk.example'].assetWorkspaces), ['/Pimcore Kingdom/Ride designs/Thunder Loop']);
+
+  assert.deepEqual(again, [], 'a second setup changes nothing');
+  assert.equal(writes, 0);
+});
+
+test('AC3 AC4: reset --all removes the portal and the folder under either name', () => {
+  const { legacy, current, both } = php(`
+    $before = (new MemoryEnvironment())->state;
+    ${legacySetup}
+    $legacy = ['changes' => demo($env)->reset(true), 'state' => $env->state, 'before' => $before];
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $current = ['changes' => demo($env)->reset(true), 'state' => $env->state, 'before' => $before];
+    // Both names at once: a legacy folder left next to the new one.
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $env->createAsset('/${LEGACY}/Thunder Loop', 'thunder-loop.coaster', demo($env)->revision1());
+    $both = ['changes' => demo($env)->reset(true), 'state' => $env->state, 'before' => $before];
+    echo json_encode(['legacy' => $legacy, 'current' => $current, 'both' => $both]);
+  `);
+  for (const [name, run] of Object.entries({ legacy, current, both })) {
+    assert.deepEqual(run.state, run.before, `${name}: the state before setup`);
+    assert.ok(run.changes.some((line) => /Deleted the portal/.test(line)), `${name}: deletes the portal`);
+  }
+  assert.ok(legacy.changes.includes(`Deleted the folder /${LEGACY} with the demo assets`), legacy.changes.join('\n'));
+  assert.ok(current.changes.includes('Deleted the folder /Pimcore Kingdom with the demo assets'));
+  assert.ok(both.changes.includes(`Deleted the folder /${LEGACY} with the demo assets`));
+  assert.ok(both.changes.includes('Deleted the folder /Pimcore Kingdom with the demo assets'));
+});
+
+test('AC2: on Pimcore, the portal rename sets the portal name editable and the document key; the folder rename keeps the element', () => {
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  const method = (name) => pimcore.slice(pimcore.indexOf(`public function ${name}(`), pimcore.indexOf('\n    }\n', pimcore.indexOf(`public function ${name}(`)));
+  assert.match(method('portalName'), /getEditable\(PortalConfig::PORTAL_NAME\)/);
+  const rename = method('renamePortal');
+  assert.match(rename, /setRawEditable\(PortalConfig::PORTAL_NAME, 'input', \$name\)/);
+  assert.match(rename, /setKey\(/);
+  assert.match(rename, /->save\(\);/);
+  const folder = method('renameFolder');
+  assert.match(folder, /setFilename\(\$name\)/, 'renames the folder itself, so the supplier workspace and the assets follow');
+  assert.match(folder, /->save\(\);/);
+});
+
+test('AC2: on Pimcore, renaming the portal or enabling the plugin loads the page\'s editables first, so its other settings survive the save', () => {
+  // PageSnippet::save() deletes all editables and writes back only the loaded ones; a page whose editables were never
+  // loaded keeps only the one set by setRawEditable (the try portal lost its "Portal name" that way).
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  for (const name of ['renamePortal', 'enablePlugin']) {
+    const start = pimcore.indexOf(`public function ${name}(`);
+    const method = pimcore.slice(start, pimcore.indexOf('\n    }\n', start));
+    const load = method.indexOf('$portal->getEditables();');
+    assert.ok(load > 0, `${name} loads the editables`);
+    assert.ok(load < method.indexOf('$portal->setRawEditable('), `${name}: before setting one`);
+  }
+});
+
+test('AC2: a demo portal without a portal name gets the name, with one change line', () => {
+  const { changes, again } = php(`
+    $env = new MemoryEnvironment();
+    demo($env)->setup();
+    $env->state['portals'][$env->portalId()]['name'] = null;
+    echo json_encode(['changes' => demo($env)->setup(), 'again' => demo($env)->setup()]);
+  `);
+  assert.deepEqual(changes, ['Renamed the portal "(no portal name)" to "Pimcore Kingdom"']);
+  assert.deepEqual(again, []);
+});
+
+test('AC2: a second setup on Pimcore reports no change, though Pimcore stores the brief with other entities and no trailing newline', () => {
+  // Seen on the try (2026-11-02): Pimcore's wysiwyg save turns &apos; into &#039; and &quot; into &#34; and drops the
+  // trailing newline, so an exact compare rewrote the brief on every run.
+  const { first, second } = php(`
+    $env = new class extends MemoryEnvironment {
+      public function saveBrief(int $portalId, string $title, string $html): void {
+        parent::saveBrief($portalId, $title, rtrim(str_replace(['&apos;', '&quot;'], ['&#039;', '&#34;'], $html)));
+      }
+    };
+    $first = demo($env)->setup();
+    $second = demo($env)->setup();
+    echo json_encode(['first' => $first, 'second' => $second]);
+  `);
+  assert.ok(first.some((line) => line.includes('brief')), first.join('\n'));
+  assert.deepEqual(second, [], 'the second run changes nothing');
+});
+
+const pimcoreMethod = (name) => {
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  const start = pimcore.indexOf(`function ${name}(`);
+  assert.ok(start > 0, `PimcoreDemoEnvironment has ${name}`);
+  return pimcore.slice(start, pimcore.indexOf('\n    }\n', start));
+};
+
+test('AC1 AC3: on Pimcore, every asset folder setup creates is marked, the supplier\'s workspace folder too', () => {
+  // Seen on the try (2026-11-02): the supplier step made the park folder first (createFolderByPath, unmarked), so the
+  // upload found it there and marked only Thunder Loop; reset --all then never deleted the park folder.
+  const pimcore = read(join(src, 'Command/CoasterDemo/PimcoreDemoEnvironment.php'));
+  const bare = pimcore.split('Asset\\Service::createFolderByPath(').length - 1;
+  assert.equal(bare, 1, 'Asset folders are made in one place only');
+  assert.match(pimcoreMethod('markedFolder'), /Asset\\Service::createFolderByPath\(/);
+  assert.match(pimcoreMethod('markedFolder'), /setProperty\(self::MARK/);
+  assert.match(pimcoreMethod('saveSupplier'), /\$this->markedFolder\(\$path\)/);
+  assert.match(pimcoreMethod('createAsset'), /\$this->markedFolder\(\$folder\)/);
+});
+
+test('AC2 AC3: on Pimcore, a park folder made unmarked by an earlier setup counts as the demo\'s through its marked Thunder Loop folder', () => {
+  const exists = pimcoreMethod('folderExists');
+  assert.match(exists, /self::MARK/);
+  assert.match(exists, /getChildren\(\)|getChildAmount|Thunder Loop|ownedChild/, 'looks at the folder\'s demo children when it is unmarked');
+  const remove = pimcoreMethod('deleteFolder');
+  assert.match(remove, /ownedChildren\(|getChildren\(\)/, 'an unmarked park folder: deletes its marked children');
+  assert.match(remove, /hasChildren\(\)/, 'and the park folder itself only once nothing else is left in it');
+});

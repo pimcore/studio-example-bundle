@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 236 48" width="236" height="48" fill="currentColor" role="img" aria-labelledby="pk-title">
+  <title id="pk-title">Pimcore Kingdom</title>
+  <!-- Own-made for the Pimcore Kingdom demo (the 2026.3 Portal Engine talk); not the Pimcore mark. CC0, see LICENSE.md. -->
+  <path fill-rule="evenodd" d="M4 44V14h3v3h4v-3h3v8h4v3h2V8h3V5h2v3h3v17h2v-3h4v-8h3v3h4v-3h3v30zM21 44v-7a3 3 0 0 1 6 0v7z"/>
+  <path d="M24 5V1l5 2z"/>
+  <path d="M1 46C12 46 15 30 24 30S36 46 47 39" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M1 46C12 46 15 30 24 30S36 46 47 39" fill="none" stroke="#502090" stroke-width="4" stroke-dasharray="1.2 2.8"/>
+  <path d="M1 46C12 46 15 30 24 30S36 46 47 39" fill="none" stroke="#502090" stroke-width="1.6" stroke-linecap="round"/>
+  <text x="56" y="32" font-family="Lato, 'Helvetica Neue', Arial, sans-serif" font-size="21" font-weight="700" letter-spacing="-0.3">Pimcore Kingdom</text>
+</svg>

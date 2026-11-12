@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <rect width="1200" height="500" fill="#f9f0ff"/>
+  <circle cx="1040" cy="110" r="56" fill="#efdbff"/>
+  <path d="M0 360 C180 290 330 300 480 340 S820 280 1000 320 S1150 330 1200 310 L1200 500 L0 500 Z" fill="#efdbff"/>
+  <path d="M0 420 C200 390 420 400 620 420 S1000 400 1200 410 L1200 500 L0 500 Z" fill="#d3adf7"/>
+  <g fill="#6428b4">
+    <rect x="200" y="240" width="220" height="190" rx="10"/>
+    <rect x="160" y="170" width="70" height="260" rx="10"/>
+    <rect x="390" y="170" width="70" height="260" rx="10"/>
+    <rect x="270" y="140" width="80" height="120" rx="10"/>
+    <path d="M150 180 L195 120 L240 180 Z M380 180 L425 120 L470 180 Z M260 150 L310 80 L360 150 Z"/>
+  </g>
+  <g fill="#502090">
+    <rect x="200" y="226" width="26" height="26" rx="5"/><rect x="250" y="226" width="26" height="26" rx="5"/>
+    <rect x="344" y="226" width="26" height="26" rx="5"/><rect x="394" y="226" width="26" height="26" rx="5"/>
+    <path d="M270 430 L270 360 A40 40 0 0 1 350 360 L350 430 Z"/>
+  </g>
+  <g fill="#ffffff">
+    <rect x="182" y="230" width="26" height="40" rx="13"/><rect x="412" y="230" width="26" height="40" rx="13"/>
+    <rect x="297" y="180" width="26" height="40" rx="13"/>
+  </g>
+  <g fill="#9254de">
+    <path d="M195 120 L195 88 L222 98 L195 108 Z M425 120 L425 88 L452 98 L425 108 Z M310 80 L310 44 L340 56 L310 68 Z"/>
+  </g>
+  <g stroke="#9254de" stroke-width="6" stroke-linecap="round">
+    <path d="M500 425 V300 M540 425 V225 M580 425 V145 M650 425 V180 M690 425 V300 M1000 425 V390 M1100 425 V390"/>
+  </g>
+  <g fill="none" stroke="#502090" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 440 C200 440 400 440 470 330 L570 140 C610 80 650 110 665 190 L715 380 C740 430 800 390 900 390 L1200 390"/>
+    <circle cx="900" cy="290" r="100"/>
+  </g>
+  <g transform="translate(520 235) rotate(-62)">
+    <rect x="-56" y="-26" width="34" height="20" rx="7" fill="#722ed1"/>
+    <rect x="-17" y="-26" width="34" height="20" rx="7" fill="#722ed1"/>
+    <rect x="22" y="-26" width="34" height="20" rx="7" fill="#722ed1"/>
+  </g>
+</svg>
